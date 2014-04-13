@@ -94,3 +94,7 @@ See comments in the code for more informtation.
 ## Limitations
 
 * Only supports front covers
+
+## License
+
+[Mozilla Public License Version 2.0](https://www.mozilla.org/MPL/2.0/)
