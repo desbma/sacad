@@ -1,0 +1,5 @@
+cssselect>=0.9.1
+enum34
+lxml>=3.3.3
+pillow>=2.3.0
+requests>=2.2.1
