@@ -580,7 +580,7 @@ class CoverSource(metaclass=abc.ABCMeta):
       headers = {"User-Agent": USER_AGENT}
       self.updateHttpHeaders(headers)
       with self.api_watcher:
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=5, verify=False)
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
