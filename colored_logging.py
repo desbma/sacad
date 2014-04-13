@@ -19,7 +19,7 @@ class ColoredFormatter(logging.Formatter):
 
   def format(self, record):
     message = super().format(record)
-    if sys.stderr.isatty():
+    if sys.stderr.isatty() and not sys.platform.startswith("win32"):
       try:
         color_code = LEVEL_COLOR_MAPPING[record.levelno].value
         bold = LEVEL_BOLD_MAPPING[record.levelno]
