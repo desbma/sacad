@@ -21,6 +21,7 @@ import pickle
 import re
 import shutil
 import subprocess
+import tempfile
 import urllib.parse
 import xml.etree.ElementTree
 
@@ -484,8 +485,10 @@ class CoverSource(metaclass=abc.ABCMeta):
     self.size_tolerance_prct = size_tolerance_prct
     self.prefer_https = prefer_https
     self.skip_this_api = False
+    tmp_dir = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
+    db_filepath = os.path.join(tmp_dir, "api_watcher_%s.sqlite" % (self.__class__.__name__.lower()))
     self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),
-                                                        db_filepath="/var/tmp/api_watcher_%s.sqlite" % (self.__class__.__name__.lower()),
+                                                        db_filepath=db_filepath,
                                                         min_delay_between_accesses=min_delay_between_accesses)
     if not hasattr(__class__, "api_cache"):
       __class__.api_cache = web_cache.WebCache("cover_source_api_data",
