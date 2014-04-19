@@ -993,6 +993,7 @@ if __name__ == "__main__":
                    "debug": logging.DEBUG}
   logging.getLogger().setLevel(logging_level[args.verbosity])
   logging.getLogger("requests").setLevel(logging.WARNING)
+  logging.getLogger("urllib3").setLevel(logging.WARNING)
   if logging_level[args.verbosity] == logging.DEBUG:
     fmt = "%(threadName)s: %(message)s"
   else:
