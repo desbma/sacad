@@ -22,6 +22,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 import urllib.parse
 import xml.etree.ElementTree
 
@@ -591,6 +592,11 @@ class CoverSource(metaclass=abc.ABCMeta):
     """ Build an URL from URL base and parameters. """
     return "%s?%s" % (base_url, urllib.parse.urlencode(params))
 
+  @staticmethod
+  def unaccentuate(s):
+    """ Replace accentuated chars in string by their non accentuated equivalent. """
+    return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
   @abc.abstractmethod
   def getSearchUrl(self, album, artist):
     """ Build a search results URL from an album and/or artist name. """
@@ -823,8 +829,8 @@ class AmazonCoverSource(CoverSource):
     """ See CoverSource.getSearchUrl. """
     params = collections.OrderedDict()
     params["search-alias"] = "popular"
-    params["field-artist"] = artist.lower()
-    params["field-title"] = album.lower()
+    params["field-artist"] = __class__.unaccentuate(artist.lower())
+    params["field-title"] = __class__.unaccentuate(album.lower())
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(__class__.BASE_URL, params)
 
