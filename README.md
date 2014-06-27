@@ -25,7 +25,7 @@ SACAD is a multi platform command line tool to download album covers witout manu
 SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 * HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
-* When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size
+* When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
 * Use multithreading when relevant, to speed up processing
 
 
@@ -88,7 +88,7 @@ Adding a new cover source is very easy if you speak Python, you need to inherit 
 * `updateHttpHeaders(self, headers)`
 * `parseResults(self, api_data)`
 
-See comments in the code for more informtation.
+See comments in the code for more information.
 
 
 ## Limitations
