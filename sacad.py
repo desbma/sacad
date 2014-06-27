@@ -501,13 +501,21 @@ class CoverSource(metaclass=abc.ABCMeta):
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     logging.getLogger().debug("Searching with source '%s'..." % (self.__class__.__name__))
-    url = self.getSearchUrl(album, artist)
+    url_data = self.getSearchUrl(album, artist)
+    if isinstance(url_data, tuple):
+      url, post_data = url_data
+    else:
+      url = url_data
+      post_data = None
     try:
-      cache_hit, api_data = self.fetchResults(url)
+      cache_hit, api_data = self.fetchResults(url, post_data)
       results = self.parseResults(api_data)
       if not cache_hit:
         # add cache entry only when parsing is successful
-        CoverSource.api_cache[url] = api_data
+        if post_data is not None:
+          CoverSource.api_cache[(url, post_data)] = api_data
+        else:
+          CoverSource.api_cache[url] = api_data
     except Exception as e:
       #raise
       logging.getLogger().warning("Search with source '%s' failed: %s" % (self.__class__.__name__, e))
@@ -566,19 +574,31 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                          result.url))
     return results_kept
 
-  def fetchResults(self, url):
+  def fetchResults(self, url, post_data=None):
     """ Get search result of an URL from cache or HTTP. """
     cache_hit = False
-    if url in __class__.api_cache:
+    if post_data is not None:
+      if (url, post_data) in __class__.api_cache:
+        logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
+        data = __class__.api_cache[(url, post_data)]
+        cache_hit = True
+    elif url in __class__.api_cache:
       logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
       data = __class__.api_cache[url]
       cache_hit = True
-    else:
-      logging.getLogger().debug("Querying URL '%s'..." % (url))
+
+    if not cache_hit:
+      if post_data is not None:
+        logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+      else:
+        logging.getLogger().debug("Querying URL '%s'..." % (url))
       headers = {"User-Agent": USER_AGENT}
       self.updateHttpHeaders(headers)
       with self.api_watcher:
-        response = requests.get(url, headers=headers, timeout=5, verify=False)
+        if post_data is not None:
+          response = requests.post(url, data=post_data, headers=headers, timeout=5, verify=False)
+        else:
+          response = requests.get(url, headers=headers, timeout=5, verify=False)
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
@@ -596,7 +616,15 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   @abc.abstractmethod
   def getSearchUrl(self, album, artist):
-    """ Build a search results URL from an album and/or artist name. """
+    """
+    Build a search results URL from an album and/or artist name.
+
+    If the URL must be accessed with an HTTP GET request, return the URL as a string.
+    If the URL must be accessed with an HTTP POST request, return a tuple with:
+    - the URL as a string
+    - the post parameters as a collections.OrderedDict
+
+    """
     pass
 
   @abc.abstractmethod
@@ -755,16 +783,15 @@ class CoverParadiseCoverSource(CoverSource):
 
   BASE_URL = "http://ecover.to/"
 
-  @staticmethod
-  def apiEscape(text):
-    return "".join(itertools.filterfalse("&.'\";:?!".__contains__, text)).replace("/", " ").lower()
-
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
-    params = collections.OrderedDict()
-    params["Module"] = "ExtendedSearch"
-    params["SearchString"] = "%s %s" % (__class__.apiEscape(artist), __class__.apiEscape(album))
-    return __class__.assembleUrl(__class__.BASE_URL, params)
+    url = "%sLookup.html" % (__class__.BASE_URL)
+    post_params = collections.OrderedDict()
+    post_params["B1"] = "Search!"
+    post_params["Page"] = "0"
+    post_params["SearchString"] = "%s %s" % (artist.lower(), album.lower())
+    post_params["Sektion"] = "2"
+    return url, post_params
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """
@@ -777,30 +804,64 @@ class CoverParadiseCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("latin-1"), parser)
-    results_selector = lxml.cssselect.CSSSelector("table#ExtSearchRslt td.ExtRsltCol")
-    size_regex = re.compile("^([0-9.]+) x ([0-9.]+)px")
-    results_groups = results_selector(html)
-    for rank, cover_group in enumerate(results_groups, 1):
-      results_divs_it = iter(cover_group.findall("div"))
-      next(results_divs_it)
-      while True:
+    results_selector = lxml.cssselect.CSSSelector("#EntryForm div.ThumbDetailsX")
+    subresults_selector = lxml.cssselect.CSSSelector("#Formel2 table.Table_SimpleSearchResult tr")
+    type_selector = lxml.cssselect.CSSSelector("span.Label")
+    info_selector = lxml.cssselect.CSSSelector("div.Info")
+    size_regex = re.compile("([0-9.]+)x([0-9.]+)px")
+    size_regex2 = re.compile("^([0-9.]+) x ([0-9.]+) px")
+    divs = results_selector(html)
+
+    if not divs:
+      # intermediate page
+      subresults_nodes = subresults_selector(html)
+      for rank, subresults_node in enumerate(subresults_nodes, 1):
+        td_it = subresults_node.iterfind("td")
+        td1 = next(td_it)
         try:
-          div1 = next(results_divs_it)
-          div2 = next(results_divs_it)
+          td2 = next(td_it)
         except StopIteration:
-          break
-        res_span = div2.findall("span")[1]
-        res_txt = lxml.etree.tostring(res_span, encoding="unicode", method="text")
-        re_match = size_regex.search(res_txt)
+          continue
+        td2_txt = lxml.etree.tostring(td2, encoding="unicode", method="text")
+        # skip non front covers
+        cover_types = frozenset(map(str.strip, td2_txt.split("Elements:")[-1].split("Dimensions:", 1)[0].split("|")))
+        if "Front" not in cover_types:
+          continue
+        # get resolution
+        res_txt = td2_txt.split("Dimensions:")[-1].split("Filesize:", 1)[0].strip()
+        re_match = size_regex2.search(res_txt)
+        size = tuple(map(int, re_match.group(1, 2)))
+        # get thumbnail url
+        link = td1.find("a")
+        thumbnail_url = link.find("img").get("src")
+        # deduce img url without downloading subpage
+        cover_id = int(thumbnail_url.rsplit(".", 1)[0].rsplit("/", 1)[1])
+        cover_name = link.get("href").rsplit(".", 1)[0].rsplit("/", 1)[1]
+        img_url = "%sDownload/%u/%s-Front.JPG" % (__class__.BASE_URL, cover_id, cover_name)
+        # assume format is always jpg
+        format = CoverImageFormat.JPEG
+        # add result
+        results.append(CoverParadiseCoverSourceResult(img_url,
+                                                      size,
+                                                      format,
+                                                      thumbnail_url=thumbnail_url,
+                                                      rank=rank))
+    else:
+      # direct result page
+      for div in divs:
+        # skip non front covers
+        cover_type = type_selector(div)[0].text.strip()
+        if cover_type != "Front":
+          continue
+        # get resolution
+        info_txt = info_selector(div)[0].text.strip()
+        re_match = size_regex.search(info_txt)
         size = tuple(map(int,
                          map("".join,
                              map(operator.methodcaller("split", "."),
                                  re_match.group(1, 2)))))
-        link = div1.find("a")
-        # skip non front covers
-        if link.find("img").get("title") != "Front":
-          continue
-        # get url
+        # get img url
+        link = div.find("a")
         img_url = link.get("href")
         img_url = "%s%s" % (__class__.BASE_URL.rstrip("/"), img_url)
         # assume format is always jpg
@@ -811,9 +872,7 @@ class CoverParadiseCoverSource(CoverSource):
         results.append(CoverParadiseCoverSourceResult(img_url,
                                                       size,
                                                       format,
-                                                      thumbnail_url=thumbnail_url,
-                                                      rank=rank))
-        break
+                                                      thumbnail_url=thumbnail_url))
 
     return results
 
