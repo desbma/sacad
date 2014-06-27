@@ -485,7 +485,6 @@ class CoverSource(metaclass=abc.ABCMeta):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
     self.prefer_https = prefer_https
-    self.skip_this_api = False
     tmp_dir = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
     db_filepath = os.path.join(tmp_dir, "api_watcher_%s.sqlite" % (self.__class__.__name__.lower()))
     self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),
@@ -501,8 +500,6 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
-    if self.skip_this_api:
-      return ()
     logging.getLogger().debug("Searching with source '%s'..." % (self.__class__.__name__))
     url = self.getSearchUrl(album, artist)
     try:
