@@ -8,6 +8,7 @@ import inspect
 import logging
 import lzma
 import os
+import pickle
 import queue
 import sqlite3
 import tempfile
@@ -36,7 +37,7 @@ class WebCache:
       compression: Algorithm used to compress cache items, or None for no compression
       compression_level: Compression level (0-9)
       logger: Logger (as in the logging module) to log execution, or None for no logging
-      safe_mode: If True, will enable some optimizations that increase cache write speed, but may compromise cache
+      safe_mode: If False, will enable some optimizations that increase cache write speed, but may compromise cache
         integrity in case of Python crash or power loss
     """
     # attribs
@@ -46,6 +47,7 @@ class WebCache:
     self.__compression = compression
     self.__compression_level = compression_level
     self.__logger = logger
+
     # connexion
     if db_filepath is None:
       if db_filename is None:
@@ -56,18 +58,23 @@ class WebCache:
       cache_directory = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
       db_filepath = os.path.join(cache_directory, cache_filename)
     self.__connexion = sqlite3.connect(db_filepath)
-    # create table if necessary
+
+    # create tables if necessary
     with self.__connexion:
       if not safe_mode:
         # enable some optimizations that can cause data corruption in case of power loss or python crash
         self.__connexion.executescript("""PRAGMA journal_mode = MEMORY;
                                           PRAGMA synchronous = OFF;""")
       self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s (url TEXT PRIMARY KEY, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
+      self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s_post (url TEXT NOT NULL, post_data BLOB NOT NULL, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
+      self.__connexion.execute("CREATE INDEX IF NOT EXISTS idx ON %s_post(url, post_data);" % (self.__table_name))
     self.purge()
+
     # stats
     if (self.__logger is not None) and self.__logger.isEnabledFor(logging.DEBUG):
       with self.__connexion:
         row_count = self.__connexion.execute("SELECT COUNT(*) FROM %s;" % (self.__table_name)).fetchall()[0][0]
+        row_count += self.__connexion.execute("SELECT COUNT(*) FROM %s_post;" % (self.__table_name)).fetchall()[0][0]
       self.__logger.debug("Cache '%s' contains %u entries" % (self.__table_name, row_count))
       if db_filepath not in __class__.cache_file_stats_displayed:
         __class__.cache_file_stats_displayed.add(db_filepath)
@@ -87,10 +94,23 @@ class WebCache:
   def __del__(self):
     self.__connexion.close()
 
-  def __getitem__(self, url):
+  def __getitem__(self, url_data):
     """ Get an item from cache. """
+    if isinstance(url_data, tuple):
+      url, post_data = url_data
+    else:
+      url = url_data
+      post_data = None
+
     with self.__connexion:
-      data = self.__connexion.execute("SELECT data FROM %s WHERE url = ?;" % (self.__table_name), (url,)).fetchone()[0]
+      if post_data is not None:
+        post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
+        data = self.__connexion.execute("SELECT data FROM %s_post WHERE url = ? AND post_data = ?;" % (self.__table_name),
+                                        (url, post_bin_data)).fetchone()[0]
+      else:
+        data = self.__connexion.execute("SELECT data FROM %s WHERE url = ?;" % (self.__table_name),
+                                        (url,)).fetchone()[0]
+
     if self.__compression is Compression.DEFLATE:
       buffer = memoryview(data)
       data = zlib.decompress(buffer)
@@ -100,16 +120,30 @@ class WebCache:
     elif self.__compression is Compression.LZMA:
       buffer = memoryview(data)
       data = lzma.decompress(buffer)
+
     if self.__caching_strategy is CachingStrategy.LRU:
       # update last access time
       with self.__connexion:
-        self.__connexion.execute("UPDATE " +
-                                 self.__table_name +
-                                 " SET last_accessed_timestamp = strftime('%s', 'now') WHERE url = ?;", (url,))
+        if post_data is not None:
+          self.__connexion.execute("UPDATE " +
+                                   self.__table_name +
+                                   "_post SET last_accessed_timestamp = strftime('%s', 'now') WHERE url = ? AND post_data = ?;",
+                                   (url, post_bin_data))
+        else:
+          self.__connexion.execute("UPDATE " +
+                                   self.__table_name +
+                                   " SET last_accessed_timestamp = strftime('%s', 'now') WHERE url = ?;",
+                                   (url,))
     return data
 
-  def __setitem__(self, url, data):
+  def __setitem__(self, url_data, data):
     """ Store an item in cache. """
+    if isinstance(url_data, tuple):
+      url, post_data = url_data
+    else:
+      url = url_data
+      post_data = None
+
     if self.__compression is Compression.DEFLATE:
       buffer = memoryview(data)
       data = zlib.compress(buffer, self.__compression_level)
@@ -119,41 +153,78 @@ class WebCache:
     elif self.__compression is Compression.LZMA:
       buffer = memoryview(data)
       data = lzma.compress(buffer, format=lzma.FORMAT_ALONE, preset=self.__compression_level)
-    with self.__connexion:
-      self.__connexion.execute("INSERT OR REPLACE INTO " +
-                               self.__table_name +
-                               " (url, added_timestamp, last_accessed_timestamp,data) VALUES (?, strftime('%s','now'), strftime('%s','now'), ?);",
-                               (url, sqlite3.Binary(data)))
 
-  def __delattr__(self, url):
-    """ Remove an item from cache. """
     with self.__connexion:
-      self.__connexion.execute("DELETE FROM " + self.__table_name + " WHERE url = ?;", (url,))
+      if post_data is not None:
+        post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
+        self.__connexion.execute("INSERT OR REPLACE INTO " +
+                                 self.__table_name +
+                                 "_post (url, post_data, added_timestamp, last_accessed_timestamp,data) VALUES (?, ?, strftime('%s','now'), strftime('%s','now'), ?);",
+                                 (url, post_bin_data, sqlite3.Binary(data)))
+      else:
+        self.__connexion.execute("INSERT OR REPLACE INTO " +
+                                 self.__table_name +
+                                 " (url, added_timestamp, last_accessed_timestamp,data) VALUES (?, strftime('%s','now'), strftime('%s','now'), ?);",
+                                 (url, sqlite3.Binary(data)))
+
+  def __delattr__(self, url_data):
+    """ Remove an item from cache. """
+    if isinstance(url_data, tuple):
+      url, post_data = url_data
+    else:
+      url = url_data
+      post_data = None
+
+    with self.__connexion:
+      if post_data is not None:
+        post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
+        self.__connexion.execute("DELETE FROM " + self.__table_name + "_post WHERE url = ? AND post_data = ?;",
+                                 (url, post_bin_data))
+      else:
+        self.__connexion.execute("DELETE FROM " + self.__table_name + " WHERE url = ?;",
+                                 (url,))
 
   def purge(self):
     """ Purge cache by removing obsolete items. """
     if self.__expiration is not None:
+      purged_count = 0
+
       with self.__connexion:
         if self.__caching_strategy is CachingStrategy.FIFO:
           # dump least recently added rows
-          purged_count = self.__connexion.execute("DELETE FROM " +
-                                                  self.__table_name +
-                                                  " WHERE (strftime('%s', 'now') - added_timestamp) > ?;",
-                                                  (self.__expiration,)).rowcount
+          for table_suffix in ("", "_post"):
+            purged_count += self.__connexion.execute("DELETE FROM " +
+                                                     self.__table_name +
+                                                     "%s " % (table_suffix) +
+                                                     "WHERE (strftime('%s', 'now') - added_timestamp) > ?;",
+                                                     (self.__expiration,)).rowcount
         elif self.__caching_strategy is CachingStrategy.LRU:
           # dump least recently accessed rows
-          purged_count = self.__connexion.execute("DELETE FROM " +
-                                                  self.__table_name +
-                                                  " WHERE (strftime('%s', 'now') - last_accessed_timestamp) > ?;",
-                                                  (self.__expiration,)).rowcount
+          for table_suffix in ("", "_post"):
+            purged_count += self.__connexion.execute("DELETE FROM " +
+                                                     self.__table_name +
+                                                     "%s " % (table_suffix) +
+                                                     "WHERE (strftime('%s', 'now') - last_accessed_timestamp) > ?;",
+                                                     (self.__expiration,)).rowcount
       if self.__logger is not None:
         self.__logger.debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, self.__table_name))
 
-  def __contains__(self, url):
+  def __contains__(self, url_data):
     """ Return true if an item is present in cache for that url, False instead. """
+    if isinstance(url_data, tuple):
+      url, post_data = url_data
+    else:
+      url = url_data
+      post_data = None
+
     with self.__connexion:
-      hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s WHERE url = ?;" % (self.__table_name),
-                                      (url,)).fetchall()[0][0] > 0)
+      if post_data is not None:
+        post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
+        hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s_post WHERE url = ? AND post_data = ?;" % (self.__table_name),
+                                        (url, post_bin_data)).fetchall()[0][0] > 0)
+      else:
+        hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s WHERE url = ?;" % (self.__table_name),
+                                        (url,)).fetchall()[0][0] > 0)
     if hit:
       self.hit_count += 1
     else:
