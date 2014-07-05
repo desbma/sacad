@@ -83,13 +83,17 @@ class CoverSourceResult:
       __class__.image_cache = web_cache.ThreadedWebCache("cover_image_data",
                                                          db_filename=cache_filename,
                                                          caching_strategy=web_cache.CachingStrategy.LRU,
-                                                         expiration=60 * 60 * 24 * 365,  # 1 year
-                                                         logger=logging.getLogger())
+                                                         expiration=60 * 60 * 24 * 365)  # 1 year
       __class__.metadata_cache = web_cache.ThreadedWebCache("cover_metadata",
                                                             db_filename=cache_filename,
                                                             caching_strategy=web_cache.CachingStrategy.LRU,
-                                                            expiration=60 * 60 * 24 * 365,  # 1 year
-                                                            logger=logging.getLogger())
+                                                            expiration=60 * 60 * 24 * 365)  # 1 year
+      for cache, cache_name in zip((__class__.image_cache, __class__.metadata_cache),
+                                   ("cover_image_data", "cover_metadata")):
+        purged_count = cache.purge()
+        logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))
+        row_count = len(cache)
+        logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
   def __str__(self):
     return "%s '%s'" % (self.__class__.__name__, self.url)
@@ -491,12 +495,19 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                         db_filepath=db_filepath,
                                                         min_delay_between_accesses=min_delay_between_accesses)
     if not hasattr(__class__, "api_cache"):
-      __class__.api_cache = web_cache.WebCache("cover_source_api_data",
-                                               db_filename="%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0]),
+      db_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
+      cache_name = "cover_source_api_data"
+      __class__.api_cache = web_cache.WebCache(cache_name,
+                                               db_filename=db_filename,
                                                caching_strategy=web_cache.CachingStrategy.FIFO,
                                                expiration=60 * 60 * 24 * 90,  # 3 month
-                                               compression=web_cache.Compression.DEFLATE,
-                                               logger=logging.getLogger())
+                                               compression=web_cache.Compression.DEFLATE)
+      logging.getLogger().debug("Total size of file '%s': %s" % (db_filename,
+                                                                 __class__.api_cache.getDatabaseFileSize()))
+      purged_count = __class__.api_cache.purge()
+      logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))
+      row_count = len(__class__.api_cache)
+      logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """

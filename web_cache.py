@@ -5,7 +5,6 @@ import collections
 import enum
 import functools
 import inspect
-import logging
 import lzma
 import os
 import pickle
@@ -22,21 +21,18 @@ CachingStrategy = enum.Enum("CachingStrategy", ("FIFO", "LRU"))
 
 class WebCache:
 
-  cache_file_stats_displayed = set()
-
   def __init__(self, table_name, *, caching_strategy, expiration=None, db_filepath=None, db_filename=None,
-               compression=None, compression_level=9, logger=None, safe_mode=False):
+               compression=None, compression_level=9, safe_mode=False):
     """
     Args:
       table_name: Database table name used for the cache
       caching_strategy: CachingStrategy enum defining how cache entries are removed
-      expiration: Cache item lifetime in seconds, used to clean items with the FIFO strategy, or None if items never
-        expire
+      expiration: Cache item lifetime in seconds, used to clean items with the FIFO and LRU strateges, or None if items
+        never expire
       db_filepath: Database filepath. If None, will generate a file in /var/tmp, or default system temp dir
       db_filename: Database filename. If None, will generate a filename according to the calling script name
       compression: Algorithm used to compress cache items, or None for no compression
       compression_level: Compression level (0-9)
-      logger: Logger (as in the logging module) to log execution, or None for no logging
       safe_mode: If False, will enable some optimizations that increase cache write speed, but may compromise cache
         integrity in case of Python crash or power loss
     """
@@ -46,7 +42,6 @@ class WebCache:
     self.__expiration = expiration
     self.__compression = compression
     self.__compression_level = compression_level
-    self.__logger = logger
 
     # connexion
     if db_filepath is None:
@@ -56,8 +51,10 @@ class WebCache:
         cache_filename = db_filename
       # prefer /var/tmp to /tmp because /tmp is usually wiped out at every boot (or a tmpfs mount) in most Linux distros
       cache_directory = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
-      db_filepath = os.path.join(cache_directory, cache_filename)
-    self.__connexion = sqlite3.connect(db_filepath)
+      self.__db_filepath = os.path.join(cache_directory, cache_filename)
+    else:
+      self.__db_filepath = db_filepath
+    self.__connexion = sqlite3.connect(self.__db_filepath)
 
     # create tables if necessary
     with self.__connexion:
@@ -68,31 +65,39 @@ class WebCache:
       self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s (url TEXT PRIMARY KEY, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
       self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s_post (url TEXT NOT NULL, post_data BLOB NOT NULL, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
       self.__connexion.execute("CREATE INDEX IF NOT EXISTS idx ON %s_post(url, post_data);" % (self.__table_name))
-    self.purge()
 
     # stats
-    if (self.__logger is not None) and self.__logger.isEnabledFor(logging.DEBUG):
-      with self.__connexion:
-        row_count = self.__connexion.execute("SELECT COUNT(*) FROM %s;" % (self.__table_name)).fetchall()[0][0]
-        row_count += self.__connexion.execute("SELECT COUNT(*) FROM %s_post;" % (self.__table_name)).fetchall()[0][0]
-      self.__logger.debug("Cache '%s' contains %u entries" % (self.__table_name, row_count))
-      if db_filepath not in __class__.cache_file_stats_displayed:
-        __class__.cache_file_stats_displayed.add(db_filepath)
-        size = os.path.getsize(db_filepath)
-        if size > 1000000000:
-          size = "%0.2fGB" % (size / 1000000000)
-        elif size > 1000000:
-          size = "%0.2fMB" % (size / 1000000)
-        elif size > 1000:
-          size = "%uKB" % (size // 1000)
-        else:
-          size = "%uB" % (size)
-        self.__logger.debug("Total size of file '%s': %s" % (db_filepath, size))
-    self.hit_count = 0
-    self.miss_count = 0
+    self.__hit_count = 0
+    self.__miss_count = 0
+
+  def getDatabaseFileSize(self):
+    """ Return the file size of the database as a pretty string. """
+    size = os.path.getsize(self.__db_filepath)
+    if size > 1000000000:
+      size = "%0.2fGB" % (size / 1000000000)
+    elif size > 1000000:
+      size = "%0.2fMB" % (size / 1000000)
+    elif size > 1000:
+      size = "%uKB" % (size // 1000)
+    else:
+      size = "%uB" % (size)
+    return size
+
+  def getCacheHitStats(self):
+    return self.__hit_count, self.__miss_count
+
+  def __len__(self):
+    """ Return the number of items in the cache. """
+    with self.__connexion:
+      row_count = self.__connexion.execute("SELECT COUNT(*) FROM %s;" % (self.__table_name)).fetchall()[0][0]
+      row_count += self.__connexion.execute("SELECT COUNT(*) FROM %s_post;" % (self.__table_name)).fetchall()[0][0]
+    return row_count
 
   def __del__(self):
-    self.__connexion.close()
+    try:
+      self.__connexion.close()
+    except AttributeError:
+      pass
 
   def __getitem__(self, url_data):
     """ Get an item from cache. """
@@ -106,10 +111,13 @@ class WebCache:
       if post_data is not None:
         post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
         data = self.__connexion.execute("SELECT data FROM %s_post WHERE url = ? AND post_data = ?;" % (self.__table_name),
-                                        (url, post_bin_data)).fetchone()[0]
+                                        (url, post_bin_data)).fetchone()
       else:
         data = self.__connexion.execute("SELECT data FROM %s WHERE url = ?;" % (self.__table_name),
-                                        (url,)).fetchone()[0]
+                                        (url,)).fetchone()
+    if not data:
+      raise KeyError(url_data)
+    data = data[0]
 
     if self.__compression is Compression.DEFLATE:
       buffer = memoryview(data)
@@ -167,7 +175,7 @@ class WebCache:
                                  " (url, added_timestamp, last_accessed_timestamp,data) VALUES (?, strftime('%s','now'), strftime('%s','now'), ?);",
                                  (url, sqlite3.Binary(data)))
 
-  def __delattr__(self, url_data):
+  def __delitem__(self, url_data):
     """ Remove an item from cache. """
     if isinstance(url_data, tuple):
       url, post_data = url_data
@@ -178,17 +186,18 @@ class WebCache:
     with self.__connexion:
       if post_data is not None:
         post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
-        self.__connexion.execute("DELETE FROM " + self.__table_name + "_post WHERE url = ? AND post_data = ?;",
-                                 (url, post_bin_data))
+        deleted_count = self.__connexion.execute("DELETE FROM " + self.__table_name + "_post WHERE url = ? AND post_data = ?;",
+                                                 (url, post_bin_data)).rowcount
       else:
-        self.__connexion.execute("DELETE FROM " + self.__table_name + " WHERE url = ?;",
-                                 (url,))
+        deleted_count = self.__connexion.execute("DELETE FROM " + self.__table_name + " WHERE url = ?;",
+                                                 (url,)).rowcount
+    if deleted_count == 0:
+      raise KeyError(url_data)
 
   def purge(self):
     """ Purge cache by removing obsolete items. """
+    purged_count = 0
     if self.__expiration is not None:
-      purged_count = 0
-
       with self.__connexion:
         if self.__caching_strategy is CachingStrategy.FIFO:
           # dump least recently added rows
@@ -206,8 +215,7 @@ class WebCache:
                                                      "%s " % (table_suffix) +
                                                      "WHERE (strftime('%s', 'now') - last_accessed_timestamp) > ?;",
                                                      (self.__expiration,)).rowcount
-      if self.__logger is not None:
-        self.__logger.debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, self.__table_name))
+    return purged_count
 
   def __contains__(self, url_data):
     """ Return true if an item is present in cache for that url, False instead. """
@@ -226,9 +234,9 @@ class WebCache:
         hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s WHERE url = ?;" % (self.__table_name),
                                         (url,)).fetchall()[0][0] > 0)
     if hit:
-      self.hit_count += 1
+      self.__hit_count += 1
     else:
-      self.miss_count += 1
+      self.__miss_count += 1
     return hit
 
 
@@ -244,32 +252,49 @@ class ThreadedWebCache:
   """
 
   def __init__(self, *args, **kwargs):
+    # this is the tricky part:
+    # attach methods from WebCache, decorated by callToThread, to this object's class
+    methods = inspect.getmembers(WebCache, inspect.isfunction)
+    for method_name, method in methods:
+      if method_name in ("__init__", "__del__"):
+        continue
+      new_method = __class__.callToThread(method)
+      setattr(self.__class__, method_name, new_method)
+    # start thread
     self.thread = WebCacheThread()
-    self.thread.execute_queue.put_nowait((args, kwargs))
+    self.thread.execute_queue.put_nowait((threading.get_ident(), args, kwargs))
     self.thread.start()
+    self.thread.execute_queue.join()
+    # check WebCache object construction went ok
+    try:
+      e = self.thread.exception_queue[threading.get_ident()].get_nowait()
+    except queue.Empty:
+      pass
+    else:
+      raise e
 
   def waitResult(self):
-    return self.thread.result_queue[threading.get_ident()].get()
+    while True:
+      # wait either for a result...
+      try:
+        return self.thread.result_queue[threading.get_ident()].get(timeout=0.001)
+      except queue.Empty:
+        pass
+      # ...or an exception
+      try:
+        e = self.thread.exception_queue[threading.get_ident()].get(timeout=0.001)
+      except queue.Empty:
+        pass
+      else:
+        raise e
 
-  def __getitem__(self, *args, **kwargs):
-    self.thread.execute_queue.put_nowait((threading.get_ident(), WebCache.__getitem__, args, kwargs))
-    return self.waitResult()
-
-  def __setitem__(self, *args, **kwargs):
-    self.thread.execute_queue.put_nowait((threading.get_ident(), WebCache.__setitem__, args, kwargs))
-    return self.waitResult()
-
-  def __delattr__(self, *args, **kwargs):
-    self.thread.execute_queue.put_nowait((threading.get_ident(), WebCache.__delattr__, args, kwargs))
-    return self.waitResult()
-
-  def purge(self, *args, **kwargs):
-    self.thread.execute_queue.put_nowait((threading.get_ident(), WebCache.purge, args, kwargs))
-    return self.waitResult()
-
-  def __contains__(self, *args, **kwargs):
-    self.thread.execute_queue.put_nowait((threading.get_ident(), WebCache.__contains__, args, kwargs))
-    return self.waitResult()
+  @staticmethod
+  def callToThread(method):
+    """ Wrap call to method to send it to WebCacheThread. """
+    def func_wrapped(self, *args, **kwargs):
+      self.thread.execute_queue.put_nowait((threading.get_ident(), method, args, kwargs))
+      return self.waitResult()
+    return func_wrapped
 
 
 class WebCacheThread(threading.Thread):
@@ -278,13 +303,28 @@ class WebCacheThread(threading.Thread):
 
   def __init__(self):
     self.execute_queue = queue.Queue()
+    self.exception_queue = collections.defaultdict(functools.partial(queue.Queue, maxsize=1))
     self.result_queue = collections.defaultdict(functools.partial(queue.Queue, maxsize=1))
     super().__init__(name=__class__.__name__, daemon=True)
 
   def run(self):
-    args, kwargs = self.execute_queue.get_nowait()
-    cache_obj = WebCache(*args, **kwargs)
+    # construct WebCache object locally
+    thread_id, args, kwargs = self.execute_queue.get_nowait()
+    try:
+      cache_obj = WebCache(*args, **kwargs)
+    except Exception as e:
+      self.exception_queue[thread_id].put_nowait(e)
+      self.execute_queue.task_done()
+      return
+    self.execute_queue.task_done()
+
+    # execute loop
     while True:
       thread_id, method, args, kwargs = self.execute_queue.get()
-      result = method(cache_obj, *args, **kwargs)
-      self.result_queue[thread_id].put_nowait(result)
+      try:
+        result = method(cache_obj, *args, **kwargs)
+      except Exception as e:
+        self.exception_queue[thread_id].put_nowait(e)
+      else:
+        self.result_queue[thread_id].put_nowait(result)
+      self.execute_queue.task_done()
