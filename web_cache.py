@@ -274,19 +274,14 @@ class ThreadedWebCache:
       raise e
 
   def waitResult(self):
-    while True:
-      # wait either for a result...
-      try:
-        return self.thread.result_queue[threading.get_ident()].get(timeout=0.001)
-      except queue.Empty:
-        pass
-      # ...or an exception
-      try:
-        e = self.thread.exception_queue[threading.get_ident()].get(timeout=0.001)
-      except queue.Empty:
-        pass
-      else:
-        raise e
+    """ Wait for the execution of the last enqueued job to be done, and return the result or raise an exception. """
+    self.thread.execute_queue.join()
+    try:
+      e = self.thread.exception_queue[threading.get_ident()].get_nowait()
+    except queue.Empty:
+      return self.thread.result_queue[threading.get_ident()].get_nowait()
+    else:
+      raise e
 
   @staticmethod
   def callToThread(method):
@@ -308,18 +303,20 @@ class WebCacheThread(threading.Thread):
     super().__init__(name=__class__.__name__, daemon=True)
 
   def run(self):
+    """ Thread loop. """
     # construct WebCache object locally
     thread_id, args, kwargs = self.execute_queue.get_nowait()
     try:
       cache_obj = WebCache(*args, **kwargs)
     except Exception as e:
       self.exception_queue[thread_id].put_nowait(e)
-      self.execute_queue.task_done()
-      return
+      loop = False
+    else:
+      loop = True
     self.execute_queue.task_done()
 
     # execute loop
-    while True:
+    while loop:
       thread_id, method, args, kwargs = self.execute_queue.get()
       try:
         result = method(cache_obj, *args, **kwargs)
