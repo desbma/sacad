@@ -379,27 +379,26 @@ class CoverSourceResult:
       reference.is_similar_to_reference = True
 
       # calculate sigs using thread pool
-      executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
-      futures = []
-      for result in results:
-        futures.append(executor.submit(CoverSourceResult.updateSignature, result))
-      if reference.is_only_reference:
-        assert(reference not in results)
-        futures.append(executor.submit(CoverSourceResult.updateSignature, reference))
-      concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
-      # raise first exception in future if any
-      for future in futures:
-        try:
-          e = future.exception(timeout=0)
-        except concurrent.futures.TimeoutError:
-          continue
-        if e is not None:
-          # try to stop all pending futures
-          for future_to_cancel in futures:
-            future_to_cancel.cancel()
-          raise e
-      results = list(future.result() for future in futures if not future.result().is_only_reference)
-      executor.shutdown(wait=False)
+      with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = []
+        for result in results:
+          futures.append(executor.submit(CoverSourceResult.updateSignature, result))
+        if reference.is_only_reference:
+          assert(reference not in results)
+          futures.append(executor.submit(CoverSourceResult.updateSignature, reference))
+        concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
+        # raise first exception in future if any
+        for future in futures:
+          try:
+            e = future.exception(timeout=0)
+          except concurrent.futures.TimeoutError:
+            continue
+          if e is not None:
+            # try to stop all pending futures
+            for future_to_cancel in futures:
+              future_to_cancel.cancel()
+            raise e
+        results = list(future.result() for future in futures if not future.result().is_only_reference)
 
       # compare other results to reference
       for result in results:
@@ -533,25 +532,24 @@ class CoverSource(metaclass=abc.ABCMeta):
       return ()
 
     # get metadata using thread pool
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
-    futures = []
-    for result in filter(operator.attrgetter("check_metadata"), results):
-      futures.append(executor.submit(CoverSourceResult.updateImageMetadata, result))
-    results = list(itertools.filterfalse(operator.attrgetter("check_metadata"), results))
-    concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
-    # raise first exception in future if any
-    for future in futures:
-      try:
-        e = future.exception(timeout=0)
-      except concurrent.futures.TimeoutError:
-        continue
-      if e is not None:
-        # try to stop all pending futures
-        for future_to_cancel in futures:
-          future_to_cancel.cancel()
-        raise e
-    results.extend(future.result() for future in futures)
-    executor.shutdown(wait=False)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+      futures = []
+      for result in filter(operator.attrgetter("check_metadata"), results):
+        futures.append(executor.submit(CoverSourceResult.updateImageMetadata, result))
+      results = list(itertools.filterfalse(operator.attrgetter("check_metadata"), results))
+      concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
+      # raise first exception in future if any
+      for future in futures:
+        try:
+          e = future.exception(timeout=0)
+        except concurrent.futures.TimeoutError:
+          continue
+        if e is not None:
+          # try to stop all pending futures
+          for future_to_cancel in futures:
+            future_to_cancel.cancel()
+          raise e
+      results.extend(future.result() for future in futures)
 
     # filter
     results_excluded_count = 0
