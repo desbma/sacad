@@ -282,7 +282,7 @@ class CoverSourceResult:
     delta_side1 = ((first.size[0] + first.size[1]) / 2) - target_size
     delta_side2 = ((second.size[0] + second.size[1]) / 2) - target_size
     if ((delta_side1 < -(size_tolerance_prct * target_size / 100)) or
-        (delta_side2 < -(size_tolerance_prct * target_size / 100))):
+            (delta_side2 < -(size_tolerance_prct * target_size / 100))):
       return -1 if (delta_side1 < delta_side2) else 1
 
     # prefer covers of reliable source
@@ -293,9 +293,9 @@ class CoverSourceResult:
 
     # prefer best ranked
     if ((first.rank is not None) and
-        (second.rank is not None) and
-        (first.__class__ is second.__class__) and
-        (first.rank != second.rank)):
+            (second.rank is not None) and
+            (first.__class__ is second.__class__) and
+            (first.rank != second.rank)):
       return -1 if (first.rank > second.rank) else 1
 
     # prefer the preferred size
@@ -317,7 +317,7 @@ class CoverSourceResult:
   def crunch(image_data, format, silent=False):
     """ Crunch image data, and return the processed data, or orignal data if operation failed. """
     if (((format is CoverImageFormat.PNG) and (not HAS_OPTIPNG)) or
-        ((format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM))):
+            ((format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM))):
       return image_data
     with mkstemp_ctx.mkstemp(suffix=".%s" % (format.name.lower())) as tmp_out_filepath:
       if not silent:
@@ -403,8 +403,8 @@ class CoverSourceResult:
       # compare other results to reference
       for result in results:
         if ((result is not reference) and
-            (result.thumbnail_sig is not None) and
-            (reference.thumbnail_sig is not None)):
+                (result.thumbnail_sig is not None) and
+                (reference.thumbnail_sig is not None)):
           result.is_similar_to_reference = __class__.areImageSigsSimilar(result.thumbnail_sig,
                                                                          reference.thumbnail_sig)
           if result.is_similar_to_reference:
@@ -557,9 +557,9 @@ class CoverSource(metaclass=abc.ABCMeta):
     results_kept = []
     for result in results:
       if ((result.size[0] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or  # skip too small images
-          (result.size[1] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or
-          (result.format not in CoverImageFormat) or  # unknown format
-          result.check_metadata):  # if still true, it means we failed to grab metadata, so exclude it
+              (result.size[1] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or
+              (result.format not in CoverImageFormat) or  # unknown format
+              result.check_metadata):  # if still true, it means we failed to grab metadata, so exclude it
         if result.source_quality is CoverSourceQuality.REFERENCE:
           # we keep this result just for the reference, it will be excluded from the results
           result.is_only_reference = True
@@ -930,7 +930,7 @@ class AmazonCoverSource(CoverSource):
       check_metadata = True
       # try to get higher res image...
       if ((self.target_size > size[0]) and  # ...only if needed
-          (rank < 3)):  # and only for first 3 results because this is time consuming (1 GET request per result)
+              (rank < 3)):  # and only for first 3 results because this is time consuming (1 GET request per result)
         product_url = product_link_selector(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_url_query = urllib.parse.parse_qsl(product_url.query)
