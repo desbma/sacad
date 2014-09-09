@@ -77,6 +77,8 @@ Additionnaly, if you want to benefit from image crunching (lossless recompressio
 * Install [optipng](http://optipng.sourceforge.net/)
 * Install [jpegoptim](http://freecode.com/projects/jpegoptim)
 
+On Ubuntu and other Debian derivatives, you can install both with `sudo apt-get install optipng jpegoptim`.
+
 Note that depending of the speed of your CPU, crunching may significantly slow down processing as it is very CPU intensive (especially for PNG files).
 
 
