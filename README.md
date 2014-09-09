@@ -70,6 +70,8 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 You are ready to download a cover, ie: `./sacad.py 'metallica' 'master of puppets' 600 cover.jpg`
 
+Windows users can also [download a standalone binary](https://dl.dropboxusercontent.com/u/70127955/sacad_20140628_win.7z) which does not require Python.
+
 #### Optional
 
 Additionnaly, if you want to benefit from image crunching (lossless recompression):
