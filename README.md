@@ -29,37 +29,6 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 * Use multithreading when relevant, to speed up processing
 
 
-## Command line reference
-
-    usage: sacad.py [-h] [-t SIZE_TOLERANCE_PRCT] [-d] [-e]
-                    [-v {quiet,warning,normal,debug}]
-                    artist album size out_filepath
-
-    Download an album cover
-
-    positional arguments:
-      artist                Artist to search for
-      album                 Album to search for
-      size                  Target image size
-      out_filepath          Output image file
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -t SIZE_TOLERANCE_PRCT, --size-tolerance SIZE_TOLERANCE_PRCT
-                            Tolerate this percentage of size difference with the
-                            target size. Note that covers with size above or close
-                            to the target size will still be preferred if
-                            available
-      -d, --disable-low-quality-sources
-                            Disable cover sources that may return unreliable
-                            results (ie. Google Images). It will speed up
-                            processing and improve reliability, but may fail to
-                            find results for some difficult searches.
-      -e, --https           Use SSL encryption (HTTPS) when available
-      -v {quiet,warning,normal,debug}, --verbosity {quiet,warning,normal,debug}
-                            Level of output to display
-
-
 ## Installation
 
 **SACAD needs Python >= 3.3**.
@@ -84,6 +53,16 @@ On Ubuntu and other Debian derivatives, you can install both with `sudo apt-get 
 Note that depending of the speed of your CPU, crunching may significantly slow down processing as it is very CPU intensive (especially for PNG files).
 
 
+## Command line usage
+
+Run `./sacad.py -h` to get full command line reference.
+
+
+## Limitations
+
+* Only supports front covers
+
+
 ## Adding cover sources
 
 Adding a new cover source is very easy if you speak Python, you need to inherit the `CoverSource` class and implement the following methods:
@@ -93,11 +72,6 @@ Adding a new cover source is very easy if you speak Python, you need to inherit 
 * `parseResults(self, api_data)`
 
 See comments in the code for more information.
-
-
-## Limitations
-
-* Only supports front covers
 
 
 ## License
