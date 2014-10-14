@@ -1048,7 +1048,7 @@ if __name__ == "__main__":
                           choices=("quiet", "warning", "normal", "debug"),
                           default="normal",
                           dest="verbosity",
-                          help="Level of output to display")
+                          help="Level of logging output")
   args = arg_parser.parse_args()
   args.format = os.path.splitext(args.out_filepath)[1][1:].lower()
   try:
