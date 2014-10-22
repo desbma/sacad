@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Smart Automatic Cover Art Downloader """
+""" Smart Automatic Cover Art Downloader : download music album covers. """
 
 
 import abc
@@ -53,6 +53,8 @@ HAS_JPEGOPTIM = shutil.which("jpegoptim") is not None
 
 
 class CoverSourceResult:
+
+  """ Cover image returned by a source, candidate to be downloaded. """
 
   MAX_FILE_METADATA_PEEK_SIZE = 2 ** 15
   IMG_SIG_SIZE = 16
@@ -236,8 +238,9 @@ class CoverSourceResult:
   @staticmethod
   def compare(first, second, *, target_size, size_tolerance_prct):
     """
-    Compare cover relevance/quality, and return -1 if first is a worst match than second, 1 otherwise, or 0 if cover
-    can't be discriminated.
+    Compare cover relevance/quality.
+
+    Return -1 if first is a worst match than second, 1 otherwise, or 0 if cover can't be discriminated.
 
     This code is responsible for comparing two cover results to identify the best one, and is used to sort all results.
     It is probably the most important piece of code of this tool.
@@ -484,6 +487,8 @@ class AmazonCoverSourceResult(CoverSourceResult):
 
 class CoverSource(metaclass=abc.ABCMeta):
 
+  """ Base class for all cover sources. """
+
   def __init__(self, target_size, size_tolerance_prct, prefer_https, min_delay_between_accesses=2 / 3):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
@@ -649,6 +654,13 @@ class CoverSource(metaclass=abc.ABCMeta):
 
 class GoogleImagesWebScrapeCoverSource(CoverSource):
 
+  """
+  Cover source that scrapes Google Images search result pages.
+
+  Google Image Search JSON API is not used because it is deprecated and Google
+  is very agressively rate limiting its access.
+  """
+
   BASE_URL = "http://www.google.com/images"
   BASE_URL_HTTPS = "https://www.google.com/images"
 
@@ -719,6 +731,12 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
 
 class LastFmCoverSource(CoverSource):
 
+  """
+  Cover source using the official LastFM API.
+
+  http://www.lastfm.fr/api/show?service=290
+  """
+
   BASE_URL = "http://ws.audioscrobbler.com/2.0/"
   BASE_URL_HTTPS = "https://ws.audioscrobbler.com/2.0/"
   API_KEY = "2410a53db5c7490d0f50c100a020f359"
@@ -736,8 +754,6 @@ class LastFmCoverSource(CoverSource):
       base_url = __class__.BASE_URL_HTTPS
     else:
       base_url = __class__.BASE_URL
-
-    # http://www.lastfm.fr/api/show?service=290
 
     params = collections.OrderedDict()
     params["method"] = "album.getinfo"
@@ -789,6 +805,8 @@ class LastFmCoverSource(CoverSource):
 
 
 class CoverParadiseCoverSource(CoverSource):
+
+  """ Cover source that scrapes the ecover.to site. """
 
   BASE_URL = "http://ecover.to/"
 
@@ -887,6 +905,8 @@ class CoverParadiseCoverSource(CoverSource):
 
 
 class AmazonCoverSource(CoverSource):
+
+  """ Cover source returning Amazon.com album images. """
 
   BASE_URL = "http://www.amazon.com/gp/search"
 
