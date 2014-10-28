@@ -860,6 +860,8 @@ class CoverParadiseCoverSource(CoverSource):
         size = tuple(map(int, re_match.group(1, 2)))
         # get thumbnail url
         link = td1.find("a")
+        if link is None:
+          link = td2.find("b").find("a")
         thumbnail_url = link.find("img").get("src")
         # deduce img url without downloading subpage
         cover_id = int(thumbnail_url.rsplit(".", 1)[0].rsplit("/", 1)[1])
