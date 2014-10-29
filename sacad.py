@@ -861,7 +861,8 @@ class CoverParadiseCoverSource(CoverSource):
         # get thumbnail url
         link = td1.find("a")
         if link is None:
-          link = td2.find("b").find("a")
+          # no thumbnail, likely low quality result
+          continue
         thumbnail_url = link.find("img").get("src")
         # deduce img url without downloading subpage
         cover_id = int(thumbnail_url.rsplit(".", 1)[0].rsplit("/", 1)[1])
