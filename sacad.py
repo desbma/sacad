@@ -935,10 +935,10 @@ class AmazonCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
-    results_selector = lxml.cssselect.CSSSelector("#resultsCol .result")
-    img_selector = lxml.cssselect.CSSSelector(".productImage")
-    product_link_selector = lxml.cssselect.CSSSelector(".imageContainer > a")
-    product_page_img_selector = lxml.cssselect.CSSSelector("img#main-image")
+    results_selector = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
+    img_selector = lxml.cssselect.CSSSelector("img.s-access-image")
+    product_link_selector = lxml.cssselect.CSSSelector("a.s-access-detail-page")
+    product_page_img_selector = lxml.cssselect.CSSSelector("img#landingImage")
     result_divs = results_selector(html)
     for rank, result_div in enumerate(result_divs, 1):
       try:
@@ -971,7 +971,9 @@ class AmazonCoverSource(CoverSource):
           # unable to get better image
           pass
         else:
-          better_img_url = img_node.get("rel")
+          better_img_url = img_node.get("data-old-hires")
+          # img_node.get("data-a-dynamic-image") contains json with image urls too, but they are not larger than
+          # previous 500px image and are often covered by autorip badges (can be removed by cleaning url though)
           if better_img_url:
             img_url = better_img_url
             size_url_hint = img_url.rsplit(".", 2)[1].strip("_")
