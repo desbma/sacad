@@ -842,7 +842,8 @@ class CoverParadiseCoverSource(CoverSource):
     if not divs:
       # intermediate page
       subresults_nodes = subresults_selector(html)
-      for rank, subresults_node in enumerate(subresults_nodes, 1):
+      rank = 1
+      for subresults_node in subresults_nodes:
         td_it = subresults_node.iterfind("td")
         td1 = next(td_it)
         try:
@@ -876,6 +877,7 @@ class CoverParadiseCoverSource(CoverSource):
                                                       format,
                                                       thumbnail_url=thumbnail_url,
                                                       rank=rank))
+        rank += 1
     else:
       # direct result page
       for div in divs:
