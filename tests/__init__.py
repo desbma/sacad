@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import inspect
 import logging
 import os
 import socket
@@ -12,6 +11,9 @@ import PIL.Image
 import requests
 
 import sacad
+import sacad.web_cache
+
+sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
 
 
 def is_internet_reachable():
@@ -51,7 +53,7 @@ class TestSacad(unittest.TestCase):
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
           for prefer_https in (True, False):
-            with sacad.mkstemp_ctx.mkstemp(prefix="%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0]),
+            with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
                                            suffix=".%s" % (format.name.lower())) as tmp_filepath:
               sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, False, prefer_https, tmp_filepath)
               out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)

@@ -10,7 +10,6 @@ import collections
 import concurrent.futures
 import enum
 import functools
-import inspect
 import io
 import itertools
 import json
@@ -81,7 +80,7 @@ class CoverSourceResult:
     self.is_similar_to_reference = False
     self.is_only_reference = False
     if not hasattr(__class__, "image_cache"):
-      cache_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.stack()[-1][0])))[0])
+      cache_filename = "sacad-cache.sqlite"
       __class__.image_cache = web_cache.ThreadedWebCache("cover_image_data",
                                                          db_filename=cache_filename,
                                                          caching_strategy=web_cache.CachingStrategy.LRU,
@@ -499,7 +498,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                         db_filepath=db_filepath,
                                                         min_delay_between_accesses=min_delay_between_accesses)
     if not hasattr(__class__, "api_cache"):
-      db_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
+      db_filename = "sacad-cache.sqlite"
       cache_name = "cover_source_api_data"
       __class__.api_cache = web_cache.WebCache(cache_name,
                                                db_filename=db_filename,

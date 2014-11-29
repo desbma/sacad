@@ -15,6 +15,9 @@ import threading
 import zlib
 
 
+DISABLE_PERSISTENT_CACHING = False  # useful for tests
+
+
 Compression = enum.Enum("Compression", ("DEFLATE", "BZIP2", "LZMA"))
 CachingStrategy = enum.Enum("CachingStrategy", ("FIFO", "LRU"))
 
@@ -44,17 +47,20 @@ class WebCache:
     self.__compression_level = compression_level
 
     # connexion
-    if db_filepath is None:
-      if db_filename is None:
-        cache_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.stack()[-1][0])))[0])
-      else:
-        cache_filename = db_filename
-      # prefer /var/tmp to /tmp because /tmp is usually wiped out at every boot (or a tmpfs mount) in most Linux distros
-      cache_directory = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
-      self.__db_filepath = os.path.join(cache_directory, cache_filename)
+    if DISABLE_PERSISTENT_CACHING:
+      self.__connexion = sqlite3.connect(":memory:")
     else:
-      self.__db_filepath = db_filepath
-    self.__connexion = sqlite3.connect(self.__db_filepath)
+      if db_filepath is None:
+        if db_filename is None:
+          cache_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.stack()[-1][0])))[0])
+        else:
+          cache_filename = db_filename
+        # prefer /var/tmp to /tmp because /tmp is usually wiped out at every boot (or a tmpfs mount) in most Linux distros
+        cache_directory = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
+        self.__db_filepath = os.path.join(cache_directory, cache_filename)
+      else:
+        self.__db_filepath = db_filepath
+      self.__connexion = sqlite3.connect(self.__db_filepath)
 
     # create tables if necessary
     with self.__connexion:
@@ -72,6 +78,7 @@ class WebCache:
 
   def getDatabaseFileSize(self):
     """ Return the file size of the database as a pretty string. """
+    assert(not DISABLE_PERSISTENT_CACHING)
     size = os.path.getsize(self.__db_filepath)
     if size > 1000000000:
       size = "%0.2fGB" % (size / 1000000000)
