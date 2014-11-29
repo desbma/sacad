@@ -62,9 +62,9 @@ Note that depending of the speed of your CPU, crunching may significantly slow d
 
 ## Command line usage
 
-To download the cover of "Master of Puppets" from Metallica, to AlbumArt.jpg, targetting ~ 600x600 pixel resolution: `sacad.py 'metallica' 'master of puppets' 600 AlbumArt.jpg`
+To download the cover of _Master of Puppets_ from _Metallica_, to the file `AlbumArt.jpg`, targetting ~ 600x600 pixel resolution: `sacad 'metallica' 'master of puppets' 600 AlbumArt.jpg`.
 
-Run `./sacad.py -h` to get full command line reference.
+Run `sacad -h` to get full command line reference.
 
 
 ## Limitations
