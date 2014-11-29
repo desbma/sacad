@@ -78,7 +78,8 @@ class WebCache:
 
   def getDatabaseFileSize(self):
     """ Return the file size of the database as a pretty string. """
-    assert(not DISABLE_PERSISTENT_CACHING)
+    if DISABLE_PERSISTENT_CACHING:
+      return "?"
     size = os.path.getsize(self.__db_filepath)
     if size > 1000000000:
       size = "%0.2fGB" % (size / 1000000000)
