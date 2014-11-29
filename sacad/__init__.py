@@ -34,10 +34,10 @@ import PIL.Image
 import PIL.ImageFile
 import requests
 
-import sacad.api_watcher
-import sacad.colored_logging
-import sacad.mkstemp_ctx
-import sacad.web_cache
+from . import api_watcher
+from . import colored_logging
+from . import mkstemp_ctx
+from . import web_cache
 
 
 USER_AGENT = "Mozilla/5.0"
