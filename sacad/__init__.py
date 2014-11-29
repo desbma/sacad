@@ -3,6 +3,9 @@
 
 """ Smart Automatic Cover Art Downloader : search and download music album covers. """
 
+__version__ = "1.0.0"
+__author__ = "desbma"
+__license__ = "MPL 2.0"
 
 import abc
 import argparse
@@ -1037,7 +1040,8 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
 
 def cl_main():
   # parse args
-  arg_parser = argparse.ArgumentParser(description="Download an album cover")
+  arg_parser = argparse.ArgumentParser(description="SACAD v%s. Search and download an album cover." % (__version__),
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   arg_parser.add_argument("artist",
                           help="Artist to search for")
   arg_parser.add_argument("album",
