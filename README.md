@@ -33,11 +33,18 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 **SACAD needs Python >= 3.3**.
 
-1. Clone this repository
-2. If you don't have it, [install pip](http://www.pip-installer.org/en/latest/installing.html) for Python3 (not needed if you are using Python >= 3.4)
-3. Install Python dependencies: `pip3 install -r requirements.txt`
+### From PyPI (with PIP)
 
-You are ready to download a cover, ie: `./sacad.py 'metallica' 'master of puppets' 600 cover.jpg`
+1. If you don't already have it, [install pip](http://www.pip-installer.org/en/latest/installing.html) for Python 3 (not needed if you are using Python >= 3.4)
+2. Install SACAD: `pip3 install sacad`
+
+### From source
+
+1. If you don't already have it, [install setuptools](https://pypi.python.org/pypi/setuptools#installation-instructions) for Python 3
+2. Clone this repository: `git clone https://github.com/desbma/sacad`
+3. Install SACAD: `python3 setup.py install`
+
+### Standalone Windows executable
 
 Windows users can also [download a standalone binary](https://dl.dropboxusercontent.com/u/70127955/sacad_latest_win.7z) which does not require Python.
 
@@ -54,6 +61,8 @@ Note that depending of the speed of your CPU, crunching may significantly slow d
 
 
 ## Command line usage
+
+To download the cover of "Master of Puppets" from Metallica, to AlbumArt.jpg, targetting ~ 600x600 pixel resolution: `sacad.py 'metallica' 'master of puppets' 600 AlbumArt.jpg`
 
 Run `./sacad.py -h` to get full command line reference.
 
