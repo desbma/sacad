@@ -3,12 +3,14 @@
 
 from setuptools import find_packages, setup
 
+VERSION = "1.0.0"
+
 
 with open("requirements.txt", "rt") as f:
   requirements= f.read().splitlines()
 
 setup(name="sacad",
-      version="1.0.0",
+      version=VERSION,
       author="desbma",
       packages=find_packages(),
       entry_points={"console_scripts": ["sacad = sacad:cl_main"]},
@@ -16,7 +18,7 @@ setup(name="sacad",
       install_requires=requirements,
       description="Search and download music album covers",
       url="https://github.com/desbma/sacad",
-      download_url="https://github.com/desbma/sacad/archive/master.zip",
+      download_url="https://github.com/desbma/sacad/tarball/%s" % (VERSION),
       keywords=["dowload", "album", "cover", "art", "albumart", "music"],
       classifiers=["Development Status :: 4 - Beta",
                    "Environment :: Console",
