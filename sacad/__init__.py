@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Smart Automatic Cover Art Downloader : download music album covers. """
+""" Smart Automatic Cover Art Downloader : search and download music album covers. """
 
 
 import abc
@@ -32,10 +32,10 @@ import PIL.Image
 import PIL.ImageFile
 import requests
 
-import api_watcher
-import colored_logging
-import mkstemp_ctx
-import web_cache
+import sacad.api_watcher
+import sacad.colored_logging
+import sacad.mkstemp_ctx
+import sacad.web_cache
 
 
 USER_AGENT = "Mozilla/5.0"
@@ -1036,7 +1036,7 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
       break
 
 
-if __name__ == "__main__":
+def cl_main():
   # parse args
   arg_parser = argparse.ArgumentParser(description="Download an album cover")
   arg_parser.add_argument("artist",
@@ -1110,3 +1110,7 @@ if __name__ == "__main__":
        args.no_lq_sources,
        args.https,
        args.out_filepath)
+
+
+if __name__ == "__main__":
+  cl_main()
