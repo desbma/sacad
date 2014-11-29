@@ -3,7 +3,7 @@
 
 from setuptools import find_packages, setup
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 with open("requirements.txt", "rt") as f:
@@ -21,7 +21,7 @@ setup(name="sacad",
       url="https://github.com/desbma/sacad",
       download_url="https://github.com/desbma/sacad/archive/%s.tar.gz" % (VERSION),
       keywords=["dowload", "album", "cover", "art", "albumart", "music"],
-      classifiers=["Development Status :: 4 - Beta",
+      classifiers=["Development Status :: 5 - Production/Stable",
                    "Environment :: Console",
                    "Intended Audience :: End Users/Desktop",
                    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
