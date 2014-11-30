@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import socket
 import unittest
 import unittest.mock
@@ -12,6 +11,7 @@ import requests
 
 import sacad
 import sacad.web_cache
+
 
 sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
 
