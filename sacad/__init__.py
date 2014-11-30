@@ -534,7 +534,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         else:
           CoverSource.api_cache[url] = api_data
     except Exception as e:
-      #raise
+      # raise
       logging.getLogger().warning("Search with source '%s' failed: %s" % (self.__class__.__name__, e))
       return ()
 

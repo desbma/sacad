@@ -7,7 +7,7 @@ VERSION = "1.1.0"
 
 
 with open("requirements.txt", "rt") as f:
-  requirements= f.read().splitlines()
+  requirements = f.read().splitlines()
 
 setup(name="sacad",
       version=VERSION,

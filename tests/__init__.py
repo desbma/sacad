@@ -119,7 +119,7 @@ class TestSacad(unittest.TestCase):
 
 if __name__ == "__main__":
   # logging
-  #logging.getLogger().setLevel(logging.DEBUG)
+  # logging.getLogger().setLevel(logging.DEBUG)
   logging.getLogger().setLevel(logging.CRITICAL + 1)
 
   # run tests
