@@ -9,15 +9,18 @@ VERSION = "1.1.0"
 with open("requirements.txt", "rt") as f:
   requirements = f.read().splitlines()
 
+with open("README.md", "rt") as f:
+  readme = f.read()
+
 setup(name="sacad",
       version=VERSION,
       author="desbma",
       packages=find_packages(),
       entry_points={"console_scripts": ["sacad = sacad:cl_main"]},
-      package_data={"": ["LICENSE", "README.md", "requirements.txt"]},
       test_suite="tests",
       install_requires=requirements,
       description="Search and download music album covers",
+      long_description=readme,
       url="https://github.com/desbma/sacad",
       download_url="https://github.com/desbma/sacad/archive/%s.tar.gz" % (VERSION),
       keywords=["download", "album", "cover", "art", "albumart", "music"],
