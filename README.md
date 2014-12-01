@@ -3,6 +3,10 @@ SACAD
 Smart Automatic Cover Art Downloader
 ------------------------------------
 
+[![Latest Version](https://pypip.in/version/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+[![Supported Python versions](https://pypip.in/py_versions/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+[![License](https://pypip.in/license/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
 
