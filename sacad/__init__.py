@@ -612,9 +612,9 @@ class CoverSource(metaclass=abc.ABCMeta):
       self.updateHttpHeaders(headers)
       with self.api_watcher:
         if post_data is not None:
-          response = requests.post(url, data=post_data, headers=headers, timeout=5, verify=False)
+          response = requests.post(url, data=post_data, headers=headers, timeout=10, verify=False)
         else:
-          response = requests.get(url, headers=headers, timeout=5, verify=False)
+          response = requests.get(url, headers=headers, timeout=10, verify=False)
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
