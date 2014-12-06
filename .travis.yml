@@ -3,6 +3,7 @@ python:
   - "3.3"
   - "3.4"
 install:
-  - "sudo apt-get -y install libxml2-dev libxslt1-dev"  # lxml dependencies
+  - "sudo apt-get -yV install libxml2-dev libxslt1-dev"  # lxml dependencies
+  - "sudo apt-get -yV install optipng jpegoptim"
   - "pip install -r requirements.txt"
 script: "python setup.py test"
