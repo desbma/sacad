@@ -24,7 +24,7 @@ SACAD is a multi platform command line tool to download album covers without man
 * Cache search results locally for faster future search
 * Do everything to avoid getting blocked by the sources: hide user-agent and automatically take care of rate limiting
 * Automatically convert/resize image if needed
-* Multiplatform (Windows/Max/ Linux)
+* Multiplatform (Windows/Mac/Linux)
 
 SACAD is designed to be robust and be executed in batch of thousands of queries:
 
