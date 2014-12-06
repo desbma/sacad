@@ -207,7 +207,9 @@ class CoverSourceResult:
 
   def updateSignature(self):
     """ Calculate a cover's "signature" using its thumbnail url. """
-    assert(self.thumbnail_sig is None)
+    if self.thumbnail_sig is not None:
+      # TODO understand how it is possible to get here (only with Python 3.4 it seems)
+      return self
     if self.thumbnail_url is None:
       logging.getLogger().warning("No thumbnail available for %s" % (self))
       return
