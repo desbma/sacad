@@ -4,6 +4,10 @@ python:
   - "3.4"
 install:
   - "sudo apt-get -yV install libxml2-dev libxslt1-dev"  # lxml dependencies
-  - "sudo apt-get -yV install optipng jpegoptim"
   - "pip install -r requirements.txt"
-script: "python setup.py test"
+  - "pip install coveralls"
+  - "sudo apt-get -yV install optipng jpegoptim"
+script:
+  - "coverage run --source=sacad setup.py test"
+after_success:
+  - "coveralls"
