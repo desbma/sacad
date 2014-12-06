@@ -10,7 +10,6 @@ import PIL.Image
 import requests
 
 import sacad
-import sacad.web_cache
 
 
 sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
