@@ -3,6 +3,7 @@ SACAD
 Smart Automatic Cover Art Downloader
 ------------------------------------
 
+[![Tests status](https://img.shields.io/travis/desbma/sacad/master.svg?label=tests&style=flat)](https://travis-ci.org/desbma/sacad)
 [![Latest Version](https://pypip.in/version/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![Supported Python versions](https://pypip.in/py_versions/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![License](https://pypip.in/license/sacad/badge.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
