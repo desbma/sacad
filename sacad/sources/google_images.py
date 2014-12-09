@@ -77,8 +77,6 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         check_metadata = True
       # extract size
       size = tuple(map(int, (query["w"][0], query["h"][0])))
-      assert(size[0] == metadata_json["ow"])
-      assert(size[1] == metadata_json["oh"])
       # extract thumbnail url
       thumbnail_url = metadata_json["tu"]
       # result
