@@ -48,7 +48,7 @@ class TestSacad(unittest.TestCase):
 
   def test_getMasterOfPuppetsCover(self):
     """ Search and download cover for 'Master of Puppets' with different parameters. """
-    for format in sacad.CoverImageFormat:
+    for format in sacad.cover.CoverImageFormat:
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
           for prefer_https in (True, False):
@@ -69,7 +69,7 @@ class TestSacad(unittest.TestCase):
     cover = sacad.CoverSourceResult(url, None, None, thumbnail_url=None, source_quality=None)
     cover.updateImageMetadata()
     self.assertEqual(cover.size, (1600, 1200))
-    self.assertEqual(cover.format, sacad.CoverImageFormat.JPEG)
+    self.assertEqual(cover.format, sacad.cover.CoverImageFormat.JPEG)
     self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
     self.assertLessEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 3)
 
@@ -98,10 +98,11 @@ class TestSacad(unittest.TestCase):
     """ Check all sources return valid results with different parameters. """
     for size in range(300, 1200 + 1, 300):
       for prefer_https in (True, False):
-        sources = (sacad.LastFmCoverSource(size, 0, prefer_https),
-                   sacad.CoverParadiseCoverSource(size, 0, prefer_https),
-                   sacad.AmazonCoverSource(size, 0, prefer_https),
-                   sacad.GoogleImagesWebScrapeCoverSource(size, 0, prefer_https))
+        source_args = (size, 0, prefer_https)
+        sources = (sacad.sources.LastFmCoverSource(*source_args),
+                   sacad.sources.CoverParadiseCoverSource(*source_args),
+                   sacad.sources.AmazonCoverSource(*source_args),
+                   sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args))
         for source in sources:
           for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
             results = source.search(album, artist)
@@ -112,7 +113,7 @@ class TestSacad(unittest.TestCase):
               self.assertGreaterEqual(len(results), 1)
             for result in results:
               self.assertTrue(result.url)
-              self.assertIn(result.format, sacad.CoverImageFormat)
+              self.assertIn(result.format, sacad.cover.CoverImageFormat)
               self.assertGreaterEqual(result.size[0], size)
 
 
