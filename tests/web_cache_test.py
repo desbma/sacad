@@ -71,7 +71,7 @@ class TestWebCache(unittest.TestCase):
                       # check key is not in cache
                       self.assertNotIn(key, cache)
                       with self.assertRaises(KeyError):
-                        _ = cache[key]
+                        cache[key]
                       with self.assertRaises(KeyError):
                         del cache[key]
 
