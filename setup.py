@@ -13,8 +13,12 @@ with open(os.path.join("sacad", "__init__.py"), "rt") as f:
 with open("requirements.txt", "rt") as f:
   requirements = f.read().splitlines()
 
-with open("README.md", "rt") as f:
-  readme = f.read()
+try:
+  import pypandoc
+  readme = pypandoc.convert("README.md", "rst")
+except ImportError:
+  with open("README.md", "rt") as f:
+    readme = f.read()
 
 setup(name="sacad",
       version=version,
