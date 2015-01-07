@@ -80,11 +80,19 @@ class CoverSourceResult:
     """ Download cover and process it. """
     if self.source_quality.value <= CoverSourceQuality.LOW.value:
       logging.getLogger().warning("Cover is from a potentially unreliable source and may be unrelated to the search")
-    if self.url in __class__.image_cache:
+
+    cache_miss = True
+    try:
+      image_data = __class__.image_cache[self.url]
+    except KeyError:
+      # cache miss
+      pass
+    else:
       # cache hit
       logging.getLogger().info("Got data for URL '%s' from cache" % (self.url))
-      image_data = __class__.image_cache[self.url]
-    else:
+      cache_miss = False
+
+    if cache_miss:
       # download
       logging.getLogger().info("Downloading cover '%s'..." % (self.url))
       response = requests.get(self.url, headers={"User-Agent": USER_AGENT}, timeout=10, verify=False)
@@ -138,11 +146,20 @@ class CoverSourceResult:
 
   def updateImageMetadata(self):
     """ Partially download an image file to get its real metadata, or get it from cache. """
-    if self.url in __class__.metadata_cache:
+    cache_miss = True
+    try:
+      format, width, height = pickle.loads(__class__.metadata_cache[self.url])
+    except KeyError:
+      # cache miss
+      pass
+    except Exception as e:
+      logging.getLogger().warning("Unable to load metadata for URL '%s' from cache: %s %s" % (self.url, e.__class__.__name__, e))
+    else:
       # cache hit
       logging.getLogger().debug("Got metadata for URL '%s' from cache" % (self.url))
-      format, width, height = pickle.loads(__class__.metadata_cache[self.url])
-    else:
+      cache_miss = False
+
+    if cache_miss:
       # download
       logging.getLogger().debug("Downloading file header for URL '%s'..." % (self.url))
       try:
@@ -184,14 +201,23 @@ class CoverSourceResult:
     if self.thumbnail_sig is not None:
       # TODO understand how it is possible to get here (only with Python 3.4 it seems)
       return self
+
     if self.thumbnail_url is None:
       logging.getLogger().warning("No thumbnail available for %s" % (self))
       return
-    if self.thumbnail_url in __class__.image_cache:
+
+    cache_miss = True
+    try:
+      image_data = __class__.image_cache[self.thumbnail_url]
+    except KeyError:
+      # cache miss
+      pass
+    else:
       # cache hit
       logging.getLogger().debug("Got data for URL '%s' from cache" % (self.thumbnail_url))
-      image_data = __class__.image_cache[self.thumbnail_url]
-    else:
+      cache_miss = False
+
+    if cache_miss:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
