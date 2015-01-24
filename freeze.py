@@ -18,5 +18,5 @@ setup(name="sacad",
       author="desbma",
       packages=["sacad"],
       options={"build_exe": build_exe_options},
-      executables=[Executable("freeze_wrapper.py",
+      executables=[Executable(os.path.join("sacad", "__main__.py"),
                               targetName="sacad.exe")])
