@@ -9,17 +9,17 @@ from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
 from .base import CoverSource
 
 
-class CoverParadiseCoverSourceResult(CoverSourceResult):
+class CoverLibCoverSourceResult(CoverSourceResult):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
 
-class CoverParadiseCoverSource(CoverSource):
+class CoverLibCoverSource(CoverSource):
 
   """ Cover source that scrapes the ecover.to site. """
 
-  BASE_URL = "http://ecover.to/"
+  BASE_URL = "http://coverlib.com/"
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
@@ -83,11 +83,11 @@ class CoverParadiseCoverSource(CoverSource):
         # assume format is always jpg
         format = CoverImageFormat.JPEG
         # add result
-        results.append(CoverParadiseCoverSourceResult(img_url,
-                                                      size,
-                                                      format,
-                                                      thumbnail_url=thumbnail_url,
-                                                      rank=rank))
+        results.append(CoverLibCoverSourceResult(img_url,
+                                                 size,
+                                                 format,
+                                                 thumbnail_url=thumbnail_url,
+                                                 rank=rank))
         rank += 1
     else:
       # direct result page
@@ -112,9 +112,9 @@ class CoverParadiseCoverSource(CoverSource):
         # get thumbnail url
         thumbnail_url = link.find("img").get("src")
         # add result
-        results.append(CoverParadiseCoverSourceResult(img_url,
-                                                      size,
-                                                      format,
-                                                      thumbnail_url=thumbnail_url))
+        results.append(CoverLibCoverSourceResult(img_url,
+                                                 size,
+                                                 format,
+                                                 thumbnail_url=thumbnail_url))
 
     return results

@@ -1,4 +1,4 @@
 from .amazon import AmazonCoverSource, AmazonCoverSourceResult
 from .lastfm import LastFmCoverSource, LastFmCoverSourceResult
 from .google_images import GoogleImagesWebScrapeCoverSource, GoogleImagesCoverSourceResult
-from .coverparadise import CoverParadiseCoverSource, CoverParadiseCoverSourceResult
+from .coverlib import CoverLibCoverSource, CoverLibCoverSourceResult

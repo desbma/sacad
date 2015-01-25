@@ -100,7 +100,7 @@ class TestSacad(unittest.TestCase):
       for prefer_https in (True, False):
         source_args = (size, 0, prefer_https)
         sources = (sacad.sources.LastFmCoverSource(*source_args),
-                   sacad.sources.CoverParadiseCoverSource(*source_args),
+                   sacad.sources.CoverLibCoverSource(*source_args),
                    sacad.sources.AmazonCoverSource(*source_args),
                    sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args))
         for source in sources:
