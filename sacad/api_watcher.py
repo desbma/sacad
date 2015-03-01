@@ -17,9 +17,6 @@ class ApiAccessRateWatcher:
                                       CREATE TABLE IF NOT EXISTS access_timestamp (timestamp FLOAT NOT NULL);""")
       self.connexion.execute("DELETE FROM access_timestamp WHERE (strftime('%s', 'now') - timestamp) > 86400;")
 
-  def __del__(self):
-    self.connexion.close()
-
   def __enter__(self):
     self.waitAccess()
 
