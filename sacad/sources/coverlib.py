@@ -43,7 +43,7 @@ class CoverLibCoverSource(CoverSource):
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("latin-1"), parser)
     results_selector = lxml.cssselect.CSSSelector("#EntryForm div.ThumbDetailsX")
-    subresults_selector = lxml.cssselect.CSSSelector("#Formel2 table.Table_SimpleSearchResult tr")
+    subresults_selector = lxml.cssselect.CSSSelector("div.defaultpanel table.Table_SimpleSearchResult tr")
     type_selector = lxml.cssselect.CSSSelector("span.Label")
     info_selector = lxml.cssselect.CSSSelector("div.Info")
     size_regex = re.compile("([0-9.]+)x([0-9.]+)px")
