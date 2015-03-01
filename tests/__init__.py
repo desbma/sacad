@@ -110,7 +110,11 @@ class TestSacad(unittest.TestCase):
             if not (((size > 500) and (source is sources[2])) or
                     ((size > 600) and (source is sources[0])) or
                     ((size >= 1200) and (source is sources[1]) and (artist == "Björk"))):
-              self.assertGreaterEqual(len(results), 1)
+              self.assertGreaterEqual(len(results), 1, "%s %s %s %s %u" % (source.__class__.__name__,
+                                                                           " HTTPS" if prefer_https else "",
+                                                                           artist,
+                                                                           album,
+                                                                           size))
             for result in results:
               self.assertTrue(result.url)
               self.assertIn(result.format, sacad.cover.CoverImageFormat)
