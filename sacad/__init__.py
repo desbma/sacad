@@ -86,14 +86,14 @@ def cl_main():
                           default=False,
                           dest="no_lq_sources",
                           help="""Disable cover sources that may return unreliable results (ie. Google Images).
-                                  It will speed up processing and improve reliability, but may fail to find results for
+                                  It will speed up search and improve reliability, but may fail to find results for
                                   some difficult searches.""")
   arg_parser.add_argument("-e",
                           "--https",
                           action="store_true",
                           default=False,
                           dest="https",
-                          help="Use SSL encryption (HTTPS) when available")
+                          help="Use SSL/TLS encryption (HTTPS) when available")
   arg_parser.add_argument("-v",
                           "--verbosity",
                           choices=("quiet", "warning", "normal", "debug"),
