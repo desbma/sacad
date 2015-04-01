@@ -8,15 +8,15 @@ from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
 from .base import CoverSource
 
 
-class AmazonCoverSourceResult(CoverSourceResult):
+class AmazonCdCoverSourceResult(CoverSourceResult):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
 
-class AmazonCoverSource(CoverSource):
+class AmazonCdCoverSource(CoverSource):
 
-  """ Cover source returning Amazon.com album images. """
+  """ Cover source returning Amazon.com audio CD images. """
 
   BASE_URL = "http://www.amazon.com/gp/search"
 
@@ -92,11 +92,11 @@ class AmazonCoverSource(CoverSource):
       # assume format is always jpg
       format = CoverImageFormat.JPEG
       # add result
-      results.append(AmazonCoverSourceResult(img_url,
-                                             size,
-                                             format,
-                                             thumbnail_url=thumbnail_url,
-                                             rank=rank,
-                                             check_metadata=check_metadata))
+      results.append(AmazonCdCoverSourceResult(img_url,
+                                               size,
+                                               format,
+                                               thumbnail_url=thumbnail_url,
+                                               rank=rank,
+                                               check_metadata=check_metadata))
 
     return results

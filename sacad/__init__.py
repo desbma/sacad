@@ -30,7 +30,7 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
   source_args = (size, size_tolerance_prct, prefer_https)
   cover_sources = [sources.LastFmCoverSource(*source_args),
                    sources.CoverLibCoverSource(*source_args),
-                   sources.AmazonCoverSource(*source_args)]
+                   sources.AmazonCdCoverSource(*source_args)]
   if not no_lq_sources:
     cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
 
