@@ -102,21 +102,22 @@ class TestSacad(unittest.TestCase):
         sources = (sacad.sources.LastFmCoverSource(*source_args),
                    sacad.sources.CoverLibCoverSource(*source_args),
                    sacad.sources.AmazonCdCoverSource(*source_args),
-                   sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args))
+                   sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
+                   sacad.sources.AmazonDigitalCoverSource(*source_args))
         for source in sources:
           for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
             results = source.search(album, artist)
             results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
-            if not (((size > 500) and (source is sources[2])) or
-                    ((size > 600) and (source is sources[0])) or
-                    ((size >= 1200) and (source is sources[1]) and (artist == "Björk"))):
+            if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
+                    ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
+                    ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk"))):
               self.assertGreaterEqual(len(results), 1, "%s %s %s %s %u" % (source.__class__.__name__,
                                                                            " HTTPS" if prefer_https else "",
                                                                            artist,
                                                                            album,
                                                                            size))
             for result in results:
-              self.assertTrue(result.url)
+              self.assertTrue(result.urls)
               self.assertIn(result.format, sacad.cover.CoverImageFormat)
               self.assertGreaterEqual(result.size[0], size)
 

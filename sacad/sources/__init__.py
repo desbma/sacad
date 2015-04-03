@@ -1,4 +1,5 @@
 from .amazoncd import AmazonCdCoverSource, AmazonCdCoverSourceResult
+from .amazondigital import AmazonDigitalCoverSource, AmazonDigitalCoverSourceResult
 from .lastfm import LastFmCoverSource, LastFmCoverSourceResult
 from .google_images import GoogleImagesWebScrapeCoverSource, GoogleImagesCoverSourceResult
 from .coverlib import CoverLibCoverSource, CoverLibCoverSourceResult

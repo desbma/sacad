@@ -30,7 +30,8 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
   source_args = (size, size_tolerance_prct, prefer_https)
   cover_sources = [sources.LastFmCoverSource(*source_args),
                    sources.CoverLibCoverSource(*source_args),
-                   sources.AmazonCdCoverSource(*source_args)]
+                   sources.AmazonCdCoverSource(*source_args),
+                   sources.AmazonDigitalCoverSource(*source_args)]
   if not no_lq_sources:
     cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
 
@@ -53,7 +54,7 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
     try:
       result.get(format, size, size_tolerance_prct, out_filepath)
     except Exception as e:
-      logging.getLogger().warning("Download of %s failed: %s" % (result, e))
+      logging.getLogger().warning("Download of %s failed: %s %s" % (result, e.__class__.__name__, e))
       continue
     else:
       break

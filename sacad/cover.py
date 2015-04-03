@@ -3,6 +3,7 @@ import enum
 import io
 import itertools
 import logging
+import math
 import operator
 import pickle
 import shutil
@@ -28,6 +29,12 @@ SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
                          "png": CoverImageFormat.PNG}
 
 
+def is_square(x):
+  """ Return True if integer x is a perfect square, False otherwise. """
+  sqrt = math.sqrt(x)
+  return (sqrt == math.trunc(sqrt))
+
+
 class CoverSourceResult:
 
   """ Cover image returned by a source, candidate to be downloaded. """
@@ -35,10 +42,10 @@ class CoverSourceResult:
   MAX_FILE_METADATA_PEEK_SIZE = 2 ** 15
   IMG_SIG_SIZE = 16
 
-  def __init__(self, url, size, format, *, thumbnail_url, source_quality, rank=None, check_metadata=False):
+  def __init__(self, urls, size, format, *, thumbnail_url, source_quality, rank=None, check_metadata=False):
     """
     Args:
-      url: Cover image file URL
+      urls: Cover image file URL. Can be a tuple of URLs of images to be joined
       size: Cover size as a (with, height) tuple
       format: Cover image format as a CoverImageFormat enum, or None if unknown
       thumbnail_url: Cover thumbnail image file URL, or None if not available
@@ -46,7 +53,10 @@ class CoverSourceResult:
       rank: Integer ranking of the cover in the other results from the same source, or None if not available
       check_metadata: If True, hint that the format and/or size parameters are not reliable and must be double checked
     """
-    self.url = url
+    if not isinstance(urls, str):
+      self.urls = urls
+    else:
+      self.urls = (urls,)
     self.size = size
     self.format = format
     self.thumbnail_url = thumbnail_url
@@ -74,46 +84,55 @@ class CoverSourceResult:
         logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
   def __str__(self):
-    return "%s '%s'" % (self.__class__.__name__, self.url)
+    s = "%s '%s'" % (self.__class__.__name__, self.urls[0])
+    if len(self.urls) > 1:
+      s += " [x%u]" % (len(self.urls))
+    return s
 
   def get(self, target_format, target_size, size_tolerance_prct, out_filepath):
     """ Download cover and process it. """
     if self.source_quality.value <= CoverSourceQuality.LOW.value:
       logging.getLogger().warning("Cover is from a potentially unreliable source and may be unrelated to the search")
 
-    cache_miss = True
-    try:
-      image_data = __class__.image_cache[self.url]
-    except KeyError:
-      # cache miss
-      pass
-    else:
-      # cache hit
-      logging.getLogger().info("Got data for URL '%s' from cache" % (self.url))
-      cache_miss = False
+    images_data = []
+    for i, url in enumerate(self.urls):
+      cache_miss = True
+      try:
+        image_data = __class__.image_cache[url]
+      except KeyError:
+        # cache miss
+        pass
+      else:
+        # cache hit
+        logging.getLogger().info("Got data for URL '%s' from cache" % (url))
+        cache_miss = False
 
-    if cache_miss:
-      # download
-      logging.getLogger().info("Downloading cover '%s'..." % (self.url))
-      response = requests.get(self.url, headers={"User-Agent": USER_AGENT}, timeout=10, verify=False)
-      response.raise_for_status()
-      image_data = response.content
+      if cache_miss:
+        # download
+        logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
+        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10, verify=False)
+        response.raise_for_status()
+        image_data = response.content
 
-      # crunch image
-      image_data = __class__.crunch(image_data, self.format)
+        # crunch image
+        image_data = __class__.crunch(image_data, self.format)
 
-      # save it to cache
-      __class__.image_cache[self.url] = image_data
+        # save it to cache
+        __class__.image_cache[url] = image_data
+
+      # append for multi images
+      images_data.append(image_data)
 
     need_format_change = (self.format != target_format)
     need_size_change = ((max(self.size) > target_size) and
                         (abs(max(self.size) - target_size) >
                          target_size * size_tolerance_prct / 100))
-    if need_format_change or need_size_change:
-      # convert
-      image_data = self.convert(image_data,
-                                target_format if need_format_change else None,
-                                target_size if need_size_change else None)
+    need_join = len(images_data) > 1
+    if need_join or need_format_change or need_size_change:
+      # post process
+      image_data = self.postProcess(images_data,
+                                    target_format if need_format_change else None,
+                                    target_size if need_size_change else None)
 
       # crunch image again
       image_data = __class__.crunch(image_data, target_format)
@@ -122,22 +141,51 @@ class CoverSourceResult:
     with open(out_filepath, "wb") as file:
       file.write(image_data)
 
-  def convert(self, image_data, new_format, new_size):
+  def postProcess(self, images_data, new_format, new_size):
     """
-    Convert image, and return the processed data, or original data if something went wrong.
+    Join/resize/convert image, and return the processed data, or original data if something went wrong.
 
     Convert image binary data to a target format and/or size (None if no conversion needed).
     Return the binary data of the output image, or None if conversion failed
 
     """
-    logging.getLogger().info("Converting to%s%s..." % ((" %ux%u" % (new_size, new_size)) if new_size is not None else "",
-                                                       (" %s" % (new_format.name.upper())) if new_format is not None else ""))
-    in_bytes = io.BytesIO(image_data)
-    img = PIL.Image.open(in_bytes)
+    if len(images_data) == 1:
+      in_bytes = io.BytesIO(images_data[0])
+      img = PIL.Image.open(in_bytes)
+
+    else:
+      # images need to be joined before further processing
+      logging.getLogger().info("Joining %u images..." % (len(images_data)))
+      # TODO find a way to do this losslessly for JPEG
+      new_img = PIL.Image.new("RGB", self.size)
+      assert(is_square(len(images_data)))
+      sq = int(math.sqrt(len(images_data)))
+
+      images_data_it = iter(images_data)
+      img_sizes = {}
+      for x in range(sq):
+        for y in range(sq):
+          current_image_data = next(images_data_it)
+          img_stream = io.BytesIO(current_image_data)
+          img = PIL.Image.open(img_stream)
+          img_sizes[(x, y)] = img.size
+          box = [0, 0]
+          if x > 0:
+            for px in range(x):
+              box[0] += img_sizes[(px, y)][0]
+          if y > 0:
+            for py in range(y):
+              box[1] += img_sizes[(x, py)][1]
+          box.extend((box[0] + img.size[0], box[1] + img.size[1]))
+          new_img.paste(img, box=tuple(box))
+      img = new_img
+
     out_bytes = io.BytesIO()
     if new_size is not None:
+      logging.getLogger().info("Resizing from %ux%u to %ux%u..." % (self.size[0], self.size[1], new_size, new_size))
       img = img.resize((new_size, new_size))
     if new_format is not None:
+      logging.getLogger().info("Converting to %s..." % (new_format.name.upper()))
       target_format = new_format
     else:
       target_format = self.format
@@ -145,54 +193,75 @@ class CoverSourceResult:
     return out_bytes.getvalue()
 
   def updateImageMetadata(self):
-    """ Partially download an image file to get its real metadata, or get it from cache. """
-    cache_miss = True
-    try:
-      format, width, height = pickle.loads(__class__.metadata_cache[self.url])
-    except KeyError:
-      # cache miss
-      pass
-    except Exception as e:
-      logging.getLogger().warning("Unable to load metadata for URL '%s' from cache: %s %s" % (self.url, e.__class__.__name__, e))
-    else:
-      # cache hit
-      logging.getLogger().debug("Got metadata for URL '%s' from cache" % (self.url))
-      cache_miss = False
+    """ Partially download image file(s) to get its real metadata, or get it from cache. """
 
-    if cache_miss:
-      # download
-      logging.getLogger().debug("Downloading file header for URL '%s'..." % (self.url))
+    width_sum, height_sum = 0, 0
+
+    idxs = []
+    # only download metadata for the needed images to get full size
+    assert(is_square(len(self.urls)))
+    sq = int(math.sqrt(len(self.urls)))
+    for x in range(sq):
+      for y in range(sq):
+        if (x == 0) or (y == 0):
+          idxs.append((y * sq + x, x, y))
+
+    for idx, x, y in idxs:
+      url = self.urls[idx]
+
+      cache_miss = True
       try:
-        response = requests.get(self.url,
-                                headers={"User-Agent": USER_AGENT},
-                                timeout=3,
-                                verify=False,
-                                stream=True)
-        response.raise_for_status()
-        metadata = None
-        img_data = bytearray()
-        for new_img_data in response.iter_content(chunk_size=2 ** 12):
-          img_data.extend(new_img_data)
-          metadata = __class__.getImageMetadata(img_data)
-          if metadata is not None:
-            break
-        if metadata is None:
-          logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (self.url))
+        format, width, height = pickle.loads(__class__.metadata_cache[url])
+      except KeyError:
+        # cache miss
+        pass
+      except Exception as e:
+        logging.getLogger().warning("Unable to load metadata for URL '%s' from cache: %s %s" % (url, e.__class__.__name__, e))
+      else:
+        # cache hit
+        logging.getLogger().debug("Got metadata for URL '%s' from cache" % (url))
+        cache_miss = False
+
+      if cache_miss:
+        # download
+        logging.getLogger().debug("Downloading file header for URL '%s'..." % (url))
+        try:
+          response = requests.get(url,
+                                  headers={"User-Agent": USER_AGENT},
+                                  timeout=3,
+                                  verify=False,
+                                  stream=True)
+          response.raise_for_status()
+          metadata = None
+          img_data = bytearray()
+          for new_img_data in response.iter_content(chunk_size=2 ** 12):
+            img_data.extend(new_img_data)
+            metadata = __class__.getImageMetadata(img_data)
+            if metadata is not None:
+              break
+          if metadata is None:
+            logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (url))
+            return self  # for use with concurrent.futures
+        except requests.exceptions.RequestException:
+          logging.getLogger().debug("Unable to get file metadata for URL '%s', falling back to API data" % (url))
+          self.check_metadata = False
           return self  # for use with concurrent.futures
-      except requests.exceptions.RequestException:
-        logging.getLogger().debug("Unable to get file metadata for URL '%s', falling back to API data" % (self.url))
-        self.check_metadata = False
-        return self  # for use with concurrent.futures
 
-      # hoorah !
-      format, width, height = metadata
+        # hoorah !
+        format, width, height = metadata
 
-      # save it to cache
-      __class__.metadata_cache[self.url] = pickle.dumps((format, width, height))
+        # save it to cache
+        __class__.metadata_cache[url] = pickle.dumps((format, width, height))
+
+      # sum sizes
+      if y == 0:
+        width_sum += width
+      if x == 0:
+        height_sum += height
 
     self.check_metadata = False
     self.format = format
-    self.size = (width, height)
+    self.size = (width_sum, height_sum)
 
     return self  # for use with concurrent.futures
 
