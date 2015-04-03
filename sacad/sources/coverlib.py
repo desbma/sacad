@@ -48,7 +48,11 @@ class CoverLibCoverSource(CoverSource):
 
     rank = 1
     for album in album_selector(html):
-      cover = cover_selector(album)[0]  # first cover is front cover
+      try:
+        cover = cover_selector(album)[0]  # first cover is front cover
+      except IndexError:
+        # no results
+        break
       desc = info_selector(cover)[0]
       desc_txt = lxml.etree.tostring(desc, encoding="unicode", method="text")
 
