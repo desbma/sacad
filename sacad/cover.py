@@ -204,7 +204,7 @@ class CoverSourceResult:
     for x in range(sq):
       for y in range(sq):
         if (x == 0) or (y == 0):
-          idxs.append((y * sq + x, x, y))
+          idxs.append((x * sq + y, x, y))
 
     for idx, x, y in idxs:
       url = self.urls[idx]
