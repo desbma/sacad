@@ -317,6 +317,7 @@ class CoverSourceResult:
 
     This code is responsible for comparing two cover results to identify the best one, and is used to sort all results.
     It is probably the most important piece of code of this tool.
+    Covers with sizes under the target size (+- configured tolerance) are excluded before comparison.
     The following factors are used in order:
       1. Prefer approximately square covers
       2. Prefer covers of "reference" source quality
@@ -326,8 +327,9 @@ class CoverSourceResult:
       6. Prefer best ranked cover
     If all previous factors do not allow sorting of two results (very unlikely):
       7. Prefer covers having the target size
-      8. Prefer PNG covers
-      9. Prefer exactly square covers
+      8. Prefer covers with less images to join
+      9. Prefer PNG covers
+      10. Prefer exactly square covers
 
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
@@ -373,6 +375,12 @@ class CoverSourceResult:
             (first.__class__ is second.__class__) and
             (first.rank != second.rank)):
       return -1 if (first.rank > second.rank) else 1
+
+    # prefer covers with less images to join
+    ic1 = len(first.urls)
+    ic2 = len(second.urls)
+    if ic1 != ic2:
+      return -1 if (ic1 > ic2) else 1
 
     # prefer the preferred size
     if abs(delta_side1) != abs(delta_side2):
