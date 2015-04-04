@@ -365,7 +365,7 @@ class CoverSourceResult:
     qs1 = first.source_quality.value
     qs2 = second.source_quality.value
     if qs1 != qs2:
-      return qs1 < qs2
+      return -1 if (qs1 < qs2) else 1
 
     # prefer best ranked
     if ((first.rank is not None) and
