@@ -18,7 +18,7 @@ class AmazonDigitalCoverSourceResult(CoverSourceResult):
 
 class AmazonDigitalCoverSource(CoverSource):
 
-  """ Cover source returning Amazon.com audio CD images. """
+  """ Cover source returning Amazon.com digital music images. """
 
   BASE_URL = "http://www.amazon.com/gp"
   DYNAPI_KEY = "A17SFUTIVB227Z"
@@ -29,8 +29,8 @@ class AmazonDigitalCoverSource(CoverSource):
     params = collections.OrderedDict()
     params["search-alias"] = "digital-music"
     params["field-keywords"] = " ".join(map(__class__.unaccentuate,
-                                           map(str.lower,
-                                               (artist, album))))
+                                            map(str.lower,
+                                                (artist, album))))
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(url, params)
 
@@ -114,4 +114,4 @@ class AmazonDigitalCoverSource(CoverSource):
       for y in range(slice_count):
         yield ("http://z2-ec2.images-amazon.com/R/1/a=" + product_id +
                "+c=" + dynapi_key +
-               "+d=_SCR%28" + str(slice_count - 1 + int(square_sub_img)) + ","+ str(x) + "," + str(y) + "%29_=.jpg")
+               "+d=_SCR%28" + str(slice_count - 1 + int(square_sub_img)) + "," + str(x) + "," + str(y) + "%29_=.jpg")
