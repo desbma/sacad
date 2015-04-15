@@ -3,7 +3,7 @@ PYTHON_VERSION       := 3.3.5
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
 CXFREEZE_VERSION     := 4.3.3
-LXML_VERSION         := 3.4.2
+LXML_VERSION         := 3.4.3
 
 # installers
 PYTHON_INSTALLER   := python-${PYTHON_VERSION}.msi
@@ -98,7 +98,7 @@ ${PIP_INSTALLER}:
 	${CURL} https://bootstrap.pypa.io/get-pip.py > $@
 
 ${LXML_INSTALLER}:
-	${CURL} -A 'Mozilla/5.0' http://www.lfd.uci.edu/~gohlke/pythonlibs/6icuform/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl > $@
+	${CURL} https://dl.dropboxusercontent.com/u/70127955/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl > $@
 
 ${7ZIP_INSTALLER}:
 	${CURL} http://www.7-zip.org/a/7z938.msi > $@
