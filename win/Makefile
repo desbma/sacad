@@ -1,13 +1,15 @@
 # versions
-PYTHON_VERSION   := 3.3.5
-CXFREEZE_VERSION := 4.3.3
-LXML_VERSION     := 3.4.2
+PYTHON_VERSION       := 3.3.5
+PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
+PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
+CXFREEZE_VERSION     := 4.3.3
+LXML_VERSION         := 3.4.2
 
 # installers
 PYTHON_INSTALLER   := python-${PYTHON_VERSION}.msi
-CXFREEZE_INSTALLER := cx_Freeze-${CXFREEZE_VERSION}.win32-py3.3.msi
+CXFREEZE_INSTALLER := cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi
 PIP_INSTALLER      := get-pip.py
-LXML_INSTALLER     := lxml-${LXML_VERSION}-cp33-none-win32.whl
+LXML_INSTALLER     := lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl
 7ZIP_INSTALLER     := 7z938.msi
 
 # env
@@ -16,10 +18,10 @@ WINE_DIR := ${CURDIR}/wine
 WINE     := WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
 
 # installed files
-PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python33/python.exe
-CXFREEZE_INSTALLED := ${WINE_DIR}/drive_c/Python33/Scripts/cxfreeze
-PIP_INSTALLED      := ${WINE_DIR}/drive_c/Python33/Scripts/pip.exe
-LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python33/Lib/site-packages/lxml/__init__.py
+PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
+CXFREEZE_INSTALLED := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/cxfreeze
+PIP_INSTALLED      := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/pip.exe
+LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site-packages/lxml/__init__.py
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
 
@@ -28,10 +30,13 @@ LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python33/Lib/site-packages/lxml/__init
 
 all:: sacad_latest_win.7z sacad_latest_win.exe
 
+print-%:
+	@echo $*=$($*)
+
 dropbox: sacad_latest_win.7z sacad_latest_win.exe
 	cp $^ ~/Dropbox/Public/
 
-sacad_latest_win.7z: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python33.dll sacad/sqlite3.dll
+sacad_latest_win.7z: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -t7z -mx9 $@ sacad > /dev/null
 
 sacad_latest_win.exe: ${7ZIP_INSTALLED} sacad_latest_win.7z
@@ -42,7 +47,7 @@ sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
 	touch $@
 
-sacad/python33.dll: ${PYTHON_INSTALLED}
+sacad/python${PYTHON_VERSION_SHORT}.dll: ${PYTHON_INSTALLED}
 	mkdir -p $(dir $@)
 	cp $(dir ${PYTHON_INSTALLED})$(notdir $@) $@
 
@@ -87,13 +92,13 @@ ${PYTHON_INSTALLER}:
 	${CURL} http://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
 
 ${CXFREEZE_INSTALLER}:
-	${CURL} http://sourceforge.net/projects/cx-freeze/files/${CXFREEZE_VERSION}/cx_Freeze-${CXFREEZE_VERSION}.win32-py3.3.msi > $@
+	${CURL} http://sourceforge.net/projects/cx-freeze/files/${CXFREEZE_VERSION}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi > $@
 
 ${PIP_INSTALLER}:
 	${CURL} https://bootstrap.pypa.io/get-pip.py > $@
 
 ${LXML_INSTALLER}:
-	${CURL} -A 'Mozilla/5.0' http://www.lfd.uci.edu/~gohlke/pythonlibs/6icuform/lxml-${LXML_VERSION}-cp33-none-win32.whl > $@
+	${CURL} -A 'Mozilla/5.0' http://www.lfd.uci.edu/~gohlke/pythonlibs/6icuform/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl > $@
 
 ${7ZIP_INSTALLER}:
 	${CURL} http://www.7-zip.org/a/7z938.msi > $@
