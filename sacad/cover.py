@@ -11,6 +11,7 @@ import subprocess
 
 import PIL.Image
 import PIL.ImageFile
+import PIL.ImageFilter
 import requests
 
 from . import mkstemp_ctx
@@ -184,6 +185,11 @@ class CoverSourceResult:
     if new_size is not None:
       logging.getLogger().info("Resizing from %ux%u to %ux%u..." % (self.size[0], self.size[1], new_size, new_size))
       img = img.resize((new_size, new_size))
+      # apply unsharp filter to remove resize blur (equivalent to (images/graphics)magick -unsharp 1.5x1+0.7+0.02)
+      # we don't use PIL.ImageFilter.SHARPEN or PIL.ImageEnhance.Sharpness because we want precise control over
+      # parameters
+      unsharper = PIL.ImageFilter.UnsharpMask(radius=1.5, percent=70, threshold=5)
+      img = img.filter(unsharper)
     if new_format is not None:
       logging.getLogger().info("Converting to %s..." % (new_format.name.upper()))
       target_format = new_format
