@@ -16,6 +16,7 @@ class ApiAccessRateWatcher:
                                       PRAGMA synchronous = OFF;
                                       CREATE TABLE IF NOT EXISTS access_timestamp (timestamp FLOAT NOT NULL);""")
       self.connexion.execute("DELETE FROM access_timestamp WHERE (strftime('%s', 'now') - timestamp) > 86400;")
+    self.time_sleeping = 0
 
   def __enter__(self):
     self.waitAccess()
@@ -49,6 +50,7 @@ class ApiAccessRateWatcher:
         if (timeout is not None) and (time_to_wait >= timeout):
           return False
         self.logger.warning("Sleeping for %us because of daily quota" % (time_to_wait))
+        self.time_sleeping += time_to_wait
         time.sleep(time_to_wait)
 
     if self.min_delay_between_accesses is not None:
@@ -67,6 +69,7 @@ class ApiAccessRateWatcher:
           if (timeout is not None) and (time_to_wait >= timeout):
             return False
           self.logger.debug("Sleeping for %.2fms because of rate limit" % (time_to_wait * 1000))
+          self.time_sleeping += time_to_wait
           time.sleep(time_to_wait)
 
     return True
