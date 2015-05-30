@@ -150,13 +150,11 @@ class CoverSource(metaclass=abc.ABCMeta):
           response = requests.post(url,
                                    data=post_data,
                                    headers=headers,
-                                   timeout=HTTP_TIMEOUT,
-                                   verify=False)
+                                   timeout=HTTP_TIMEOUT)
         else:
           response = requests.get(url,
                                   headers=headers,
-                                  timeout=HTTP_TIMEOUT,
-                                  verify=False)
+                                  timeout=HTTP_TIMEOUT)
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
