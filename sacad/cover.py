@@ -5,6 +5,7 @@ import itertools
 import logging
 import math
 import operator
+import os
 import pickle
 import shutil
 import subprocess
@@ -28,6 +29,7 @@ USER_AGENT = "Mozilla/5.0"
 SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
                          "jpeg": CoverImageFormat.JPEG,
                          "png": CoverImageFormat.PNG}
+HTTP_TIMEOUT = 300 if (os.getenv("CI") and os.getenv("TRAVIS")) else 10
 
 
 def is_square(x):
@@ -234,7 +236,7 @@ class CoverSourceResult:
         try:
           response = requests.get(url,
                                   headers={"User-Agent": USER_AGENT},
-                                  timeout=3,
+                                  timeout=HTTP_TIMEOUT / 3,  # we want it to be fast here
                                   verify=False,
                                   stream=True)
           response.raise_for_status()
@@ -296,7 +298,10 @@ class CoverSourceResult:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
-        response = requests.get(self.thumbnail_url, headers={"User-Agent": USER_AGENT}, timeout=10, verify=False)
+        response = requests.get(self.thumbnail_url,
+                                headers={"User-Agent": USER_AGENT},
+                                timeout=HTTP_TIMEOUT,
+                                verify=False)
         response.raise_for_status()
         image_data = response.content
       except requests.exceptions.RequestException:

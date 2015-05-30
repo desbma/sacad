@@ -16,6 +16,7 @@ from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality,
 
 
 MAX_THUMBNAIL_SIZE = 256
+HTTP_TIMEOUT = 300 if (os.getenv("CI") and os.getenv("TRAVIS")) else 5
 
 
 class CoverSource(metaclass=abc.ABCMeta):
@@ -146,9 +147,16 @@ class CoverSource(metaclass=abc.ABCMeta):
       self.updateHttpHeaders(headers)
       with self.api_watcher:
         if post_data is not None:
-          response = requests.post(url, data=post_data, headers=headers, timeout=15, verify=False)
+          response = requests.post(url,
+                                   data=post_data,
+                                   headers=headers,
+                                   timeout=HTTP_TIMEOUT,
+                                   verify=False)
         else:
-          response = requests.get(url, headers=headers, timeout=15, verify=False)
+          response = requests.get(url,
+                                  headers=headers,
+                                  timeout=HTTP_TIMEOUT,
+                                  verify=False)
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
