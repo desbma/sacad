@@ -3,9 +3,14 @@
 
 import os
 import re
+import sys
 
 from setuptools import find_packages, setup
 
+
+if sys.hexversion < 0x3030000:
+  print("Python version %s is unsupported, >= 3.3.0 is needed" % (".".join(map(str, sys.version_info[:3]))))
+  exit(1)
 
 with open(os.path.join("sacad", "__init__.py"), "rt") as f:
   version = re.search("__version__ = \"([^\"]+)\"", f.read()).group(1)
