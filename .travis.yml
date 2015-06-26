@@ -8,7 +8,7 @@ install:
   - "pip install -r requirements.txt"
   - "pip install coveralls"
   - "sudo apt-get -yV install optipng jpegoptim"
-  - "sudo apt-get -yV install wine"
+  - "sudo apt-get -yV install wine p7zip-full"
 script:
   - "coverage run --source=sacad setup.py test"
   - "pushd win && make all && popd"
