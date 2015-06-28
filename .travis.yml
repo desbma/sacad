@@ -2,8 +2,9 @@ language: python
 python:
   - "3.3"
   - "3.4"
-install:
+before_install:
   - "sudo apt-get -q update"
+install:
   - "sudo apt-get -yV install libxml2-dev libxslt1-dev"  # lxml dependencies
   - "pip install -r requirements.txt"
   - "pip install coveralls"
