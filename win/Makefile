@@ -44,8 +44,8 @@ sacad_win.zip: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTH
 sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 	cat $^ > $@
 
-test.jpg: sacad/sacad.exe
-	cd $(dir $<) && ${WINE} $(notdir $<) "neu" "neu 2" 1000 ../$@
+test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	${WINE} $< "neu" "neu 2" 1000 $@
 
 sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	mkdir -p $(dir $@)
