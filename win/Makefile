@@ -25,24 +25,29 @@ LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
 
-.PHONY: all
+.PHONY: all test
 
 
-all:: sacad_latest_win.7z sacad_latest_win.exe
+all:: sacad_win.7z sacad_win.zip sacad_win.exe
+
+test:: test.jpg
 
 print-%:
 	@echo $*=$($*)
 
-dropbox: sacad_latest_win.7z sacad_latest_win.exe
-	cp $^ ~/Dropbox/Public/
-
-sacad_latest_win.7z: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+sacad_win.7z: sacad/sacad_win.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -t7z -mx9 $@ sacad > /dev/null
 
-sacad_latest_win.exe: ${7ZIP_INSTALLED} sacad_latest_win.7z
+sacad_win.zip: sacad/sacad_win.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	7z a -tzip -mx9 $@ sacad > /dev/null
+
+sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 	cat $^ > $@
 
-sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+test.jpg: sacad_win.exe
+	${WINE} $< "neu" "neu 2" 1000 $@
+
+sacad/sacad_win.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	mkdir -p $(dir $@)
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
 	touch $@
@@ -108,4 +113,5 @@ clean:
 	@-rm -vf ${PYTHON_INSTALLER} ${CXFREEZE_INSTALLER} ${PIP_INSTALLER} ${LXML_INSTALLER} ${7ZIP_INSTALLER}
 	@-rm -Rvf sacad .requirements
 	@-rm -Rvf 7z920_extra.7z 7z920_extra
-	@-rm -vf sacad_latest_win.7z sacad_latest_win.exe
+	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
+	@-rm -vf test.jpg
