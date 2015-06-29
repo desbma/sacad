@@ -53,10 +53,7 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 ### Standalone Windows executable
 
-Windows users can also download a standalone binary which does not require Python:
-
-* [7z archive](https://dl.dropboxusercontent.com/u/70127955/sacad_latest_win.7z)
-* [auto extractible](https://dl.dropboxusercontent.com/u/70127955/sacad_latest_win.exe)
+Windows users can also download a [standalone binary which does not require Python](https://github.com/desbma/sacad/releases).
 
 #### Optional
 

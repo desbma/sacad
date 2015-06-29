@@ -12,6 +12,32 @@ install:
   - "sudo apt-get -yV install wine p7zip-full"
 script:
   - "coverage run --source=sacad setup.py test"
-  - "pushd win && make all && popd"
+  - "pushd win; make test && make all; popd"
 after_success:
   - "coveralls"
+deploy:
+  - provider: releases
+    api_key:
+      secure: "B6gBCH4ecbVXrGKwEehal5tbYOtyvzbDvdwCXnAf87h18CIuRdzIMRkFIYd06cIYXzTtkptaSvC1euZYWUP8NVSoiZmpLNumQCJMANh/eDcBKrfm4fFvsTwq5fQ3NDauJH4VJreh73pex8ke+NmyRy+BfgEj4FO8pxBbN9/Q/Sw="
+    file:
+      - "win/sacad_win.zip"
+      - "win/sacad_win.7z"
+      - "win/sacad_win.exe"
+    skip_cleanup: true
+    on:
+      repo: "desbma/sacad"
+      tags: true
+      python: "3.3"
+  - provider: pypi
+    user: desbma
+    password:
+      secure: "WJGhFJrX/S42EhXIj6oEmOxEoMSHLAtVyZe7EQm0ho5A5MH0NR64H8pPlrPuzHl/AZmxiSz/70G5xGlV6anaxjEOH8FFQ+lrjwgp0H4a1hVImFUZi45QHRq1E2GhzxMEsaAq1K5BdAYXOkIHCa4+jsFbZRcrDNO72jCIJfvX1q0="
+    on:
+      tags: true
+      python: "3.4"
+notifications:
+  email:
+    recipients:
+      - secure: "g5HaEKHvapImYa1t/2DfW86YAEDUwAcPlbKJ/SZSUkH9POCtdc0TayLGuS9ByY/2cOXiUyCwbQ3r3qMs9p14ev6wKo5NMOYJsR3ijDB8Qh6ri182TmeXWlWLQrLWAZD5NTYdhUoK4taEAbnLV+AQuZwAUBkyX8tFGHQre3/IYl4="
+    on_success: always
+    on_failure: always
