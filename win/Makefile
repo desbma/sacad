@@ -35,19 +35,19 @@ test:: test.jpg
 print-%:
 	@echo $*=$($*)
 
-sacad_win.7z: sacad/sacad_win.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+sacad_win.7z: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -t7z -mx9 $@ sacad > /dev/null
 
-sacad_win.zip: sacad/sacad_win.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+sacad_win.zip: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -tzip -mx9 $@ sacad > /dev/null
 
 sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 	cat $^ > $@
 
-test.jpg: sacad_win.exe
+test.jpg: sacad/sacad.exe
 	${WINE} $< "neu" "neu 2" 1000 $@
 
-sacad/sacad_win.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	mkdir -p $(dir $@)
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
 	touch $@
