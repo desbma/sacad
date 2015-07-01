@@ -14,7 +14,7 @@ LXML_INSTALLER     := lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.
 
 # env
 CURL     := curl -s -f -L -m 60
-WINE_DIR := ${CURDIR}/wine
+WINE_DIR := /tmp/$(subst /,_,${CURDIR})_wine
 WINE     := WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
 
 # installed files
