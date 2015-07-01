@@ -14,7 +14,7 @@ LXML_INSTALLER     := lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.
 
 # env
 CURL     := curl -s -f -L -m 60
-WINE_DIR := /tmp/$(subst /,_,${CURDIR})_wine
+WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine
 WINE     := WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
 
 # installed files
@@ -72,7 +72,10 @@ sacad/readme.txt:
 	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip install -r requirements.txt 2> /dev/null > /dev/null
 	touch $@
 
-${PYTHON_INSTALLED}: ${PYTHON_INSTALLER}
+${WINE_DIR}:
+	mkdir -p $(dir $@)
+
+${PYTHON_INSTALLED}: ${PYTHON_INSTALLER} ${WINE_DIR}
 	${WINE} msiexec /i $< /qb 2> /dev/null
 	touch $@
 
