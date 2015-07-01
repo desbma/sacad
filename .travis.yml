@@ -16,6 +16,7 @@ script:
 after_success:
   - "coveralls"
 before_deploy:
+  - "sudo apt-get -yV install pandoc"
   - "pip install pypandoc"
 deploy:
   - provider: releases
