@@ -3,7 +3,6 @@ python:
   - "3.3"
   - "3.4"
 before_install:
-add-apt-repository ppa:
   - "sudo add-apt-repository -y ppa:ubuntu-wine/ppa"
   - "sudo apt-get -q update"
 install:
