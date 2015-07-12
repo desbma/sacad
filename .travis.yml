@@ -3,6 +3,8 @@ python:
   - "3.3"
   - "3.4"
 before_install:
+add-apt-repository ppa:
+  - "sudo add-apt-repository -y ppa:ubuntu-wine/ppa"
   - "sudo apt-get -q update"
 install:
   - "sudo apt-get -yV install libxml2-dev libxslt1-dev"  # lxml dependencies
@@ -12,7 +14,7 @@ install:
   - "sudo apt-get -yV install wine p7zip-full"
 script:
   - "coverage run --source=sacad setup.py test"
-  - "pushd win && make all && popd"
+  - "pushd win && make test && popd"
 after_success:
   - "coveralls"
 before_deploy:
@@ -20,6 +22,7 @@ before_deploy:
   - "sudo apt-get -q update"
   - "sudo apt-get -yV install pandoc"
   - "pip install pypandoc"
+  - "pushd win && make all && popd"
 deploy:
   - provider: releases
     api_key:
