@@ -5,6 +5,7 @@ python:
 before_install:
   - "sudo add-apt-repository -y ppa:ubuntu-wine/ppa"
   - "sudo apt-get -q update"
+  - "pip install -U pip"
 install:
   - "sudo apt-get -yV install libxml2-dev libxslt1-dev"  # lxml dependencies
   - "pip install -r requirements.txt"
