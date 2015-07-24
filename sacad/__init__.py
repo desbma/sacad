@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """ Smart Automatic Cover Art Downloader : search and download music album covers. """
 
