@@ -45,13 +45,20 @@ class AmazonDigitalCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
-    results_selector = lxml.cssselect.CSSSelector("div#mp3AlbumsBar div.mp3Cell")
-    img_selector = lxml.cssselect.CSSSelector("img.productImage")
+    results_selectors = (lxml.cssselect.CSSSelector("div#dm_mp3Player div.mp3Cell"),
+                         lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))
+    img_selectors = (lxml.cssselect.CSSSelector("img.productImage"),
+                     lxml.cssselect.CSSSelector("img.s-access-image"))
     slice_count_to_res = {1: 600, 2: 700, 3: 1050, 4: 1400}
 
-    for rank, result_div in enumerate(results_selector(html), 1):
+    for page_struct_version in range(len(results_selectors)):
+      result_divs = results_selectors[page_struct_version](html)
+      if result_divs:
+        break
+
+    for rank, result_div in enumerate(result_divs, 1):
       # get thumbnail & full image url
-      img_node = img_selector(result_div)[0]
+      img_node = img_selectors[page_struct_version](result_div)[0]
       thumbnail_url = img_node.get("src")
       url_parts = thumbnail_url.rsplit(".", 2)
       img_url = ".".join((url_parts[0], url_parts[2]))
