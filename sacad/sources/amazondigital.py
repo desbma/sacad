@@ -60,6 +60,7 @@ class AmazonDigitalCoverSource(CoverSource):
       # get thumbnail & full image url
       img_node = img_selectors[page_struct_version](result_div)[0]
       thumbnail_url = img_node.get("src")
+      thumbnail_url = thumbnail_url.replace("Stripe-Prime-Only", "")
       url_parts = thumbnail_url.rsplit(".", 2)
       img_url = ".".join((url_parts[0], url_parts[2]))
 
