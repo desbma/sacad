@@ -49,6 +49,7 @@ class AmazonDigitalCoverSource(CoverSource):
                          lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))
     img_selectors = (lxml.cssselect.CSSSelector("img.productImage"),
                      lxml.cssselect.CSSSelector("img.s-access-image"))
+    link_selector = lxml.cssselect.CSSSelector("a")
     slice_count_to_res = {1: 600, 2: 700, 3: 1050, 4: 1400}
 
     for page_struct_version in range(len(results_selectors)):
@@ -70,7 +71,7 @@ class AmazonDigitalCoverSource(CoverSource):
       # try to get higher res image...
       if self.target_size > size[0]:  # ...but only if needed
         logging.getLogger().debug("Looking for optimal subimages configuration...")
-        product_url = result_div.find("a").get("href")
+        product_url = link_selector(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_id = product_url.path.split("/")[3]
 
