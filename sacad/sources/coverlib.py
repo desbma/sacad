@@ -1,6 +1,7 @@
 import collections
 import operator
 import re
+import urllib.parse
 
 import lxml.cssselect
 import lxml.etree
@@ -65,6 +66,9 @@ class CoverLibCoverSource(CoverSource):
       # get thumbnail url
       link = link_selector(cover)[0]
       thumbnail_url = link.find("img").get("src")
+      if not urllib.parse.urlparse(thumbnail_url).netloc:
+        # make relative url absolute
+        thumbnail_url = urllib.parse.urljoin(__class__.BASE_URL, thumbnail_url)
 
       # deduce img url without downloading subpage
       cover_id = int(thumbnail_url.rsplit(".", 1)[0].rsplit("/", 1)[1])
