@@ -2,4 +2,5 @@ cssselect>=0.9.1
 enum34
 lxml>=3.3.3,<4.0.0
 pillow>=2.3.0,<2.9.0
+redo>=1.4
 requests>=2.6.0

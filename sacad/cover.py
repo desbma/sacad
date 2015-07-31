@@ -5,16 +5,18 @@ import itertools
 import logging
 import math
 import operator
-import os
 import pickle
 import shutil
+import socket
 import subprocess
 
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
+import redo
 import requests
 
+from . import HTTP_TIMEOUT, HTTP_ATTEMPTS
 from . import mkstemp_ctx
 from . import web_cache
 
@@ -29,7 +31,6 @@ USER_AGENT = "Mozilla/5.0"
 SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
                          "jpeg": CoverImageFormat.JPEG,
                          "png": CoverImageFormat.PNG}
-HTTP_TIMEOUT = 300 if (os.getenv("CI") and os.getenv("TRAVIS")) else 10
 
 
 def is_square(x):
@@ -113,7 +114,24 @@ class CoverSourceResult:
       if cache_miss:
         # download
         logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-        response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10, verify=False)
+        for attempt, _ in enumerate(redo.retrier(attempts=HTTP_ATTEMPTS,
+                                                 sleeptime=1.5,
+                                                 max_sleeptime=5,
+                                                 sleepscale=1.25,
+                                                 jitter=1),
+                                    1):
+          try:
+            response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=HTTP_TIMEOUT, verify=False)
+            break
+          except (socket.timeout, ConnectionResetError) as e:
+            logging.getLogger().warning("Download of cover '%s' (part %u/%u) failed (attempt %u/%u) : %s" % (url,
+                                                                                                             i + 1,
+                                                                                                             len(self.urls),
+                                                                                                             attempt,
+                                                                                                             HTTP_ATTEMPTS,
+                                                                                                             e.__class__.__name__))
+            if attempt == HTTP_ATTEMPTS:
+              raise e
         response.raise_for_status()
         image_data = response.content
 

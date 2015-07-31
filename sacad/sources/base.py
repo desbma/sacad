@@ -4,19 +4,21 @@ import itertools
 import logging
 import operator
 import os
+import socket
 import tempfile
 import unicodedata
 import urllib.parse
 
+import redo
 import requests
 
+from sacad import HTTP_TIMEOUT, HTTP_ATTEMPTS
 from sacad import api_watcher
 from sacad import web_cache
 from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality, USER_AGENT
 
 
 MAX_THUMBNAIL_SIZE = 256
-HTTP_TIMEOUT = 300 if (os.getenv("CI") and os.getenv("TRAVIS")) else 5
 
 
 class CoverSource(metaclass=abc.ABCMeta):
@@ -145,16 +147,32 @@ class CoverSource(metaclass=abc.ABCMeta):
         logging.getLogger().debug("Querying URL '%s'..." % (url))
       headers = {"User-Agent": USER_AGENT}
       self.updateHttpHeaders(headers)
-      with self.api_watcher:
-        if post_data is not None:
-          response = requests.post(url,
-                                   data=post_data,
-                                   headers=headers,
-                                   timeout=HTTP_TIMEOUT)
-        else:
-          response = requests.get(url,
-                                  headers=headers,
-                                  timeout=HTTP_TIMEOUT)
+      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_ATTEMPTS,
+                                               sleeptime=1.5,
+                                               max_sleeptime=5,
+                                               sleepscale=1.25,
+                                               jitter=1),
+                                  1):
+        try:
+          with self.api_watcher:
+            if post_data is not None:
+              response = requests.post(url,
+                                       data=post_data,
+                                       headers=headers,
+                                       timeout=HTTP_TIMEOUT)
+            else:
+              response = requests.get(url,
+                                      headers=headers,
+                                      timeout=HTTP_TIMEOUT)
+          break
+        except (socket.timeout, ConnectionResetError) as e:
+          logging.getLogger().warning("Querying '%s' for source '%s' failed (attempt %u/%u): %s" % (url,
+                                                                                                    self.__class__.__name__,
+                                                                                                    attempt,
+                                                                                                    HTTP_ATTEMPTS,
+                                                                                                    e.__class__.__name__))
+          if attempt == HTTP_ATTEMPTS:
+            raise e
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
