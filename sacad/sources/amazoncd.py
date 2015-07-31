@@ -5,7 +5,7 @@ import lxml.cssselect
 import lxml.etree
 
 from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
-from .base import CoverSource
+from sacad.sources.base import CoverSource
 
 
 class AmazonCdCoverSourceResult(CoverSourceResult):

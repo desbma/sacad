@@ -17,9 +17,9 @@ IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
 HTTP_TIMEOUT = 30 if IS_TRAVIS else 10
 HTTP_ATTEMPTS = 10 if IS_TRAVIS else 3
 
-from . import colored_logging
-from . import sources
-from .cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
+from sacad import colored_logging
+from sacad import sources
+from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
 def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer_https, out_filepath):

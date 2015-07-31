@@ -3,7 +3,7 @@ import os.path
 import xml.etree.ElementTree
 
 from sacad.cover import CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
-from .base import CoverSource, MAX_THUMBNAIL_SIZE
+from sacad.sources.base import CoverSource, MAX_THUMBNAIL_SIZE
 
 
 class LastFmCoverSourceResult(CoverSourceResult):

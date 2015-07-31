@@ -7,7 +7,7 @@ import lxml.etree
 import requests
 
 from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult, USER_AGENT
-from .base import CoverSource
+from sacad.sources.base import CoverSource
 
 
 class AmazonDigitalCoverSourceResult(CoverSourceResult):

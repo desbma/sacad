@@ -16,9 +16,9 @@ import PIL.ImageFilter
 import redo
 import requests
 
-from . import HTTP_TIMEOUT, HTTP_ATTEMPTS
-from . import mkstemp_ctx
-from . import web_cache
+from sacad import HTTP_TIMEOUT, HTTP_ATTEMPTS
+from sacad import mkstemp_ctx
+from sacad import web_cache
 
 
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))

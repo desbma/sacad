@@ -6,7 +6,7 @@ import lxml.cssselect
 import lxml.etree
 
 from sacad.cover import CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
-from .base import CoverSource
+from sacad.sources.base import CoverSource
 
 
 class GoogleImagesCoverSourceResult(CoverSourceResult):
