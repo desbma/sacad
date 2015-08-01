@@ -10,6 +10,7 @@ import argparse
 import functools
 import logging
 import os
+import sys
 
 from sacad import colored_logging
 from sacad import sources
@@ -130,6 +131,11 @@ def cl_main():
        args.no_lq_sources,
        args.https,
        args.out_filepath)
+
+
+if getattr(sys, "frozen", False):
+  # fix for cx_freeze generated executable not finding certs
+  os.environ["REQUESTS_CA_BUNDLE"] = os.path.join(os.path.dirname(sys.executable), "cacert.pem")
 
 
 if __name__ == "__main__":
