@@ -7,16 +7,13 @@ import math
 import operator
 import pickle
 import shutil
-import socket
 import subprocess
 
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
-import redo
-import requests
 
-from sacad import HTTP_TIMEOUT, HTTP_ATTEMPTS
+from sacad import http
 from sacad import mkstemp_ctx
 from sacad import web_cache
 
@@ -27,7 +24,6 @@ CoverSourceQuality = enum.Enum("CoverSourceQuality", ("LOW", "NORMAL", "REFERENC
 
 HAS_JPEGOPTIM = shutil.which("jpegoptim") is not None
 HAS_OPTIPNG = shutil.which("optipng") is not None
-USER_AGENT = "Mozilla/5.0"
 SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
                          "jpeg": CoverImageFormat.JPEG,
                          "png": CoverImageFormat.PNG}
@@ -114,28 +110,7 @@ class CoverSourceResult:
       if cache_miss:
         # download
         logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-        for attempt, _ in enumerate(redo.retrier(attempts=HTTP_ATTEMPTS,
-                                                 sleeptime=1.5,
-                                                 max_sleeptime=5,
-                                                 sleepscale=1.25,
-                                                 jitter=1),
-                                    1):
-          try:
-            response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=HTTP_TIMEOUT, verify=False)
-            break
-          except requests.exceptions.SSLError:
-            raise
-          except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            logging.getLogger().warning("Download of cover '%s' (part %u/%u) failed (attempt %u/%u) : %s" % (url,
-                                                                                                             i + 1,
-                                                                                                             len(self.urls),
-                                                                                                             attempt,
-                                                                                                             HTTP_ATTEMPTS,
-                                                                                                             e.__class__.__name__))
-            if attempt == HTTP_ATTEMPTS:
-              raise
-        response.raise_for_status()
-        image_data = response.content
+        image_data = http.query(url, verify=False)
 
         # crunch image
         image_data = __class__.crunch(image_data, self.format)
@@ -254,12 +229,7 @@ class CoverSourceResult:
         # download
         logging.getLogger().debug("Downloading file header for URL '%s'..." % (url))
         try:
-          response = requests.get(url,
-                                  headers={"User-Agent": USER_AGENT},
-                                  timeout=HTTP_TIMEOUT / 3,  # we want it to be fast here
-                                  verify=False,
-                                  stream=True)
-          response.raise_for_status()
+          response = http.fast_query(url, verify=False)
           metadata = None
           img_data = bytearray()
           for new_img_data in response.iter_content(chunk_size=2 ** 12):
@@ -270,8 +240,10 @@ class CoverSourceResult:
           if metadata is None:
             logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (url))
             return self  # for use with concurrent.futures
-        except requests.exceptions.RequestException:
-          logging.getLogger().debug("Unable to get file metadata for URL '%s', falling back to API data" % (url))
+        except Exception as e:
+          logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), falling back to API data" % (url,
+                                                                                                                    e.__class__.__name__,
+                                                                                                                    e))
           self.check_metadata = False
           return self  # for use with concurrent.futures
 
@@ -318,14 +290,11 @@ class CoverSourceResult:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
-        response = requests.get(self.thumbnail_url,
-                                headers={"User-Agent": USER_AGENT},
-                                timeout=HTTP_TIMEOUT,
-                                verify=False)
-        response.raise_for_status()
-        image_data = response.content
-      except requests.exceptions.RequestException:
-        logging.getLogger().warning("Download of '%s' failed" % (self.thumbnail_url))
+        image_data = http.query(self.thumbnail_url, verify=False)
+      except Exception as e:
+        logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
+                                                                        e.__class__.__name__,
+                                                                        e))
         return self  # for use with concurrent.futures
       else:
         # crunch image

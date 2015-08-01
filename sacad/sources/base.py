@@ -4,18 +4,14 @@ import itertools
 import logging
 import operator
 import os
-import socket
 import tempfile
 import unicodedata
 import urllib.parse
 
-import redo
-import requests
-
-from sacad import HTTP_TIMEOUT, HTTP_ATTEMPTS
 from sacad import api_watcher
+from sacad import http
 from sacad import web_cache
-from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality, USER_AGENT
+from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
 
 
 MAX_THUMBNAIL_SIZE = 256
@@ -145,38 +141,9 @@ class CoverSource(metaclass=abc.ABCMeta):
         logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
       else:
         logging.getLogger().debug("Querying URL '%s'..." % (url))
-      headers = {"User-Agent": USER_AGENT}
+      headers = {}
       self.updateHttpHeaders(headers)
-      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_ATTEMPTS,
-                                               sleeptime=1.5,
-                                               max_sleeptime=5,
-                                               sleepscale=1.25,
-                                               jitter=1),
-                                  1):
-        try:
-          with self.api_watcher:
-            if post_data is not None:
-              response = requests.post(url,
-                                       data=post_data,
-                                       headers=headers,
-                                       timeout=HTTP_TIMEOUT)
-            else:
-              response = requests.get(url,
-                                      headers=headers,
-                                      timeout=HTTP_TIMEOUT)
-          break
-        except requests.exceptions.SSLError:
-          raise
-        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-          logging.getLogger().warning("Querying '%s' for source '%s' failed (attempt %u/%u): %s" % (url,
-                                                                                                    self.__class__.__name__,
-                                                                                                    attempt,
-                                                                                                    HTTP_ATTEMPTS,
-                                                                                                    e.__class__.__name__))
-          if attempt == HTTP_ATTEMPTS:
-            raise
-      response.raise_for_status()
-      data = response.content
+      data = http.query(url, watcher=self.api_watcher, post_data=post_data, headers=headers)
       # add cache entry only when parsing is successful
     return cache_hit, data
 

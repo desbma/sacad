@@ -4,9 +4,9 @@ import urllib.parse
 
 import lxml.cssselect
 import lxml.etree
-import requests
 
-from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult, USER_AGENT
+from sacad import http
+from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
 from sacad.sources.base import CoverSource
 
 
@@ -85,11 +85,9 @@ class AmazonDigitalCoverSource(CoverSource):
             logging.getLogger().debug("Trying %u %ssquare subimages..." % (slice_count ** 2,
                                                                            "non " if not square_sub_img else ""))
             urls = tuple(self.generateImgUrls(product_id, __class__.DYNAPI_KEY, slice_count, square_sub_img))
-            try:
-              # this is a simple head request (no payload), so we don't rate limit
-              response = requests.head(urls[-1], headers={"User-Agent": USER_AGENT}, timeout=2, verify=False)
-              response.raise_for_status()
-            except:
+            # this is a simple head request (no payload), so we don't rate limit
+            url_ok = http.is_reachable(urls[-1])
+            if not url_ok:
               # images at this size are not available
               continue
 

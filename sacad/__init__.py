@@ -11,12 +11,6 @@ import functools
 import logging
 import os
 
-import requests
-
-IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
-HTTP_TIMEOUT = 30 if IS_TRAVIS else 10
-HTTP_ATTEMPTS = 10 if IS_TRAVIS else 3
-
 from sacad import colored_logging
 from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
@@ -118,12 +112,6 @@ def cl_main():
                    "normal": logging.INFO,
                    "debug": logging.DEBUG}
   logging.getLogger().setLevel(logging_level[args.verbosity])
-  logging.getLogger("requests").setLevel(logging.ERROR)
-  logging.getLogger("urllib3").setLevel(logging.ERROR)
-  try:
-    requests.packages.urllib3.disable_warnings()
-  except:
-    pass
   if logging_level[args.verbosity] == logging.DEBUG:
     fmt = "%(threadName)s: %(message)s"
   else:
