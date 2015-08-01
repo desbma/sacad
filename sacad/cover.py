@@ -123,7 +123,9 @@ class CoverSourceResult:
           try:
             response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=HTTP_TIMEOUT, verify=False)
             break
-          except (socket.timeout, ConnectionResetError) as e:
+          except requests.exceptions.SSLError:
+            raise
+          except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             logging.getLogger().warning("Download of cover '%s' (part %u/%u) failed (attempt %u/%u) : %s" % (url,
                                                                                                              i + 1,
                                                                                                              len(self.urls),
@@ -131,7 +133,7 @@ class CoverSourceResult:
                                                                                                              HTTP_ATTEMPTS,
                                                                                                              e.__class__.__name__))
             if attempt == HTTP_ATTEMPTS:
-              raise e
+              raise
         response.raise_for_status()
         image_data = response.content
 

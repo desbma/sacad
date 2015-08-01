@@ -165,14 +165,16 @@ class CoverSource(metaclass=abc.ABCMeta):
                                       headers=headers,
                                       timeout=HTTP_TIMEOUT)
           break
-        except (socket.timeout, ConnectionResetError) as e:
+        except requests.exceptions.SSLError:
+          raise
+        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
           logging.getLogger().warning("Querying '%s' for source '%s' failed (attempt %u/%u): %s" % (url,
                                                                                                     self.__class__.__name__,
                                                                                                     attempt,
                                                                                                     HTTP_ATTEMPTS,
                                                                                                     e.__class__.__name__))
           if attempt == HTTP_ATTEMPTS:
-            raise e
+            raise
       response.raise_for_status()
       data = response.content
       # add cache entry only when parsing is successful
