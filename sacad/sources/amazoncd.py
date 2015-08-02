@@ -18,7 +18,7 @@ class AmazonCdCoverSource(CoverSource):
 
   """ Cover source returning Amazon.com audio CD images. """
 
-  BASE_URL = "http://www.amazon.com/gp/search"
+  BASE_URL = "https://www.amazon.com/gp/search"
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """

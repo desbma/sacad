@@ -21,10 +21,9 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   """ Base class for all cover sources. """
 
-  def __init__(self, target_size, size_tolerance_prct, prefer_https, min_delay_between_accesses=2 / 3):
+  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
-    self.prefer_https = prefer_https
     tmp_dir = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
     db_filepath = os.path.join(tmp_dir, "api_watcher_%s.sqlite" % (self.__class__.__name__.lower()))
     self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),

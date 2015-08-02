@@ -20,7 +20,7 @@ class AmazonDigitalCoverSource(CoverSource):
 
   """ Cover source returning Amazon.com digital music images. """
 
-  BASE_URL = "http://www.amazon.com/gp"
+  BASE_URL = "https://www.amazon.com/gp"
   DYNAPI_KEY = "A17SFUTIVB227Z"
 
   def getSearchUrl(self, album, artist):

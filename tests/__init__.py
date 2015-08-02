@@ -50,16 +50,15 @@ class TestSacad(unittest.TestCase):
     for format in sacad.cover.CoverImageFormat:
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
-          for prefer_https in (True, False):
-            with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
-                                           suffix=".%s" % (format.name.lower())) as tmp_filepath:
-              sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, False, prefer_https, tmp_filepath)
-              out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
-              self.assertEqual(out_format, format)
-              self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
-              self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
-              self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
-              self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
+          with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
+                                         suffix=".%s" % (format.name.lower())) as tmp_filepath:
+            sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, False, tmp_filepath)
+            out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
+            self.assertEqual(out_format, format)
+            self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
+            self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
+            self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
+            self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
 
   def test_getImageUrlMetadata(self):
     """ Download the beginning of an image file to guess its format and resolution. """
@@ -96,29 +95,27 @@ class TestSacad(unittest.TestCase):
   def test_coverSources(self):
     """ Check all sources return valid results with different parameters. """
     for size in range(300, 1200 + 1, 300):
-      for prefer_https in (True, False):
-        source_args = (size, 0, prefer_https)
-        sources = (sacad.sources.LastFmCoverSource(*source_args),
-                   sacad.sources.CoverLibCoverSource(*source_args),
-                   sacad.sources.AmazonCdCoverSource(*source_args),
-                   sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
-                   sacad.sources.AmazonDigitalCoverSource(*source_args))
-        for source in sources:
-          for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
-            results = source.search(album, artist)
-            results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
-            if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
-                    ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
-                    ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk"))):
-              self.assertGreaterEqual(len(results), 1, "%s %s %s %s %u" % (source.__class__.__name__,
-                                                                           " HTTPS" if prefer_https else "",
-                                                                           artist,
-                                                                           album,
-                                                                           size))
-            for result in results:
-              self.assertTrue(result.urls)
-              self.assertIn(result.format, sacad.cover.CoverImageFormat)
-              self.assertGreaterEqual(result.size[0], size)
+      source_args = (size, 0)
+      sources = (sacad.sources.LastFmCoverSource(*source_args),
+                 sacad.sources.CoverLibCoverSource(*source_args),
+                 sacad.sources.AmazonCdCoverSource(*source_args),
+                 sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
+                 sacad.sources.AmazonDigitalCoverSource(*source_args))
+      for source in sources:
+        for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
+          results = source.search(album, artist)
+          results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
+          if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
+                  ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
+                  ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk"))):
+            self.assertGreaterEqual(len(results), 1, "%s %s %s %u" % (source.__class__.__name__,
+                                                                      artist,
+                                                                      album,
+                                                                      size))
+          for result in results:
+            self.assertTrue(result.urls)
+            self.assertIn(result.format, sacad.cover.CoverImageFormat)
+            self.assertGreaterEqual(result.size[0], size)
 
 
 if __name__ == "__main__":

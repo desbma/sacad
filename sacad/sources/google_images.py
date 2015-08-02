@@ -24,17 +24,11 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
   is very agressively rate limiting its access.
   """
 
-  BASE_URL = "http://www.google.com/images"
-  BASE_URL_HTTPS = "https://www.google.com/images"
+  BASE_URL = "https://www.google.com/images"
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     # build request url
-    if self.prefer_https:
-      base_url = __class__.BASE_URL_HTTPS
-    else:
-      base_url = __class__.BASE_URL
-
     params = collections.OrderedDict()
     params["gbv"] = "2"
     params["q"] = "\"%s\" \"%s\" front cover" % (artist.lower(), album.lower())
@@ -43,7 +37,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
     elif self.target_size > 800:
       params["tbs"] = "isz:l"
 
-    return __class__.assembleUrl(base_url, params)
+    return __class__.assembleUrl(__class__.BASE_URL, params)
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """

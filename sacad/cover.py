@@ -290,7 +290,7 @@ class CoverSourceResult:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
-        image_data = http.query(self.thumbnail_url, verify=False)
+        image_data = http.query(self.thumbnail_url)
       except Exception as e:
         logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                         e.__class__.__name__,

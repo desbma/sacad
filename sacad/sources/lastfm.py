@@ -20,8 +20,7 @@ class LastFmCoverSource(CoverSource):
   http://www.lastfm.fr/api/show?service=290
   """
 
-  BASE_URL = "http://ws.audioscrobbler.com/2.0/"
-  BASE_URL_HTTPS = "https://ws.audioscrobbler.com/2.0/"
+  BASE_URL = "https://ws.audioscrobbler.com/2.0/"
   API_KEY = "2410a53db5c7490d0f50c100a020f359"
 
   SIZES = {"small": (34, 34),
@@ -33,18 +32,13 @@ class LastFmCoverSource(CoverSource):
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     # build request url
-    if self.prefer_https:
-      base_url = __class__.BASE_URL_HTTPS
-    else:
-      base_url = __class__.BASE_URL
-
     params = collections.OrderedDict()
     params["method"] = "album.getinfo"
     params["api_key"] = __class__.API_KEY
     params["album"] = album.lower()
     params["artist"] = artist.lower()
 
-    return __class__.assembleUrl(base_url, params)
+    return __class__.assembleUrl(__class__.BASE_URL, params)
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """

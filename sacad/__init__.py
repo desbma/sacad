@@ -17,7 +17,7 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer_https, out_filepath):
+def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, out_filepath):
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
     logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
@@ -25,7 +25,7 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, prefer
     logging.getLogger().warning("optipng could not be found, PNG crunching will be disabled")
 
   # register sources
-  source_args = (size, size_tolerance_prct, prefer_https)
+  source_args = (size, size_tolerance_prct)
   cover_sources = [sources.LastFmCoverSource(*source_args),
                    sources.CoverLibCoverSource(*source_args),
                    sources.AmazonCdCoverSource(*source_args),
@@ -87,12 +87,6 @@ def cl_main():
                           help="""Disable cover sources that may return unreliable results (ie. Google Images).
                                   It will speed up search and improve reliability, but may fail to find results for
                                   some difficult searches.""")
-  arg_parser.add_argument("-e",
-                          "--https",
-                          action="store_true",
-                          default=False,
-                          dest="https",
-                          help="Use SSL/TLS encryption (HTTPS) when available")
   arg_parser.add_argument("-v",
                           "--verbosity",
                           choices=("quiet", "warning", "normal", "debug"),
@@ -129,7 +123,6 @@ def cl_main():
        args.size,
        args.size_tolerance_prct,
        args.no_lq_sources,
-       args.https,
        args.out_filepath)
 
 
