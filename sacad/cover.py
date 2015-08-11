@@ -1,4 +1,5 @@
 import concurrent.futures
+import contextlib
 import enum
 import io
 import itertools
@@ -229,14 +230,14 @@ class CoverSourceResult:
         # download
         logging.getLogger().debug("Downloading file header for URL '%s'..." % (url))
         try:
-          response = http.fast_query(url, verify=False)
           metadata = None
           img_data = bytearray()
-          for new_img_data in response.iter_content(chunk_size=2 ** 12):
-            img_data.extend(new_img_data)
-            metadata = __class__.getImageMetadata(img_data)
-            if metadata is not None:
-              break
+          with contextlib.closing(http.fast_streamed_query(url, verify=False)) as response:
+            for new_img_data in response.iter_content(chunk_size=2 ** 12):
+              img_data.extend(new_img_data)
+              metadata = __class__.getImageMetadata(img_data)
+              if metadata is not None:
+                break
           if metadata is None:
             logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (url))
             return self  # for use with concurrent.futures

@@ -74,7 +74,7 @@ def is_reachable(url, *, headers=None, verify=True):
   return True
 
 
-def fast_query(url, *, headers=None, verify=True):
+def fast_streamed_query(url, *, headers=None, verify=True):
   """ Send a GET request with short timeout, do not retry, and return streamed response. """
   if headers is None:
     headers = {}
