@@ -10,8 +10,8 @@ import requests
 
 
 IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
-HTTP_NORMAL_TIMEOUT_S = 30 if IS_TRAVIS else 10
-HTTP_SHORT_TIMEOUT_S = 10 if IS_TRAVIS else 3
+HTTP_NORMAL_TIMEOUT_S = 30.1 if IS_TRAVIS else 9.1
+HTTP_SHORT_TIMEOUT_S = 9.1 if IS_TRAVIS else 3.1
 HTTP_MAX_ATTEMPTS = 10 if IS_TRAVIS else 3
 USER_AGENT = "Mozilla/5.0"
 
