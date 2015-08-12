@@ -236,7 +236,7 @@ class CoverSourceResult:
             for new_img_data in response.iter_content(chunk_size=2 ** 12):
               img_data.extend(new_img_data)
               metadata = __class__.getImageMetadata(img_data)
-              if metadata is not None:
+              if (metadata is not None) or (len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE):
                 break
           if metadata is None:
             logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (url))
