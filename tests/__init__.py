@@ -61,15 +61,24 @@ class TestSacad(unittest.TestCase):
             self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
 
   def test_getImageUrlMetadata(self):
-    """ Download the beginning of an image file to guess its format and resolution. """
-    url = "http://lacuriosphere.fr/wp-content/uploads/2013/12/mountains-and-clouds.jpg"
-    sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
-    cover = sacad.CoverSourceResult(url, None, None, thumbnail_url=None, source_quality=None)
-    cover.updateImageMetadata()
-    self.assertEqual(cover.size, (1600, 1200))
-    self.assertEqual(cover.format, sacad.cover.CoverImageFormat.JPEG)
-    self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
-    self.assertLessEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 3)
+    """ Download the beginning of image files to guess their format and resolution. """
+    refs = {"http://lacuriosphere.fr/wp-content/uploads/2013/12/mountains-and-clouds.jpg": (sacad.cover.CoverImageFormat.JPEG,
+                                                                                            (1600, 1200),
+                                                                                            3),
+            "https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
+                                                                                         (700, 700),
+                                                                                         5),
+            "http://userserve-ak.last.fm/serve/_/48800521/The+Wacken+Carnage.png": (sacad.cover.CoverImageFormat.PNG,
+                                                                                    (600, 600),
+                                                                                    1)}
+    for url, (ref_fmt, ref_size, block_read) in refs.items():
+      sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
+      cover = sacad.CoverSourceResult(url, None, None, thumbnail_url=None, source_quality=None)
+      cover.updateImageMetadata()
+      self.assertEqual(cover.size, ref_size)
+      self.assertEqual(cover.format, ref_fmt)
+      self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
+      self.assertLessEqual(sacad.CoverSourceResult.getImageMetadata.call_count, block_read)
 
   def test_compareImageSignatures(self):
     """ Compare images using their signatures. """
