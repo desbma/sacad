@@ -62,10 +62,7 @@ class TestSacad(unittest.TestCase):
 
   def test_getImageUrlMetadata(self):
     """ Download the beginning of image files to guess their format and resolution. """
-    refs = {"http://lacuriosphere.fr/wp-content/uploads/2013/12/mountains-and-clouds.jpg": (sacad.cover.CoverImageFormat.JPEG,
-                                                                                            (1600, 1200),
-                                                                                            3),
-            "https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
+    refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
                                                                                          (700, 700),
                                                                                          5),
             "http://userserve-ak.last.fm/serve/_/48800521/The+Wacken+Carnage.png": (sacad.cover.CoverImageFormat.PNG,
