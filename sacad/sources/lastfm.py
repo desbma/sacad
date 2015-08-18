@@ -66,7 +66,10 @@ class LastFmCoverSource(CoverSource):
         continue
       lfm_size = img_element.get("size")
       check_metadata = (lfm_size == "mega")
-      size = __class__.SIZES[lfm_size]
+      try:
+        size = __class__.SIZES[lfm_size]
+      except KeyError:
+        continue
       if (size[0] <= MAX_THUMBNAIL_SIZE) and ((thumbnail_size is None) or (size[0] < thumbnail_size)):
         thumbnail_url = img_url
         thumbnail_size = size[0]
