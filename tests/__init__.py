@@ -17,7 +17,8 @@ sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
 def is_internet_reachable():
   try:
     # open TCP socket to Google DNS server
-    socket.create_connection(("8.8.8.8", 53))
+    with socket.create_connection(("8.8.8.8", 53)):
+      pass
   except OSError as e:
     if e.errno == 101:
       return False
