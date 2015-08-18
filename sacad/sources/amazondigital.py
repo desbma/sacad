@@ -86,7 +86,7 @@ class AmazonDigitalCoverSource(CoverSource):
                                                                            "non " if not square_sub_img else ""))
             urls = tuple(self.generateImgUrls(product_id, __class__.DYNAPI_KEY, slice_count, square_sub_img))
             # this is a simple head request (no payload), so we don't rate limit
-            url_ok = http.is_reachable(urls[-1])
+            url_ok = http.is_reachable(urls[-1], session=self.http_session)
             if not url_ok:
               # images at this size are not available
               continue
@@ -110,6 +110,7 @@ class AmazonDigitalCoverSource(CoverSource):
                                                     size,
                                                     format,
                                                     thumbnail_url=thumbnail_url,
+                                                    source=self,
                                                     rank=rank,
                                                     check_metadata=True))
 

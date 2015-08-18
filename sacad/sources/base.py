@@ -29,6 +29,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),
                                                         db_filepath=db_filepath,
                                                         min_delay_between_accesses=min_delay_between_accesses)
+    self.http_session = http.session()
     if not hasattr(__class__, "api_cache"):
       db_filename = "sacad-cache.sqlite"
       cache_name = "cover_source_api_data"
@@ -142,7 +143,11 @@ class CoverSource(metaclass=abc.ABCMeta):
         logging.getLogger().debug("Querying URL '%s'..." % (url))
       headers = {}
       self.updateHttpHeaders(headers)
-      data = http.query(url, watcher=self.api_watcher, post_data=post_data, headers=headers)
+      data = http.query(url,
+                        session=self.http_session,
+                        watcher=self.api_watcher,
+                        post_data=post_data,
+                        headers=headers)
       # add cache entry only when parsing is successful
     return cache_hit, data
 

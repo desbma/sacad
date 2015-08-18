@@ -70,7 +70,14 @@ class TestSacad(unittest.TestCase):
                                                                                     1)}
     for url, (ref_fmt, ref_size, block_read) in refs.items():
       sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
-      cover = sacad.CoverSourceResult(url, None, None, thumbnail_url=None, source_quality=None)
+      source = unittest.mock.Mock()
+      source.http_session = sacad.http.session()
+      cover = sacad.CoverSourceResult(url,
+                                      None,
+                                      None,
+                                      source=source,
+                                      thumbnail_url=None,
+                                      source_quality=None)
       cover.updateImageMetadata()
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)

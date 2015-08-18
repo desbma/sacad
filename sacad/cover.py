@@ -43,7 +43,7 @@ class CoverSourceResult:
   MAX_FILE_METADATA_PEEK_SIZE = 2 ** 15
   IMG_SIG_SIZE = 16
 
-  def __init__(self, urls, size, format, *, thumbnail_url, source_quality, rank=None, check_metadata=False):
+  def __init__(self, urls, size, format, *, thumbnail_url, source, source_quality, rank=None, check_metadata=False):
     """
     Args:
       urls: Cover image file URL. Can be a tuple of URLs of images to be joined
@@ -62,6 +62,7 @@ class CoverSourceResult:
     self.format = format
     self.thumbnail_url = thumbnail_url
     self.thumbnail_sig = None
+    self.source = source
     self.source_quality = source_quality
     self.rank = rank
     self.check_metadata = check_metadata
@@ -111,7 +112,9 @@ class CoverSourceResult:
       if cache_miss:
         # download
         logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-        image_data = http.query(url, verify=False)
+        image_data = http.query(url,
+                                session=self.source.http_session,
+                                verify=False)
 
         # crunch image
         image_data = __class__.crunch(image_data, self.format)
@@ -232,7 +235,9 @@ class CoverSourceResult:
         try:
           metadata = None
           img_data = bytearray()
-          with contextlib.closing(http.fast_streamed_query(url, verify=False)) as response:
+          with contextlib.closing(http.fast_streamed_query(url,
+                                                           session=self.source.http_session,
+                                                           verify=False)) as response:
             for new_img_data in response.iter_content(chunk_size=2 ** 12):
               img_data.extend(new_img_data)
               metadata = __class__.getImageMetadata(img_data)
@@ -291,7 +296,8 @@ class CoverSourceResult:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
-        image_data = http.query(self.thumbnail_url)
+        image_data = http.query(self.thumbnail_url,
+                                session=self.source.http_session)
       except Exception as e:
         logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                         e.__class__.__name__,

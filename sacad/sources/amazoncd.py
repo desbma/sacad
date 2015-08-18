@@ -96,6 +96,7 @@ class AmazonCdCoverSource(CoverSource):
                                                size,
                                                format,
                                                thumbnail_url=thumbnail_url,
+                                               source=self,
                                                rank=rank,
                                                check_metadata=check_metadata))
 

@@ -76,6 +76,7 @@ class LastFmCoverSource(CoverSource):
                                              size,
                                              format,
                                              thumbnail_url=thumbnail_url,
+                                             source=self,
                                              check_metadata=check_metadata))
 
     return results

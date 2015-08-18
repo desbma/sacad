@@ -1,6 +1,7 @@
 """ Common HTTP code. """
 
 import contextlib
+import http.cookiejar
 import logging
 import os
 import socket
@@ -16,7 +17,7 @@ HTTP_MAX_ATTEMPTS = 10 if IS_TRAVIS else 3
 USER_AGENT = "Mozilla/5.0"
 
 
-def query(url, *, watcher=None, post_data=None, headers=None, verify=True):
+def query(url, *, session, watcher=None, post_data=None, headers=None, verify=True):
   """ Send a GET/POST request, retry if it fails, and return response content. """
   if headers is None:
     headers = {}
@@ -33,16 +34,16 @@ def query(url, *, watcher=None, post_data=None, headers=None, verify=True):
         if watcher is not None:
           context_manager.enter_context(watcher)
         if post_data is not None:
-          response = requests.post(url,
-                                   data=post_data,
-                                   headers=headers,
-                                   timeout=HTTP_NORMAL_TIMEOUT_S,
-                                   verify=verify)
-        else:
-          response = requests.get(url,
+          response = session.post(url,
+                                  data=post_data,
                                   headers=headers,
                                   timeout=HTTP_NORMAL_TIMEOUT_S,
                                   verify=verify)
+        else:
+          response = session.get(url,
+                                 headers=headers,
+                                 timeout=HTTP_NORMAL_TIMEOUT_S,
+                                 verify=verify)
       break
     except requests.exceptions.SSLError:
       raise
@@ -57,34 +58,34 @@ def query(url, *, watcher=None, post_data=None, headers=None, verify=True):
   return response.content
 
 
-def is_reachable(url, *, headers=None, verify=True):
+def is_reachable(url, *, session, headers=None, verify=True):
   """ Send a HEAD request with short timeout, return True if ressource has 2xx status code, False instead. """
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
     headers["User-Agent"] = USER_AGENT
   try:
-    response = requests.head(url,
-                             headers=headers,
-                             timeout=HTTP_SHORT_TIMEOUT_S,
-                             verify=verify)
+    response = session.head(url,
+                            headers=headers,
+                            timeout=HTTP_SHORT_TIMEOUT_S,
+                            verify=verify)
     response.raise_for_status()
   except requests.exceptions.HTTPError:
     return False
   return True
 
 
-def fast_streamed_query(url, *, headers=None, verify=True):
+def fast_streamed_query(url, *, session, headers=None, verify=True):
   """ Send a GET request with short timeout, do not retry, and return streamed response. """
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
     headers["User-Agent"] = USER_AGENT
-  response = requests.get(url,
-                          headers=headers,
-                          timeout=HTTP_SHORT_TIMEOUT_S,
-                          verify=verify,
-                          stream=True)
+  response = session.get(url,
+                         headers=headers,
+                         timeout=HTTP_SHORT_TIMEOUT_S,
+                         verify=verify,
+                         stream=True)
   response.raise_for_status()
   return response
 
@@ -97,3 +98,10 @@ try:
   requests.packages.urllib3.disable_warnings()
 except:
   pass
+
+
+def session():
+  s = requests.Session()
+  cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
+  s.cookies.set_policy(cp)
+  return s

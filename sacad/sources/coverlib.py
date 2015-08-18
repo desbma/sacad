@@ -83,6 +83,7 @@ class CoverLibCoverSource(CoverSource):
                                                size,
                                                format,
                                                thumbnail_url=thumbnail_url,
+                                               source=self,
                                                rank=rank))
       rank += 1
 
