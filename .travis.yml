@@ -43,6 +43,7 @@ deploy:
     on:
       tags: true
       python: "3.4"
+    edge: true  # workaround Travis bug, see https://github.com/travis-ci/dpl/issues/296#issuecomment-131932037
 notifications:
   email:
     recipients:
