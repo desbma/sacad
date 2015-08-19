@@ -48,10 +48,11 @@ def query(url, *, session, watcher=None, post_data=None, headers=None, verify=Tr
     except requests.exceptions.SSLError:
       raise
     except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-      logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s" % (url,
-                                                                                attempt,
-                                                                                HTTP_MAX_ATTEMPTS,
-                                                                                e.__class__.__name__))
+      logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                   attempt,
+                                                                                   HTTP_MAX_ATTEMPTS,
+                                                                                   e.__class__.__qualname__,
+                                                                                   e))
       if attempt == HTTP_MAX_ATTEMPTS:
         raise
   response.raise_for_status()

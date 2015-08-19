@@ -52,7 +52,9 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, out_fi
     try:
       result.get(format, size, size_tolerance_prct, out_filepath)
     except Exception as e:
-      logging.getLogger().warning("Download of %s failed: %s %s" % (result, e.__class__.__name__, e))
+      logging.getLogger().warning("Download of %s failed: %s %s" % (result,
+                                                                    e.__class__.__qualname__,
+                                                                    e))
       continue
     else:
       break

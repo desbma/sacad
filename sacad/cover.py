@@ -223,7 +223,9 @@ class CoverSourceResult:
         # cache miss
         pass
       except Exception as e:
-        logging.getLogger().warning("Unable to load metadata for URL '%s' from cache: %s %s" % (url, e.__class__.__name__, e))
+        logging.getLogger().warning("Unable to load metadata for URL '%s' from cache: %s %s" % (url,
+                                                                                                e.__class__.__qualname__,
+                                                                                                e))
       else:
         # cache hit
         logging.getLogger().debug("Got metadata for URL '%s' from cache" % (url))
@@ -248,7 +250,7 @@ class CoverSourceResult:
             return self  # for use with concurrent.futures
         except Exception as e:
           logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), falling back to API data" % (url,
-                                                                                                                    e.__class__.__name__,
+                                                                                                                    e.__class__.__qualname__,
                                                                                                                     e))
           self.check_metadata = False
           return self  # for use with concurrent.futures
@@ -300,7 +302,7 @@ class CoverSourceResult:
                                 session=self.source.http_session)
       except Exception as e:
         logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
-                                                                        e.__class__.__name__,
+                                                                        e.__class__.__qualname__,
                                                                         e))
         return self  # for use with concurrent.futures
       else:

@@ -66,7 +66,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     except Exception as e:
       # raise
       logging.getLogger().warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
-                                                                             e.__class__.__name__,
+                                                                             e.__class__.__qualname__,
                                                                              e))
       return ()
 
