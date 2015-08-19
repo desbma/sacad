@@ -77,6 +77,7 @@ def is_reachable(url, *, session, headers=None, verify=True):
                                 headers=headers,
                                 timeout=HTTP_SHORT_TIMEOUT_S,
                                 verify=verify)
+        break
       except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
         logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                      attempt,
