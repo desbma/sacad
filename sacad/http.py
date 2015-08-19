@@ -66,12 +66,27 @@ def is_reachable(url, *, session, headers=None, verify=True):
   if "User-Agent" not in headers:
     headers["User-Agent"] = USER_AGENT
   try:
-    response = session.head(url,
-                            headers=headers,
-                            timeout=HTTP_SHORT_TIMEOUT_S,
-                            verify=verify)
+    for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
+                                             sleeptime=1.5,
+                                             max_sleeptime=3,
+                                             sleepscale=1.25,
+                                             jitter=1),
+                                1):
+      try:
+        response = session.head(url,
+                                headers=headers,
+                                timeout=HTTP_SHORT_TIMEOUT_S,
+                                verify=verify)
+      except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                     attempt,
+                                                                                     HTTP_MAX_ATTEMPTS,
+                                                                                     e.__class__.__qualname__,
+                                                                                     e))
+        if attempt == HTTP_MAX_ATTEMPTS:
+          raise
     response.raise_for_status()
-  except requests.exceptions.HTTPError:
+  except Exception:
     return False
   return True
 
