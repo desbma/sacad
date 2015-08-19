@@ -14,7 +14,7 @@ IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
 HTTP_NORMAL_TIMEOUT_S = 30.1 if IS_TRAVIS else 9.1
 HTTP_SHORT_TIMEOUT_S = 9.1 if IS_TRAVIS else 3.1
 HTTP_MAX_ATTEMPTS = 10 if IS_TRAVIS else 3
-USER_AGENT = "Mozilla/5.0"
+DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
 def query(url, *, session, watcher=None, post_data=None, headers=None, verify=True):
@@ -22,7 +22,7 @@ def query(url, *, session, watcher=None, post_data=None, headers=None, verify=Tr
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
-    headers["User-Agent"] = USER_AGENT
+    headers["User-Agent"] = DEFAULT_USER_AGENT
   for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
                                            sleeptime=1.5,
                                            max_sleeptime=5,
@@ -64,7 +64,7 @@ def is_reachable(url, *, session, headers=None, verify=True):
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
-    headers["User-Agent"] = USER_AGENT
+    headers["User-Agent"] = DEFAULT_USER_AGENT
   try:
     for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
                                              sleeptime=1.5,
@@ -96,7 +96,7 @@ def fast_streamed_query(url, *, session, headers=None, verify=True):
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
-    headers["User-Agent"] = USER_AGENT
+    headers["User-Agent"] = DEFAULT_USER_AGENT
   response = session.get(url,
                          headers=headers,
                          timeout=HTTP_SHORT_TIMEOUT_S,
