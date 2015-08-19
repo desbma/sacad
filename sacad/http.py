@@ -117,6 +117,7 @@ except:
 
 
 def session():
+  """ Return a HTTP session to use to benefit from TCP connection reuse. It also refuses cookies. """
   s = requests.Session()
   cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
   s.cookies.set_policy(cp)
