@@ -50,6 +50,7 @@ class CoverSourceResult:
       size: Cover size as a (with, height) tuple
       format: Cover image format as a CoverImageFormat enum, or None if unknown
       thumbnail_url: Cover thumbnail image file URL, or None if not available
+      source: Cover source object that produced this result
       source_quality: Quality of the cover's source as a CoverSourceQuality enum value
       rank: Integer ranking of the cover in the other results from the same source, or None if not available
       check_metadata: If True, hint that the format and/or size parameters are not reliable and must be double checked
@@ -144,13 +145,7 @@ class CoverSourceResult:
       file.write(image_data)
 
   def postProcess(self, images_data, new_format, new_size):
-    """
-    Join/resize/convert image, and return the processed data, or original data if something went wrong.
-
-    Convert image binary data to a target format and/or size (None if no conversion needed).
-    Return the binary data of the output image, or None if conversion failed
-
-    """
+    """ Convert image binary data to a target format and/or size (None if no conversion needed), and return the processed data. """
     if len(images_data) == 1:
       in_bytes = io.BytesIO(images_data[0])
       img = PIL.Image.open(in_bytes)
