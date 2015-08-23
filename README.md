@@ -34,6 +34,9 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 * HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
 * When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
 * Use multithreading when relevant, to speed up processing
+* Automatically reuse TCP connections (HTTP Keep-Alive)
+* Automatically retry failed HTTP requests
+* Cover sources page or API changes are quickly detected, thanks to high test coverage, and SACAD is quickly updated accordingly
 
 
 ## Installation
