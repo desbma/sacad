@@ -6,7 +6,7 @@ import lxml.cssselect
 import lxml.etree
 
 from sacad import http
-from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
+from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
 from sacad.sources.base import CoverSource
 
 
@@ -112,7 +112,7 @@ class AmazonDigitalCoverSource(CoverSource):
                                                     thumbnail_url=thumbnail_url,
                                                     source=self,
                                                     rank=rank,
-                                                    check_metadata=True))
+                                                    check_metadata=CoverImageMetadata.SIZE))
 
     return results
 

@@ -5,7 +5,7 @@ import urllib.parse
 import lxml.cssselect
 import lxml.etree
 
-from sacad.cover import CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
+from sacad.cover import CoverImageMetadata, CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
 from sacad.sources.base import CoverSource
 
 
@@ -61,14 +61,14 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
       metadata_div = result.find("div")
       metadata_json = lxml.etree.tostring(metadata_div, encoding="unicode", method="text")
       metadata_json = json.loads(metadata_json)
-      check_metadata = False
+      check_metadata = CoverImageMetadata.NONE
       format = metadata_json["ity"].lower()
       try:
         format = SUPPORTED_IMG_FORMATS[format]
       except KeyError:
         # format could not be identified or is unknown
         format = None
-        check_metadata = True
+        check_metadata = CoverImageMetadata.FORMAT
       # extract size
       size = tuple(map(int, (query["w"][0], query["h"][0])))
       # extract thumbnail url

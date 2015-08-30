@@ -5,6 +5,7 @@ import io
 import itertools
 import logging
 import math
+import mimetypes
 import operator
 import pickle
 import shutil
@@ -22,6 +23,12 @@ from sacad import web_cache
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
 
 CoverSourceQuality = enum.Enum("CoverSourceQuality", ("LOW", "NORMAL", "REFERENCE"))
+
+CoverImageMetadata = enum.IntEnum("CoverImageMetadata",
+                                  (("NONE", 0),
+                                   ("FORMAT", 1),
+                                   ("SIZE", 2),
+                                   ("ALL", 3)))
 
 HAS_JPEGOPTIM = shutil.which("jpegoptim") is not None
 HAS_OPTIPNG = shutil.which("optipng") is not None
@@ -43,7 +50,8 @@ class CoverSourceResult:
   MAX_FILE_METADATA_PEEK_SIZE = 2 ** 15
   IMG_SIG_SIZE = 16
 
-  def __init__(self, urls, size, format, *, thumbnail_url, source, source_quality, rank=None, check_metadata=False):
+  def __init__(self, urls, size, format, *, thumbnail_url, source, source_quality, rank=None,
+               check_metadata=CoverImageMetadata.NONE):
     """
     Args:
       urls: Cover image file URL. Can be a tuple of URLs of images to be joined
@@ -53,7 +61,7 @@ class CoverSourceResult:
       source: Cover source object that produced this result
       source_quality: Quality of the cover's source as a CoverSourceQuality enum value
       rank: Integer ranking of the cover in the other results from the same source, or None if not available
-      check_metadata: If True, hint that the format and/or size parameters are not reliable and must be double checked
+      check_metadata: If != 0, hint that the format and/or size parameters are not reliable and must be double checked
     """
     if not isinstance(urls, str):
       self.urls = urls
@@ -196,8 +204,10 @@ class CoverSourceResult:
 
   def updateImageMetadata(self):
     """ Partially download image file(s) to get its real metadata, or get it from cache. """
+    assert(self.needMetadataUpdate())
 
     width_sum, height_sum = 0, 0
+    format, width, height = None, None, None
 
     idxs = []
     # only download metadata for the needed images to get full size
@@ -211,7 +221,6 @@ class CoverSourceResult:
     for idx, x, y in idxs:
       url = self.urls[idx]
 
-      cache_miss = True
       try:
         format, width, height = pickle.loads(__class__.metadata_cache[url])
       except KeyError:
@@ -224,9 +233,12 @@ class CoverSourceResult:
       else:
         # cache hit
         logging.getLogger().debug("Got metadata for URL '%s' from cache" % (url))
-        cache_miss = False
+        if format is not None:
+          self.check_metadata &= ~CoverImageMetadata.FORMAT
+        if (width is not None) and (height is not None):
+          self.check_metadata &= ~CoverImageMetadata.SIZE
 
-      if cache_miss:
+      if self.needMetadataUpdate():
         # download
         logging.getLogger().debug("Downloading file header for URL '%s'..." % (url))
         try:
@@ -235,38 +247,59 @@ class CoverSourceResult:
           with contextlib.closing(http.fast_streamed_query(url,
                                                            session=self.source.http_session,
                                                            verify=False)) as response:
-            for new_img_data in response.iter_content(chunk_size=2 ** 12):
-              img_data.extend(new_img_data)
-              metadata = __class__.getImageMetadata(img_data)
-              if (metadata is not None) or (len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE):
-                break
-          if metadata is None:
-            logging.getLogger().debug("Unable to get file metadata from file header for URL '%s', skipping this result" % (url))
+            if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
+              # try to get format from response mime type
+              try:
+                content_type = response.headers["Content-Type"]
+                ext = mimetypes.guess_extension(content_type, strict=False)
+                if ext is not None:
+                  format = SUPPORTED_IMG_FORMATS[ext[1:]]
+                  self.check_metadata &= ~CoverImageMetadata.FORMAT
+              except KeyError:
+                pass
+            if self.needMetadataUpdate():
+              for new_img_data in response.iter_content(chunk_size=2 ** 12):
+                img_data.extend(new_img_data)
+                metadata = __class__.getImageMetadata(img_data)
+                if len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
+                  break
+                if metadata is not None:
+                  format, width, height = metadata
+                  self.check_metadata = CoverImageMetadata.NONE
+                  break
+          if self.needMetadataUpdate():
+            # if we get here, file is probably not reachable, or not even an image
+            logging.getLogger().debug("Unable to get file metadata from file  or HTTP headers for URL '%s', \
+                                       skipping this result" % (url))
             return self  # for use with concurrent.futures
         except Exception as e:
-          logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), falling back to API data" % (url,
-                                                                                                                    e.__class__.__qualname__,
-                                                                                                                    e))
-          self.check_metadata = False
+          logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), \
+                                     falling back to API data" % (url,
+                                                                  e.__class__.__qualname__,
+                                                                  e))
+          self.check_metadata = CoverImageMetadata.NONE
           return self  # for use with concurrent.futures
-
-        # hoorah !
-        format, width, height = metadata
 
         # save it to cache
         __class__.metadata_cache[url] = pickle.dumps((format, width, height))
 
       # sum sizes
-      if y == 0:
-        width_sum += width
-      if x == 0:
-        height_sum += height
+      if (width is not None) and (height is not None):
+        if y == 0:
+          width_sum += width
+        if x == 0:
+          height_sum += height
 
-    self.check_metadata = False
+    self.check_metadata = CoverImageMetadata.NONE
     self.format = format
-    self.size = (width_sum, height_sum)
+    if (width_sum > 0) and (height_sum > 0):
+      self.size = (width_sum, height_sum)
 
     return self  # for use with concurrent.futures
+
+  def needMetadataUpdate(self):
+    """ Return True if image metadata needs to be checked, False instead. """
+    return self.check_metadata != CoverImageMetadata.NONE
 
   def updateSignature(self):
     """ Calculate a cover's "signature" using its thumbnail url. """
@@ -338,6 +371,10 @@ class CoverSourceResult:
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
     """
+    for c in (first, second):
+      assert(c.format is not None)
+      assert(isinstance(c.size[0], int) and isinstance(c.size[1], int))
+
     # prefer square covers #1
     delta_ratio1 = abs(first.size[0] / first.size[1] - 1)
     delta_ratio2 = abs(second.size[0] / second.size[1] - 1)

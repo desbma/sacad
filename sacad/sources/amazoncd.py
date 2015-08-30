@@ -4,7 +4,7 @@ import urllib.parse
 import lxml.cssselect
 import lxml.etree
 
-from sacad.cover import CoverImageFormat, CoverSourceQuality, CoverSourceResult
+from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
 from sacad.sources.base import CoverSource
 
 
@@ -57,7 +57,7 @@ class AmazonCdCoverSource(CoverSource):
       img_url = ".".join((url_parts[0], url_parts[2]))
       # assume size is fixed
       size = (500, 500)
-      check_metadata = True
+      check_metadata = CoverImageMetadata.SIZE
       # try to get higher res image...
       if ((self.target_size > size[0]) and  # ...only if needed
               (rank < 3)):  # and only for first 3 results because this is time consuming (1 GET request per result)
@@ -85,7 +85,7 @@ class AmazonCdCoverSource(CoverSource):
             assert(size_url_hint.startswith("SL"))
             size_url_hint = int(size_url_hint[2:])
             size = (size_url_hint, size_url_hint)
-            check_metadata = False
+            check_metadata = CoverImageMetadata.NONE
           if not cache_hit:
             # add cache entry only when parsing is successful
             CoverSource.api_cache[product_url] = product_page_data

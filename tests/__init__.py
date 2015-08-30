@@ -78,7 +78,8 @@ class TestSacad(unittest.TestCase):
                                       None,
                                       source=source,
                                       thumbnail_url=None,
-                                      source_quality=None)
+                                      source_quality=None,
+                                      check_metadata=sacad.cover.CoverImageMetadata.ALL)
       cover.updateImageMetadata()
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)

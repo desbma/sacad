@@ -2,7 +2,7 @@ import collections
 import os.path
 import xml.etree.ElementTree
 
-from sacad.cover import CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
+from sacad.cover import CoverImageMetadata, CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
 from sacad.sources.base import CoverSource, MAX_THUMBNAIL_SIZE
 
 
@@ -65,7 +65,10 @@ class LastFmCoverSource(CoverSource):
         # last.fm returns empty image tag for size it does not have
         continue
       lfm_size = img_element.get("size")
-      check_metadata = (lfm_size == "mega")
+      if lfm_size == "mega":
+        check_metadata = CoverImageMetadata.SIZE
+      else:
+        check_metadata = CoverImageMetadata.NONE
       try:
         size = __class__.SIZES[lfm_size]
       except KeyError:

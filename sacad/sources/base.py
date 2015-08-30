@@ -73,9 +73,9 @@ class CoverSource(metaclass=abc.ABCMeta):
     # get metadata using thread pool
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
       futures = []
-      for result in filter(operator.attrgetter("check_metadata"), results):
+      for result in filter(operator.methodcaller("needMetadataUpdate"), results):
         futures.append(executor.submit(CoverSourceResult.updateImageMetadata, result))
-      results = list(itertools.filterfalse(operator.attrgetter("check_metadata"), results))
+      results = list(itertools.filterfalse(operator.methodcaller("needMetadataUpdate"), results))
       concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
       # raise first exception in future if any
       for future in futures:
@@ -98,7 +98,7 @@ class CoverSource(metaclass=abc.ABCMeta):
       if ((result.size[0] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or  # skip too small images
               (result.size[1] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or
               (result.format not in CoverImageFormat) or  # unknown format
-              result.check_metadata):  # if still true, it means we failed to grab metadata, so exclude it
+              result.needMetadataUpdate()):  # if still true, it means we failed to grab metadata, so exclude it
         if result.source_quality is CoverSourceQuality.REFERENCE:
           # we keep this result just for the reference, it will be excluded from the results
           result.is_only_reference = True
