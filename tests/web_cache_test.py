@@ -36,10 +36,10 @@ class TestWebCache(unittest.TestCase):
                 table_name = get_random_string(16, string.ascii_letters)
                 with mkstemp_ctx.mkstemp(suffix=".sqlite") as cache_filepath:
                   # init cache
-                  cache = cache_class(table_name,
+                  cache = cache_class(cache_filepath,
+                                      table_name,
                                       caching_strategy=caching_strategy,
                                       expiration=expiration,
-                                      db_filepath=cache_filepath,
                                       compression=compression,
                                       compression_level=compression_level,
                                       safe_mode=sql_crash_safe)
@@ -116,10 +116,10 @@ class TestWebCache(unittest.TestCase):
                 table_name = get_random_string(16, string.ascii_letters)
                 with mkstemp_ctx.mkstemp(suffix=".sqlite") as cache_filepath:
                   # init cache
-                  cache = cache_class(table_name,
+                  cache = cache_class(cache_filepath,
+                                      table_name,
                                       caching_strategy=caching_strategy,
                                       expiration=expiration,
-                                      db_filepath=cache_filepath,
                                       compression=compression,
                                       compression_level=compression_level,
                                       safe_mode=sql_crash_safe)
@@ -152,10 +152,10 @@ class TestWebCache(unittest.TestCase):
           table_name = get_random_string(16, string.ascii_letters)
           with mkstemp_ctx.mkstemp(suffix=".sqlite") as cache_filepath:
             # init cache
-            cache = cache_class(table_name,
+            cache = cache_class(cache_filepath,
+                                table_name,
                                 caching_strategy=caching_strategy,
-                                expiration=expiration,
-                                db_filepath=cache_filepath)
+                                expiration=expiration)
 
             # add items
             for req_type in ("get", "post"):

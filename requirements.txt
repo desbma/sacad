@@ -1,3 +1,4 @@
+appdirs>=1.4.0
 cssselect>=0.9.1
 enum34
 lxml>=3.3.3,<4.0.0

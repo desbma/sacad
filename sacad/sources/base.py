@@ -8,6 +8,8 @@ import tempfile
 import unicodedata
 import urllib.parse
 
+import appdirs
+
 from sacad import api_watcher
 from sacad import http
 from sacad import web_cache
@@ -31,14 +33,17 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                         min_delay_between_accesses=min_delay_between_accesses)
     self.http_session = http.session()
     if not hasattr(__class__, "api_cache"):
-      db_filename = "sacad-cache.sqlite"
+      db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
+                                                        appauthor=False),
+                                 "sacad-cache.sqlite")
+      os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
       cache_name = "cover_source_api_data"
-      __class__.api_cache = web_cache.WebCache(cache_name,
-                                               db_filename=db_filename,
+      __class__.api_cache = web_cache.WebCache(db_filepath,
+                                               cache_name,
                                                caching_strategy=web_cache.CachingStrategy.FIFO,
                                                expiration=60 * 60 * 24 * 90,  # 3 month
                                                compression=web_cache.Compression.DEFLATE)
-      logging.getLogger().debug("Total size of file '%s': %s" % (db_filename,
+      logging.getLogger().debug("Total size of file '%s': %s" % (db_filepath,
                                                                  __class__.api_cache.getDatabaseFileSize()))
       purged_count = __class__.api_cache.purge()
       logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))

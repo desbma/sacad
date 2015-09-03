@@ -10,7 +10,6 @@ import os
 import pickle
 import queue
 import sqlite3
-import tempfile
 import threading
 import zlib
 
@@ -24,16 +23,15 @@ CachingStrategy = enum.Enum("CachingStrategy", ("FIFO", "LRU"))
 
 class WebCache:
 
-  def __init__(self, table_name, *, caching_strategy, expiration=None, db_filepath=None, db_filename=None,
-               compression=None, compression_level=9, safe_mode=False):
+  def __init__(self, db_filepath, table_name, *, caching_strategy, expiration=None, compression=None,
+               compression_level=9, safe_mode=False):
     """
     Args:
+      db_filepath: Database filepath
       table_name: Database table name used for the cache
       caching_strategy: CachingStrategy enum defining how cache entries are removed
       expiration: Cache item lifetime in seconds, used to clean items with the FIFO and LRU strateges, or None if items
         never expire
-      db_filepath: Database filepath. If None, will generate a file in /var/tmp, or default system temp dir
-      db_filename: Database filename. If None, will generate a filename according to the calling script name
       compression: Algorithm used to compress cache items, or None for no compression
       compression_level: Compression level (0-9)
       safe_mode: If False, will enable some optimizations that increase cache write speed, but may compromise cache
@@ -50,16 +48,7 @@ class WebCache:
     if DISABLE_PERSISTENT_CACHING:
       self.__connexion = sqlite3.connect(":memory:")
     else:
-      if db_filepath is None:
-        if db_filename is None:
-          cache_filename = "%s-cache.sqlite" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.stack()[-1][0])))[0])
-        else:
-          cache_filename = db_filename
-        # prefer /var/tmp to /tmp because /tmp is usually wiped out at every boot (or a tmpfs mount) in most Linux distros
-        cache_directory = "/var/tmp" if os.path.isdir("/var/tmp") else tempfile.gettempdir()
-        self.__db_filepath = os.path.join(cache_directory, cache_filename)
-      else:
-        self.__db_filepath = db_filepath
+      self.__db_filepath = db_filepath
       self.__connexion = sqlite3.connect(self.__db_filepath)
 
     # create tables if necessary

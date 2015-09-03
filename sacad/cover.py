@@ -7,10 +7,12 @@ import logging
 import math
 import mimetypes
 import operator
+import os
 import pickle
 import shutil
 import subprocess
 
+import appdirs
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
@@ -78,13 +80,16 @@ class CoverSourceResult:
     self.is_similar_to_reference = False
     self.is_only_reference = False
     if not hasattr(__class__, "image_cache"):
-      cache_filename = "sacad-cache.sqlite"
-      __class__.image_cache = web_cache.ThreadedWebCache("cover_image_data",
-                                                         db_filename=cache_filename,
+      cache_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
+                                                           appauthor=False),
+                                    "sacad-cache.sqlite")
+      os.makedirs(os.path.dirname(cache_filepath), exist_ok=True)
+      __class__.image_cache = web_cache.ThreadedWebCache(cache_filepath,
+                                                         "cover_image_data",
                                                          caching_strategy=web_cache.CachingStrategy.LRU,
                                                          expiration=60 * 60 * 24 * 365)  # 1 year
-      __class__.metadata_cache = web_cache.ThreadedWebCache("cover_metadata",
-                                                            db_filename=cache_filename,
+      __class__.metadata_cache = web_cache.ThreadedWebCache(cache_filepath,
+                                                            "cover_metadata",
                                                             caching_strategy=web_cache.CachingStrategy.LRU,
                                                             expiration=60 * 60 * 24 * 365)  # 1 year
       for cache, cache_name in zip((__class__.image_cache, __class__.metadata_cache),
