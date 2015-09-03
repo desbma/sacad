@@ -68,8 +68,21 @@ class WebCache:
         # enable some optimizations that can cause data corruption in case of power loss or python crash
         self.__connexion.executescript("""PRAGMA journal_mode = MEMORY;
                                           PRAGMA synchronous = OFF;""")
-      self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s (url TEXT PRIMARY KEY, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
-      self.__connexion.execute("CREATE TABLE IF NOT EXISTS %s_post (url TEXT NOT NULL, post_data BLOB NOT NULL, added_timestamp INTEGER NOT NULL, last_accessed_timestamp INTEGER NOT NULL, data BLOB NOT NULL);" % (self.__table_name))
+      self.__connexion.execute("""CREATE TABLE IF NOT EXISTS %s
+                                  (
+                                    url TEXT PRIMARY KEY,
+                                    added_timestamp INTEGER NOT NULL,
+                                    last_accessed_timestamp INTEGER NOT NULL,
+                                    data BLOB NOT NULL
+                                  );""" % (self.__table_name))
+      self.__connexion.execute("""CREATE TABLE IF NOT EXISTS %s_post
+                                  (
+                                    url TEXT NOT NULL,
+                                    post_data BLOB NOT NULL,
+                                    added_timestamp INTEGER NOT NULL,
+                                    last_accessed_timestamp INTEGER NOT NULL,
+                                    data BLOB NOT NULL
+                                  );""" % (self.__table_name))
       self.__connexion.execute("CREATE INDEX IF NOT EXISTS idx ON %s_post(url, post_data);" % (self.__table_name))
 
     # stats
@@ -118,10 +131,15 @@ class WebCache:
     with self.__connexion:
       if post_data is not None:
         post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
-        data = self.__connexion.execute("SELECT data FROM %s_post WHERE url = ? AND post_data = ?;" % (self.__table_name),
+        data = self.__connexion.execute("""SELECT data
+                                           FROM %s_post
+                                           WHERE url = ? AND
+                                                 post_data = ?;""" % (self.__table_name),
                                         (url, post_bin_data)).fetchone()
       else:
-        data = self.__connexion.execute("SELECT data FROM %s WHERE url = ?;" % (self.__table_name),
+        data = self.__connexion.execute("""SELECT data
+                                           FROM %s
+                                           WHERE url = ?;""" % (self.__table_name),
                                         (url,)).fetchone()
     if not data:
       raise KeyError(url_data)
@@ -236,10 +254,15 @@ class WebCache:
     with self.__connexion:
       if post_data is not None:
         post_bin_data = sqlite3.Binary(pickle.dumps(post_data, protocol=3))
-        hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s_post WHERE url = ? AND post_data = ?;" % (self.__table_name),
+        hit = (self.__connexion.execute("""SELECT COUNT(*)
+                                           FROM %s_post
+                                           WHERE url = ? AND
+                                                 post_data = ?;""" % (self.__table_name),
                                         (url, post_bin_data)).fetchall()[0][0] > 0)
       else:
-        hit = (self.__connexion.execute("SELECT COUNT(*) FROM %s WHERE url = ?;" % (self.__table_name),
+        hit = (self.__connexion.execute("""SELECT COUNT(*)
+                                           FROM %s
+                                           WHERE url = ?;""" % (self.__table_name),
                                         (url,)).fetchall()[0][0] > 0)
     if hit:
       self.__hit_count += 1
