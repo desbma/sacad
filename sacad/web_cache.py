@@ -17,13 +17,13 @@ import zlib
 DISABLE_PERSISTENT_CACHING = False  # useful for tests
 
 
-Compression = enum.Enum("Compression", ("DEFLATE", "BZIP2", "LZMA"))
+Compression = enum.Enum("Compression", ("NONE", "DEFLATE", "BZIP2", "LZMA"))
 CachingStrategy = enum.Enum("CachingStrategy", ("FIFO", "LRU"))
 
 
 class WebCache:
 
-  def __init__(self, db_filepath, table_name, *, caching_strategy, expiration=None, compression=None,
+  def __init__(self, db_filepath, table_name, *, caching_strategy, expiration=None, compression=Compression.NONE,
                compression_level=9, safe_mode=False):
     """
     Args:
@@ -32,15 +32,17 @@ class WebCache:
       caching_strategy: CachingStrategy enum defining how cache entries are removed
       expiration: Cache item lifetime in seconds, used to clean items with the FIFO and LRU strateges, or None if items
         never expire
-      compression: Algorithm used to compress cache items, or None for no compression
+      compression: Algorithm used to compress cache items
       compression_level: Compression level (0-9)
       safe_mode: If False, will enable some optimizations that increase cache write speed, but may compromise cache
         integrity in case of Python crash or power loss
     """
     # attribs
     self.__table_name = table_name
+    assert(caching_strategy in CachingStrategy)
     self.__caching_strategy = caching_strategy
     self.__expiration = expiration
+    assert(compression in Compression)
     self.__compression = compression
     self.__compression_level = compression_level
 

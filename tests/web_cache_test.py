@@ -28,7 +28,7 @@ class TestWebCache(unittest.TestCase):
   def test_getSetDelete(self):
     """ Get/set/delete cache items using all cache parameter combinations. """
     for cache_class in (web_cache.WebCache, web_cache.ThreadedWebCache):
-      for compression in (None,) + tuple(web_cache.Compression):
+      for compression in web_cache.Compression:
         for compression_level in range(1, 9):
           for caching_strategy in web_cache.CachingStrategy:
             for expiration in (None, 0, INFINITY):
@@ -108,7 +108,7 @@ class TestWebCache(unittest.TestCase):
   def test_getCacheHitStats(self):
     """ Get cache stats using all cache parameter combinations. """
     for cache_class in (web_cache.WebCache, web_cache.ThreadedWebCache):
-      for compression in (None,) + tuple(web_cache.Compression):
+      for compression in web_cache.Compression:
         for compression_level in range(1, 9):
           for caching_strategy in web_cache.CachingStrategy:
             for expiration in (None, 0, INFINITY):
