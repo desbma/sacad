@@ -62,7 +62,7 @@ sacad/sqlite3.dll: ${PYTHON_INSTALLED}
 
 sacad/LICENSE:
 	mkdir -p $(dir $@)
-	${CURL} https://www.mozilla.org/MPL/2.0/index.txt > $@
+	cp ../LICENSE $@
 
 sacad/readme.txt:
 	mkdir -p $(dir $@)
