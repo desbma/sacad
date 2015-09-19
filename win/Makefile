@@ -70,6 +70,7 @@ sacad/readme.txt:
 
 .requirements: ${PIP_INSTALLED}
 	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip install -r requirements.txt 2> /dev/null > /dev/null
+	${WINE} ${PYTHON_INSTALLED} -c "import enum" 2> /dev/null > /dev/null || ${PYTHON_INSTALLED} -m pip install enum34
 	touch $@
 
 ${WINE_DIR}:
