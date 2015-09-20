@@ -66,9 +66,9 @@ class TestSacad(unittest.TestCase):
     refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
                                                                                          (700, 700),
                                                                                          5),
-            "http://userserve-ak.last.fm/serve/_/48800521/The+Wacken+Carnage.png": (sacad.cover.CoverImageFormat.PNG,
-                                                                                    (600, 600),
-                                                                                    1)}
+            "http://img2-ak.lst.fm/i/u/55ad95c53e6043e3b150ba8a0a3b20a1.png": (sacad.cover.CoverImageFormat.PNG,
+                                                                               (600, 600),
+                                                                               1)}
     for url, (ref_fmt, ref_size, block_read) in refs.items():
       sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
       source = unittest.mock.Mock()
