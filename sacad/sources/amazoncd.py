@@ -18,7 +18,7 @@ class AmazonCdCoverSource(CoverSource):
 
   """ Cover source returning Amazon.com audio CD images. """
 
-  TLDS = ("com", "ca", "fr", "de", "co.jp", "co.uk")
+  TLDS = ("com", "ca", "cn", "fr", "de", "co.jp", "co.uk")
 
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)

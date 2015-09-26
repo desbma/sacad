@@ -4,6 +4,7 @@ import logging
 import socket
 import unittest
 import unittest.mock
+import urllib.parse
 
 import PIL.Image
 import requests
@@ -122,7 +123,9 @@ class TestSacad(unittest.TestCase):
           results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
           if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
                   ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
-                  ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk"))):
+                  ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk")) or
+                  (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
+                   (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
             self.assertGreaterEqual(len(results), 1, "%s %s %s %u" % (source.__class__.__name__,
                                                                       artist,
                                                                       album,
