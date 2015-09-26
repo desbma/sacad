@@ -17,7 +17,7 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, out_filepath):
+def main(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
     logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
@@ -30,6 +30,8 @@ def main(album, artist, format, size, size_tolerance_prct, no_lq_sources, out_fi
                    sources.CoverLibCoverSource(*source_args),
                    sources.AmazonCdCoverSource(*source_args),
                    sources.AmazonDigitalCoverSource(*source_args)]
+  for tld in amazon_tlds:
+    cover_sources.append(sources.AmazonCdCoverSource(*source_args, tld=tld))
   if not no_lq_sources:
     cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
 
@@ -81,6 +83,13 @@ def cl_main():
                           help="""Tolerate this percentage of size difference with the target size.
                                   Note that covers with size above or close to the target size will still be preferred
                                   if available""")
+  arg_parser.add_argument("-a",
+                          "--amazon-sites",
+                          nargs="+",
+                          choices=sources.AmazonCdCoverSource.TLDS[1:],
+                          default=(),
+                          dest="amazon_tlds",
+                          help="""Amazon site TLDs to use as search source, in addition to amazon.com""")
   arg_parser.add_argument("-d",
                           "--disable-low-quality-sources",
                           action="store_true",
@@ -124,6 +133,7 @@ def cl_main():
        args.format,
        args.size,
        args.size_tolerance_prct,
+       args.amazon_tlds,
        args.no_lq_sources,
        args.out_filepath)
 

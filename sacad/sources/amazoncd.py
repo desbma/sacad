@@ -18,7 +18,12 @@ class AmazonCdCoverSource(CoverSource):
 
   """ Cover source returning Amazon.com audio CD images. """
 
-  BASE_URL = "https://www.amazon.com/gp/search"
+  TLDS = ("com", "ca", "fr", "de", "co.jp", "co.uk")
+
+  def __init__(self, *args, tld="com", **kwargs):
+    assert(tld in __class__.TLDS)
+    self.base_url = "https://www.amazon.%s/gp/search" % (tld)
+    super().__init__(*args, **kwargs)
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
@@ -27,7 +32,7 @@ class AmazonCdCoverSource(CoverSource):
     params["field-artist"] = __class__.unaccentuate(artist.lower())
     params["field-title"] = __class__.unaccentuate(album.lower())
     params["sort"] = "relevancerank"
-    return __class__.assembleUrl(__class__.BASE_URL, params)
+    return __class__.assembleUrl(self.base_url, params)
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """
@@ -40,7 +45,7 @@ class AmazonCdCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
-    results_selector = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
+    results_selector = lxml.cssselect.CSSSelector("#atfResults li.s-result-item")
     img_selector = lxml.cssselect.CSSSelector("img.s-access-image")
     product_link_selector = lxml.cssselect.CSSSelector("a.s-access-detail-page")
     product_page_img_selector = lxml.cssselect.CSSSelector("img#landingImage")

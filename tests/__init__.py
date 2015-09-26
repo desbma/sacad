@@ -53,7 +53,7 @@ class TestSacad(unittest.TestCase):
         for size_tolerance in (0, 25, 50):
           with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
                                          suffix=".%s" % (format.name.lower())) as tmp_filepath:
-            sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, False, tmp_filepath)
+            sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, (), False, tmp_filepath)
             out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
             self.assertEqual(out_format, format)
             self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
@@ -111,11 +111,11 @@ class TestSacad(unittest.TestCase):
     """ Check all sources return valid results with different parameters. """
     for size in range(300, 1200 + 1, 300):
       source_args = (size, 0)
-      sources = (sacad.sources.LastFmCoverSource(*source_args),
+      sources = [sacad.sources.LastFmCoverSource(*source_args),
                  sacad.sources.CoverLibCoverSource(*source_args),
-                 sacad.sources.AmazonCdCoverSource(*source_args),
                  sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
-                 sacad.sources.AmazonDigitalCoverSource(*source_args))
+                 sacad.sources.AmazonDigitalCoverSource(*source_args)]
+      sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
       for source in sources:
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
           results = source.search(album, artist)
@@ -131,6 +131,16 @@ class TestSacad(unittest.TestCase):
             self.assertTrue(result.urls)
             self.assertIn(result.format, sacad.cover.CoverImageFormat)
             self.assertGreaterEqual(result.size[0], size)
+
+    # test for specific cover not available on amazon.com, but on amazon.de
+    size = 300
+    source = sacad.sources.AmazonCdCoverSource(size, 0, tld="de")
+    results = source.search("Dream Dance 5", "Various")
+    self.assertGreaterEqual(len(results), 1)
+    for result in results:
+      self.assertTrue(result.urls)
+      self.assertIn(result.format, sacad.cover.CoverImageFormat)
+      self.assertGreaterEqual(result.size[0], size)
 
 
 if __name__ == "__main__":

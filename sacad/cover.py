@@ -504,6 +504,26 @@ class CoverSourceResult:
     # remove results that are only refs
     results = list(itertools.filterfalse(operator.attrgetter("is_only_reference"), results))
 
+    # remove duplicates
+    no_dup_results = []
+    for result in results:
+      is_dup = False
+      for result_comp in results:
+        if ((result_comp is not result) and
+            (result_comp.urls == result.urls) and
+            (__class__.compare(result,
+                               result_comp,
+                               target_size=target_size,
+                               size_tolerance_prct=size_tolerance_prct) < 0)):
+          is_dup = True
+          break
+      if not is_dup:
+        no_dup_results.append(result)
+    dup_count = len(results) - len(no_dup_results)
+    if dup_count > 0:
+      logging.getLogger().info("Removed %u duplicate results" % (dup_count))
+      results = no_dup_results
+
     if reference is not None:
       logging.getLogger().info("Reference is: %s" % (reference))
       reference.is_similar_to_reference = True
