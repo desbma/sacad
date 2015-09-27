@@ -17,7 +17,7 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def main(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
+def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
     logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
@@ -131,15 +131,15 @@ def cl_main():
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
 
-  # main
-  main(args.album,
-       args.artist,
-       args.format,
-       args.size,
-       args.size_tolerance_prct,
-       args.amazon_tlds,
-       args.no_lq_sources,
-       args.out_filepath)
+  # search and download
+  search_and_download(args.album,
+                      args.artist,
+                      args.format,
+                      args.size,
+                      args.size_tolerance_prct,
+                      args.amazon_tlds,
+                      args.no_lq_sources,
+                      args.out_filepath)
 
 
 if getattr(sys, "frozen", False):
