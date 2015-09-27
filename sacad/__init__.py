@@ -62,19 +62,7 @@ def main(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_so
       break
 
 
-def cl_main():
-  # parse args
-  arg_parser = argparse.ArgumentParser(description="SACAD v%s. Search and download an album cover." % (__version__),
-                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  arg_parser.add_argument("artist",
-                          help="Artist to search for")
-  arg_parser.add_argument("album",
-                          help="Album to search for")
-  arg_parser.add_argument("size",
-                          type=int,
-                          help="Target image size")
-  arg_parser.add_argument("out_filepath",
-                          help="Output image file")
+def setup_common_args(arg_parser):
   arg_parser.add_argument("-t",
                           "--size-tolerance",
                           type=int,
@@ -98,6 +86,22 @@ def cl_main():
                           help="""Disable cover sources that may return unreliable results (ie. Google Images).
                                   It will speed up search and improve reliability, but may fail to find results for
                                   some difficult searches.""")
+
+
+def cl_main():
+  # parse args
+  arg_parser = argparse.ArgumentParser(description="SACAD v%s. Search and download an album cover." % (__version__),
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  arg_parser.add_argument("artist",
+                          help="Artist to search for")
+  arg_parser.add_argument("album",
+                          help="Album to search for")
+  arg_parser.add_argument("size",
+                          type=int,
+                          help="Target image size")
+  arg_parser.add_argument("out_filepath",
+                          help="Output image filepath")
+  setup_common_args(arg_parser)
   arg_parser.add_argument("-v",
                           "--verbosity",
                           choices=("quiet", "warning", "normal", "debug"),
