@@ -47,11 +47,10 @@ def get_metadata(audio_filepaths):
     mf = mutagen.File(audio_filepath)
     if mf is None:
       continue
-    artist = mf.get("artist", None)
+    artist = mf.get("albumartist",
+                    mf.get("artist", None))
     album = mf.get("album", None)
-    # TODO error handling
-    # TODO handle album artist
-    break  # consider the first file that succeeds for performance
+    break  # stop at the first file that succeeds for performance
   return artist, album
 
 
