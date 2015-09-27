@@ -5,7 +5,9 @@
 import argparse
 import collections
 import itertools
+import logging
 import os
+import shutil
 import time
 
 import mutagen
@@ -49,8 +51,12 @@ def get_metadata(audio_filepaths):
       continue
     artist = mf.get("albumartist",
                     mf.get("artist", None))
+    if artist is not None:
+      artist = artist[0]
     album = mf.get("album", None)
-    break  # stop at the first file that succeeds for performance
+    if album is not None:
+      album = album[0]
+    break  # stop at the first file that succeeds (for performance)
   return artist, album
 
 
@@ -81,12 +87,54 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, scrobbler, tim
 def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False):
   """ Display analysis global progress. """
   now = time.time()
-  if end or (now - time_progress_shown > 0.1):  # do not refresh display at each call for performance
+  # TODO test tty
+  if end or (now - time_progress_shown > 0.1):  # do not refresh display at each call (for performance)
     time_progress_shown = now
     print("Analyzing library %s | %s" % (next(scrobbler) if not end else "-",
                                          "  ".join(("%u %s" % (v, k)) for k, v in stats.items())),
           end="\r" if not end else "\n")
   return time_progress_shown
+
+
+def get_covers(work, args):
+  """ Get missing covers. """
+  stats = collections.OrderedDict(((k, 0) for k in("ok", "no result found")))
+  for i, (path, (artist, album)) in enumerate(work.items()):
+    # update progress
+    show_get_covers_progress(i,
+                             len(work),
+                             stats,
+                             artist=artist,
+                             album=album)
+
+    # search and download
+    status = sacad.search_and_download(album,
+                                       artist,
+                                       args.format,
+                                       args.size,
+                                       args.size_tolerance_prct,
+                                       args.amazon_tlds,
+                                       args.no_lq_sources,
+                                       os.path.join(path, args.filename))
+    if status:
+      stats["ok"] += 1
+    else:
+      stats["no result found"] += 1
+  if work:
+    show_get_covers_progress(i + 1, len(work), stats, end=True)
+
+
+def show_get_covers_progress(current_idx, total_count, stats, *, artist=None, album=None, end=False):
+  """ Display search and download global progress. """
+  # TODO test tty
+  line_width = shutil.get_terminal_size(fallback=(80, 0))[0] - 1
+  print(" " * line_width, end="\r")
+  print("Searching and downloading covers %u%% (%u/%u)%s | %s" % (current_idx // total_count,
+                                                                  current_idx,
+                                                                  total_count,
+                                                                  (" | Current album: '%s' '%s'" % (artist, album)) if not end else "",
+                                                                  "  ".join(("%u %s" % (v, k)) for k, v in stats.items())),
+        end="\r" if not end else "\n")
 
 
 def cl_main():
@@ -110,5 +158,9 @@ def cl_main():
     print("Unable to guess image format from extension, or unknown format: %s" % (args.format))
     exit(1)
 
-  # run
-  analyze_lib(args.lib_dir, args.filename)
+  # silence the logger
+  logging.getLogger().setLevel(logging.ERROR)
+
+  # do the job
+  work = analyze_lib(args.lib_dir, args.filename)
+  get_covers(work, args)

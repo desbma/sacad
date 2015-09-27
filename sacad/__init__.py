@@ -18,6 +18,7 @@ from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED
 
 
 def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
+  """ Search and download a cover, return True if success, False instead. """
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
     logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
@@ -59,7 +60,9 @@ def search_and_download(album, artist, format, size, size_tolerance_prct, amazon
                                                                     e))
       continue
     else:
-      break
+      return True
+
+  return False
 
 
 def setup_common_args(arg_parser):
