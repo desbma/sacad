@@ -20,4 +20,6 @@ setup(name="sacad",
       packages=["sacad"],
       options={"build_exe": build_exe_options},
       executables=[Executable(os.path.join("sacad", "__main__.py"),
-                              targetName="sacad.exe")])
+                              targetName="sacad.exe"),
+                   Executable(os.path.join("sacad", "recurse.py"),
+                              targetName="sacad_r.exe")])
