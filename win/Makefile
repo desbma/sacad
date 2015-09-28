@@ -33,7 +33,7 @@ TEST_LIB_DIR := ${WINE_DIR}/drive_c/zic
 
 all:: sacad_win.7z sacad_win.zip sacad_win.exe
 
-test:: test.jpg $TEST_LIB_DIR/test.png
+test:: test.jpg ${TEST_LIB_DIR}/test.png
 
 print-%:
 	@echo $*=$($*)
@@ -50,10 +50,10 @@ sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} $< "neu" "neu 2" 1000 $@
 
-$TEST_LIB_DIR/test.png: $TEST_LIB_DIR/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	cd .. && ${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
 
-$TEST_LIB_DIR/zic.ogg:
+${TEST_LIB_DIR}/zic.ogg:
 	mkdir -p $(dir $@)
 	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
 
