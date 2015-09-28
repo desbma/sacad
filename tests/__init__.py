@@ -10,6 +10,7 @@ import PIL.Image
 import requests
 
 import sacad
+from . import recurse_test
 
 
 sacad.web_cache.DISABLE_PERSISTENT_CACHING = True

@@ -8,6 +8,7 @@ import itertools
 import logging
 import os
 import shutil
+import sys
 import time
 
 import mutagen
@@ -29,7 +30,7 @@ AUDIO_EXTENSIONS = ("aac",
 
 def analyze_lib(lib_dir, cover_filename):
   """ Recursively analyze library, and return a dict of path -> (artist, album). """
-  work = collections.OrderedDict()
+  work = {}
   scrobbler = itertools.cycle("|/-\\")
   stats = collections.OrderedDict(((k, 0) for k in("dirs", "files", "albums", "missing covers", "errors")))
   time_progress_shown = show_analyze_progress(stats, scrobbler)
@@ -89,8 +90,8 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, scrobbler, tim
 def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False):
   """ Display analysis global progress. """
   now = time.time()
-  # TODO test tty
-  if end or (now - time_progress_shown > 0.1):  # do not refresh display at each call (for performance)
+  if (sys.stdout.isatty() and
+     (end or (now - time_progress_shown > 0.1))):  # do not refresh display at each call (for performance)
     time_progress_shown = now
     print("Analyzing library %s | %s" % (next(scrobbler) if not end else "-",
                                          "  ".join(("%u %s" % (v, k)) for k, v in stats.items())),
@@ -128,7 +129,8 @@ def get_covers(work, args):
 
 def show_get_covers_progress(current_idx, total_count, stats, *, artist=None, album=None, end=False):
   """ Display search and download global progress. """
-  # TODO test tty
+  if not sys.stdout.isatty():
+    return
   line_width = shutil.get_terminal_size(fallback=(80, 0))[0] - 1
   print(" " * line_width, end="\r")
   print("Searching and downloading covers %u%% (%u/%u)%s | %s" % (current_idx // total_count,
