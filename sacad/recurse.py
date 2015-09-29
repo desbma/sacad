@@ -133,7 +133,7 @@ def show_get_covers_progress(current_idx, total_count, stats, *, artist=None, al
     return
   line_width = shutil.get_terminal_size(fallback=(80, 0))[0] - 1
   print(" " * line_width, end="\r")
-  print("Searching and downloading covers %u%% (%u/%u)%s | %s" % (current_idx // total_count,
+  print("Searching and downloading covers %u%% (%u/%u)%s | %s" % (100 * current_idx // total_count,
                                                                   current_idx,
                                                                   total_count,
                                                                   (" | Current album: '%s' '%s'" % (artist, album)) if not end else "",
