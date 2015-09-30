@@ -87,8 +87,8 @@ Run `sacad -h` to get full command line reference.
 Adding a new cover source is very easy if you speak Python, you need to inherit the `CoverSource` class and implement the following methods:
 
 * `getSearchUrl(self, album, artist)`
-* `updateHttpHeaders(self, headers)`
 * `parseResults(self, api_data)`
+* `updateHttpHeaders(self, headers)` (optional)
 
 See comments in the code for more information.
 

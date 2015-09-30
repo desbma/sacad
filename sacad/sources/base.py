@@ -179,7 +179,6 @@ class CoverSource(metaclass=abc.ABCMeta):
     """
     pass
 
-  @abc.abstractmethod
   def updateHttpHeaders(self, headers):
     """ Add API specific HTTP headers. """
     pass

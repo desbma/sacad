@@ -40,10 +40,6 @@ class LastFmCoverSource(CoverSource):
 
     return __class__.assembleUrl(__class__.BASE_URL, params)
 
-  def updateHttpHeaders(self, headers):
-    """ See CoverSource.updateHttpHeaders. """
-    pass
-
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []

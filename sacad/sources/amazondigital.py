@@ -34,10 +34,6 @@ class AmazonDigitalCoverSource(CoverSource):
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(url, params)
 
-  def updateHttpHeaders(self, headers):
-    """ See CoverSource.updateHttpHeaders. """
-    pass
-
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
