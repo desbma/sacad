@@ -28,6 +28,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                       appauthor=False),
                                "api_watcher_%s.sqlite" % (self.__class__.__name__.lower()))
+    os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
     self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),
                                                         db_filepath=db_filepath,
                                                         min_delay_between_accesses=min_delay_between_accesses)
