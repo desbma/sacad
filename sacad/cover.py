@@ -296,7 +296,8 @@ class CoverSourceResult:
           height_sum += height
 
     self.check_metadata = CoverImageMetadata.NONE
-    self.format = format
+    if format is not None:
+      self.format = format
     if (width_sum > 0) and (height_sum > 0):
       self.size = (width_sum, height_sum)
 
