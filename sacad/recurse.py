@@ -4,6 +4,7 @@
 
 import argparse
 import collections
+import concurrent.futures
 import itertools
 import logging
 import os
@@ -101,28 +102,35 @@ def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False)
 
 def get_covers(work, args):
   """ Get missing covers. """
-  stats = collections.OrderedDict(((k, 0) for k in("ok", "no result found")))
-  for i, (path, (artist, album)) in enumerate(work.items()):
-    # update progress
-    show_get_covers_progress(i,
-                             len(work),
-                             stats,
-                             artist=artist,
-                             album=album)
+  with concurrent.futures.ProcessPoolExecutor() as executor:
+    # post work
+    futures = {}
+    for path, (artist, album) in work.items():
+      future = executor.submit(sacad.search_and_download,
+                               album,
+                               artist,
+                               args.format,
+                               args.size,
+                               args.size_tolerance_prct,
+                               args.amazon_tlds,
+                               args.no_lq_sources,
+                               os.path.join(path, args.filename))
+      futures[future] = (artist, album)
 
-    # search and download
-    status = sacad.search_and_download(album,
-                                       artist,
-                                       args.format,
-                                       args.size,
-                                       args.size_tolerance_prct,
-                                       args.amazon_tlds,
-                                       args.no_lq_sources,
-                                       os.path.join(path, args.filename))
-    if status:
-      stats["ok"] += 1
-    else:
-      stats["no result found"] += 1
+    # follow progress
+    stats = collections.OrderedDict(((k, 0) for k in("ok", "no result found")))
+    for i, future in enumerate(concurrent.futures.as_completed(futures)):
+      artist, album = futures[future]
+      status = future.result()
+      show_get_covers_progress(i,
+                               len(work),
+                               stats,
+                               artist=artist,
+                               album=album)
+      if status:
+        stats["ok"] += 1
+      else:
+        stats["no result found"] += 1
   if work:
     show_get_covers_progress(i + 1, len(work), stats, end=True)
 
