@@ -24,21 +24,24 @@ PIP_INSTALLED      := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/
 LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site-packages/lxml/__init__.py
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
+# test
+TEST_LIB_DIR := ${WINE_DIR}/drive_c/zic
+
 
 .PHONY: all test
 
 
 all:: sacad_win.7z sacad_win.zip sacad_win.exe
 
-test:: test.jpg
+test:: test.jpg ${TEST_LIB_DIR}/test.png
 
 print-%:
 	@echo $*=$($*)
 
-sacad_win.7z: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+sacad_win.7z: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -t7z -mx9 $@ sacad > /dev/null
 
-sacad_win.zip: sacad/sacad.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+sacad_win.zip: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -tzip -mx9 $@ sacad > /dev/null
 
 sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
@@ -46,6 +49,13 @@ sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 
 test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} $< "neu" "neu 2" 1000 $@
+
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
+
+${TEST_LIB_DIR}/zic.ogg:
+	mkdir -p $(dir $@)
+	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
 
 sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	mkdir -p $(dir $@)

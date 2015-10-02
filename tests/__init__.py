@@ -10,6 +10,7 @@ import PIL.Image
 import requests
 
 import sacad
+from . import recurse_test
 
 
 sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
@@ -54,7 +55,14 @@ class TestSacad(unittest.TestCase):
         for size_tolerance in (0, 25, 50):
           with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
                                          suffix=".%s" % (format.name.lower())) as tmp_filepath:
-            sacad.main("Master of Puppets", "Metallica", format, size, size_tolerance, (), False, tmp_filepath)
+            sacad.search_and_download("Master of Puppets",
+                                      "Metallica",
+                                      format,
+                                      size,
+                                      size_tolerance,
+                                      (),
+                                      False,
+                                      tmp_filepath)
             out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
             self.assertEqual(out_format, format)
             self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)

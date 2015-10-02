@@ -17,7 +17,8 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def main(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
+def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
+  """ Search and download a cover, return True if success, False instead. """
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
     logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
@@ -59,22 +60,12 @@ def main(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_so
                                                                     e))
       continue
     else:
-      break
+      return True
+
+  return False
 
 
-def cl_main():
-  # parse args
-  arg_parser = argparse.ArgumentParser(description="SACAD v%s. Search and download an album cover." % (__version__),
-                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  arg_parser.add_argument("artist",
-                          help="Artist to search for")
-  arg_parser.add_argument("album",
-                          help="Album to search for")
-  arg_parser.add_argument("size",
-                          type=int,
-                          help="Target image size")
-  arg_parser.add_argument("out_filepath",
-                          help="Output image file")
+def setup_common_args(arg_parser):
   arg_parser.add_argument("-t",
                           "--size-tolerance",
                           type=int,
@@ -98,6 +89,22 @@ def cl_main():
                           help="""Disable cover sources that may return unreliable results (ie. Google Images).
                                   It will speed up search and improve reliability, but may fail to find results for
                                   some difficult searches.""")
+
+
+def cl_main():
+  # parse args
+  arg_parser = argparse.ArgumentParser(description="SACAD v%s. Search and download an album cover." % (__version__),
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+  arg_parser.add_argument("artist",
+                          help="Artist to search for")
+  arg_parser.add_argument("album",
+                          help="Album to search for")
+  arg_parser.add_argument("size",
+                          type=int,
+                          help="Target image size")
+  arg_parser.add_argument("out_filepath",
+                          help="Output image filepath")
+  setup_common_args(arg_parser)
   arg_parser.add_argument("-v",
                           "--verbosity",
                           choices=("quiet", "warning", "normal", "debug"),
@@ -127,15 +134,15 @@ def cl_main():
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
 
-  # main
-  main(args.album,
-       args.artist,
-       args.format,
-       args.size,
-       args.size_tolerance_prct,
-       args.amazon_tlds,
-       args.no_lq_sources,
-       args.out_filepath)
+  # search and download
+  search_and_download(args.album,
+                      args.artist,
+                      args.format,
+                      args.size,
+                      args.size_tolerance_prct,
+                      args.amazon_tlds,
+                      args.no_lq_sources,
+                      args.out_filepath)
 
 
 if getattr(sys, "frozen", False):

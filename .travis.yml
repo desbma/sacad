@@ -34,8 +34,8 @@ deploy:
       - "win/sacad_win.exe"
     skip_cleanup: true
     on:
-      repo: "desbma/sacad"
       tags: true
+      branch: master
       python: "3.3"
   - provider: pypi
     user: desbma
@@ -43,6 +43,7 @@ deploy:
       secure: "WJGhFJrX/S42EhXIj6oEmOxEoMSHLAtVyZe7EQm0ho5A5MH0NR64H8pPlrPuzHl/AZmxiSz/70G5xGlV6anaxjEOH8FFQ+lrjwgp0H4a1hVImFUZi45QHRq1E2GhzxMEsaAq1K5BdAYXOkIHCa4+jsFbZRcrDNO72jCIJfvX1q0="
     on:
       tags: true
+      branch: master
       python: "3.4"
 notifications:
   email:
