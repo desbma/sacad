@@ -11,6 +11,8 @@ Smart Automatic Cover Art Downloader
 
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
+**Since version 1.6.0, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically.**
+
 
 ## Features
 
@@ -33,9 +35,10 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 * HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
 * When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
-* Use multithreading when relevant, to speed up processing
-* Automatically reuse TCP connections (HTTP Keep-Alive)
+* Use multiple threads or processes automatically when relevant, to speed up processing
+* Automatically reuse TCP connections (HTTP Keep-Alive), for better performance
 * Automatically retry failed HTTP requests
+* Music library scan supports all common audio formats (MP3, AAC, Vorbis, FLAC..)
 * Cover sources page or API changes are quickly detected, thanks to high test coverage, and SACAD is quickly updated accordingly
 
 
@@ -72,9 +75,15 @@ Note that depending of the speed of your CPU, crunching may significantly slow d
 
 ## Command line usage
 
+Two tools are provided: `sacad` to search and download one cover, and `sacad_r` to scan a music library and download all missing covers.
+
+Run `sacad -h` / `sacad_r -h` to get full command line reference.
+
+#### Examples
+
 To download the cover of _Master of Puppets_ from _Metallica_, to the file `AlbumArt.jpg`, targetting ~ 600x600 pixel resolution: `sacad 'metallica' 'master of puppets' 600 AlbumArt.jpg`.
 
-Run `sacad -h` to get full command line reference.
+To download covers for your library with the same parameters as previous example: `sacad_r library_directory 600 AlbumArt.jpg`.
 
 
 ## Limitations
@@ -84,7 +93,7 @@ Run `sacad -h` to get full command line reference.
 
 ## Adding cover sources
 
-Adding a new cover source is very easy if you speak Python, you need to inherit the `CoverSource` class and implement the following methods:
+Adding a new cover source is very easy if you are a Python developer, you need to inherit the `CoverSource` class and implement the following methods:
 
 * `getSearchUrl(self, album, artist)`
 * `parseResults(self, api_data)`
