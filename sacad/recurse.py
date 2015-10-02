@@ -115,24 +115,38 @@ def get_covers(work, args):
                                args.amazon_tlds,
                                args.no_lq_sources,
                                os.path.join(path, args.filename))
-      futures[future] = (artist, album)
+      futures[future] = (path, artist, album)
 
     # follow progress
-    stats = collections.OrderedDict(((k, 0) for k in("ok", "no result found")))
+    stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
+    errors = []
+    not_found = []
     for i, future in enumerate(concurrent.futures.as_completed(futures)):
-      artist, album = futures[future]
-      status = future.result()
+      path, artist, album = futures[future]
+      try:
+        status = future.result()
+      except:
+        stats["errors"] += 1
+        errors.append((path, artist, album))
+      else:
+        if status:
+          stats["ok"] += 1
+        else:
+          stats["no result found"] += 1
+          not_found.append((path, artist, album))
       show_get_covers_progress(i,
                                len(work),
                                stats,
                                artist=artist,
                                album=album)
-      if status:
-        stats["ok"] += 1
-      else:
-        stats["no result found"] += 1
   if work:
     show_get_covers_progress(i + 1, len(work), stats, end=True)
+  for path, artist, album in not_found:
+    print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
+  for path, artist, album in errors:
+    print("Error occured while searching cover for '%s' by '%s' from '%s'" % (album, artist, path))
+  if errors:
+    print("Please report this at https://github.com/desbma/sacad/issues")
 
 
 def show_get_covers_progress(current_idx, total_count, stats, *, artist=None, album=None, end=False):
