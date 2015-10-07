@@ -38,6 +38,11 @@ test:: test.jpg ${TEST_LIB_DIR}/test.png
 print-%:
 	@echo $*=$($*)
 
+
+#
+# End targets
+#
+
 sacad_win.7z: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	7z a -t7z -mx9 $@ sacad > /dev/null
 
@@ -47,15 +52,10 @@ sacad_win.zip: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt 
 sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 	cat $^ > $@
 
-test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	${WINE} $< "neu" "neu 2" 1000 $@
 
-${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
-
-${TEST_LIB_DIR}/zic.ogg:
-	mkdir -p $(dir $@)
-	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
+#
+# Intermediate targets
+#
 
 sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	mkdir -p $(dir $@)
@@ -77,6 +77,22 @@ sacad/LICENSE:
 sacad/readme.txt:
 	mkdir -p $(dir $@)
 	echo 'Get source, help and latest version at: https://github.com/desbma/sacad' > $@
+
+
+#
+# Tests
+#
+
+test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	${WINE} $< "neu" "neu 2" 1000 $@
+
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
+
+
+#
+# Installations
+#
 
 .requirements: ${PIP_INSTALLED}
 	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip install -r requirements.txt 2> /dev/null > /dev/null
@@ -107,6 +123,11 @@ ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
 	${WINE} msiexec /i $< /qb INSTALLDIR='c:\7-Zip' 2> /dev/null
 	touch $@
 
+
+#
+# Downloads
+#
+
 ${PYTHON_INSTALLER}:
 	${CURL} http://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
 
@@ -122,10 +143,18 @@ ${LXML_INSTALLER}:
 ${7ZIP_INSTALLER}:
 	${CURL} http://www.7-zip.org/a/7z938.msi > $@
 
+${TEST_LIB_DIR}/zic.ogg:
+	mkdir -p $(dir $@)
+	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
+
+
+#
+# Clean
+#
+
 clean:
 	@-rm -Rvf ${WINE_DIR}
 	@-rm -vf ${PYTHON_INSTALLER} ${CXFREEZE_INSTALLER} ${PIP_INSTALLER} ${LXML_INSTALLER} ${7ZIP_INSTALLER}
 	@-rm -Rvf sacad .requirements
-	@-rm -Rvf 7z920_extra.7z 7z920_extra
 	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
 	@-rm -vf test.jpg
