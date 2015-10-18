@@ -6,6 +6,7 @@ python:
   - "3.4"
   - "3.5"
 before_install:
+  - "sudo apt-get -q update"
   - "pip install -U pip"
 install:
   - "sudo apt-get -V install libxml2-dev libxslt1-dev"  # lxml dependencies
