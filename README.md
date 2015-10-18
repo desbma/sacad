@@ -79,7 +79,7 @@ Two tools are provided: `sacad` to search and download one cover, and `sacad_r` 
 
 Run `sacad -h` / `sacad_r -h` to get full command line reference.
 
-#### Examples
+### Examples
 
 To download the cover of _Master of Puppets_ from _Metallica_, to the file `AlbumArt.jpg`, targetting ~ 600x600 pixel resolution: `sacad 'metallica' 'master of puppets' 600 AlbumArt.jpg`.
 
