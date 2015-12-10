@@ -142,7 +142,7 @@ class TestSacad(unittest.TestCase):
             self.assertGreaterEqual(result.size[0], size)
 
     # test for specific cover not available on amazon.com, but on amazon.de
-    size = 300
+    size = 290
     source = sacad.sources.AmazonCdCoverSource(size, 0, tld="de")
     results = source.search("Dream Dance 5", "Various")
     self.assertGreaterEqual(len(results), 1)
