@@ -121,7 +121,6 @@ class TestSacad(unittest.TestCase):
     for size in range(300, 1200 + 1, 300):
       source_args = (size, 0)
       sources = [sacad.sources.LastFmCoverSource(*source_args),
-                 sacad.sources.CoverLibCoverSource(*source_args),
                  sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
                  sacad.sources.AmazonDigitalCoverSource(*source_args)]
       sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
@@ -131,7 +130,6 @@ class TestSacad(unittest.TestCase):
           results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
           if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
                   ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
-                  ((size >= 1200) and isinstance(source, sacad.sources.CoverLibCoverSource) and (artist == "Björk")) or
                   (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
                    (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
             self.assertGreaterEqual(len(results), 1, "%s %s %s %u" % (source.__class__.__name__,
