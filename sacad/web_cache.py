@@ -86,7 +86,7 @@ class WebCache:
       return "?"
     size = os.path.getsize(self.__db_filepath)
     if size > 1000000000:
-      size = "%0.2fGB" % (size / 1000000000)
+      size = "%0.3fGB" % (size / 1000000000)
     elif size > 1000000:
       size = "%0.2fMB" % (size / 1000000)
     elif size > 1000:
