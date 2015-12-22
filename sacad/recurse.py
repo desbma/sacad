@@ -90,7 +90,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, scrobbler, tim
 
 def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False):
   """ Display analysis global progress. """
-  now = time.time()
+  now = time.monotonic()
   if (sys.stdout.isatty() and
      (end or (now - time_progress_shown > 0.1))):  # do not refresh display at each call (for performance)
     time_progress_shown = now
