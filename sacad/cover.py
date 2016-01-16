@@ -591,7 +591,7 @@ class CoverSourceResult:
       logging.getLogger().debug("Non square thumbnail after resize to %ux%u, unable to compute signature" % target_size)
       return None
     img = img.convert(mode="RGB")
-    return tuple(img.getdata())
+    return bytes(itertools.chain.from_iterable(img.getdata()))
 
   @staticmethod
   def areImageSigsSimilar(sig1, sig2):
@@ -603,13 +603,6 @@ class CoverSourceResult:
     Stupid simple, but it seems to work pretty well.
 
     """
-    delta = 0
-    for x in range(__class__.IMG_SIG_SIZE):
-      for y in range(__class__.IMG_SIG_SIZE):
-        p1 = sig1[x * __class__.IMG_SIG_SIZE + y]
-        p2 = sig2[x * __class__.IMG_SIG_SIZE + y]
-        assert(len(p1) == len(p2) == 3)
-        for c1, c2 in zip(p1, p2):
-          delta += ((c1 - c2) ** 2) / 3
-    delta = delta / (__class__.IMG_SIG_SIZE * __class__.IMG_SIG_SIZE)
+    delta = sum((b1 - b2) ** 2 for b1, b2 in zip(sig1, sig2))
+    delta = delta / (__class__.IMG_SIG_SIZE * __class__.IMG_SIG_SIZE * 3)
     return delta < 3000
