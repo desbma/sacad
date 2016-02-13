@@ -276,9 +276,13 @@ class CoverSourceResult:
                   break
                 if metadata is not None:
                   format, width, height = metadata
-                  self.check_metadata = CoverImageMetadata.NONE
+                  if idx == idxs[-1][0]:
+                    self.check_metadata = CoverImageMetadata.NONE
+                  else:
+                    # we may need to check size for other URLs
+                    self.check_metadata &= ~CoverImageMetadata.FORMAT
                   break
-          if self.needMetadataUpdate():
+          if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
             # if we get here, file is probably not reachable, or not even an image
             logging.getLogger().debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
                                       "skipping this result" % (url))
