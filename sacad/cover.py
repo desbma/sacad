@@ -280,12 +280,12 @@ class CoverSourceResult:
                   break
           if self.needMetadataUpdate():
             # if we get here, file is probably not reachable, or not even an image
-            logging.getLogger().debug("Unable to get file metadata from file  or HTTP headers for URL '%s', \
-                                       skipping this result" % (url))
+            logging.getLogger().debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
+                                      "skipping this result" % (url))
             return self  # for use with concurrent.futures
         except Exception as e:
-          logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), \
-                                     falling back to API data" % (url,
+          logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), "
+                                    "falling back to API data" % (url,
                                                                   e.__class__.__qualname__,
                                                                   e))
           self.check_metadata = CoverImageMetadata.NONE
