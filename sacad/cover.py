@@ -193,7 +193,7 @@ class CoverSourceResult:
     out_bytes = io.BytesIO()
     if new_size is not None:
       logging.getLogger().info("Resizing from %ux%u to %ux%u..." % (self.size[0], self.size[1], new_size, new_size))
-      img = img.resize((new_size, new_size))
+      img = img.resize((new_size, new_size), PIL.Image.LANCZOS)
       # apply unsharp filter to remove resize blur (equivalent to (images/graphics)magick -unsharp 1.5x1+0.7+0.02)
       # we don't use PIL.ImageFilter.SHARPEN or PIL.ImageEnhance.Sharpness because we want precise control over
       # parameters
@@ -590,7 +590,7 @@ class CoverSourceResult:
     parser.feed(image_data)
     img = parser.close()
     target_size = (__class__.IMG_SIG_SIZE, __class__.IMG_SIG_SIZE)
-    img.thumbnail(target_size, PIL.Image.ANTIALIAS)
+    img.thumbnail(target_size, PIL.Image.BICUBIC)
     if img.size != target_size:
       logging.getLogger().debug("Non square thumbnail after resize to %ux%u, unable to compute signature" % target_size)
       return None
