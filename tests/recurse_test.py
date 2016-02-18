@@ -28,6 +28,7 @@ except AttributeError:
       sys.stdout = original_stdout
 
 
+@unittest.skip
 class TestRecursive(unittest.TestCase):
 
   @classmethod

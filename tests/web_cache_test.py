@@ -23,6 +23,7 @@ def get_random_string(length, chars=string.ascii_letters + string.digits):
   return "".join(random.choice(chars) for _ in range(length))
 
 
+@unittest.skip
 class TestWebCache(unittest.TestCase):
 
   def test_getSetDelete(self):

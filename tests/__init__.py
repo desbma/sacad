@@ -48,6 +48,7 @@ class TestSacad(unittest.TestCase):
       width, height = img.size
     return format, width, height
 
+  @unittest.skip
   def test_getMasterOfPuppetsCover(self):
     """ Search and download cover for 'Master of Puppets' with different parameters. """
     for format in sacad.cover.CoverImageFormat:
@@ -70,6 +71,7 @@ class TestSacad(unittest.TestCase):
             self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
             self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
 
+  @unittest.skip
   def test_getImageUrlMetadata(self):
     """ Download the beginning of image files to guess their format and resolution. """
     refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
@@ -95,6 +97,7 @@ class TestSacad(unittest.TestCase):
       self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
       self.assertLessEqual(sacad.CoverSourceResult.getImageMetadata.call_count, block_read)
 
+  @unittest.skip
   def test_compareImageSignatures(self):
     """ Compare images using their signatures. """
     urls = ("http://wac.450f.edgecastcdn.net/80450F/kool1017.com/files/2013/09/cover_highway_to_hell_500x500.jpg",
