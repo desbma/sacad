@@ -415,11 +415,10 @@ class CoverSourceResult:
       return -1
 
     # prefer size above preferred
-    delta_side1 = ((first.size[0] + first.size[1]) / 2) - target_size
-    delta_side2 = ((second.size[0] + second.size[1]) / 2) - target_size
-    if ((delta_side1 < -(size_tolerance_prct * target_size / 100)) or
-            (delta_side2 < -(size_tolerance_prct * target_size / 100))):
-      return -1 if (delta_side1 < delta_side2) else 1
+    delta_size1 = ((first.size[0] + first.size[1]) / 2) - target_size
+    delta_size2 = ((second.size[0] + second.size[1]) / 2) - target_size
+    if delta_size1 != delta_size2:
+      return -1 if (delta_size1 < delta_size2) else 1
 
     # prefer covers of reliable source
     qs1 = first.source_quality.value
@@ -441,8 +440,8 @@ class CoverSourceResult:
       return -1 if (ic1 > ic2) else 1
 
     # prefer the preferred size
-    if abs(delta_side1) != abs(delta_side2):
-      return -1 if (abs(delta_side1) > abs(delta_side2)) else 1
+    if abs(delta_size1) != abs(delta_size2):
+      return -1 if (abs(delta_size1) > abs(delta_size2)) else 1
 
     # prefer png
     if first.format != second.format:
