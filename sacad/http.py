@@ -107,6 +107,14 @@ def fast_streamed_query(url, *, session, headers=None, verify=True):
   return response
 
 
+def session():
+  """ Return a HTTP session to use to benefit from TCP connection reuse. It also refuses cookies. """
+  s = requests.Session()
+  cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
+  s.cookies.set_policy(cp)
+  return s
+
+
 # silence third party module loggers
 logging.getLogger("redo").setLevel(logging.ERROR)
 logging.getLogger("requests").setLevel(logging.ERROR)
@@ -115,11 +123,3 @@ try:
   requests.packages.urllib3.disable_warnings()
 except:
   pass
-
-
-def session():
-  """ Return a HTTP session to use to benefit from TCP connection reuse. It also refuses cookies. """
-  s = requests.Session()
-  cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
-  s.cookies.set_policy(cp)
-  return s
