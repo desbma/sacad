@@ -373,17 +373,16 @@ class CoverSourceResult:
     Covers with sizes under the target size (+- configured tolerance) are excluded before comparison.
     The following factors are used in order:
       1. Prefer approximately square covers
-      2. Prefer covers of "reference" source quality
-      3. Prefer covers similar to the reference cover
-      4. Prefer size above target size
-      5. Prefer covers of reliable source
-      6. Prefer best ranked cover
+      2. Prefer covers similar to the reference cover
+      3. Prefer size above target size
+      4. Prefer covers of reliable source
+      5. Prefer best ranked cover
     If all previous factors do not allow sorting of two results (very unlikely):
-      7. Prefer single image cover
-      8. Prefer covers having the target size
-      9. Prefer covers with less images to join
-      10. Prefer PNG covers
-      11. Prefer exactly square covers
+      6. Prefer single image cover
+      7. Prefer covers having the target size
+      8. Prefer covers with less images to join
+      9. Prefer PNG covers
+      10. Prefer exactly square covers
 
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
@@ -397,14 +396,6 @@ class CoverSourceResult:
     delta_ratio2 = abs(second.size[0] / second.size[1] - 1)
     if abs(delta_ratio1 - delta_ratio2) > 0.04:
       return -1 if (delta_ratio1 > delta_ratio2) else 1
-
-    # prefer reference
-    r1 = first.source_quality is CoverSourceQuality.REFERENCE
-    r2 = second.source_quality is CoverSourceQuality.REFERENCE
-    if r1 and (not r2):
-      return 1
-    if (not r1) and r2:
-      return -1
 
     # prefer similar to reference
     sr1 = first.is_similar_to_reference
