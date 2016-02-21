@@ -14,7 +14,7 @@ install:
   - "sudo apt-get -V install optipng jpegoptim"
   - "sudo apt-get -V install wine p7zip-full"
 script:
-  - "coverage run --source=sacad setup.py test"
+  - "travis_retry coverage run --source=sacad setup.py test"
   - "pushd win && make test && popd"
 after_success:
   - "coveralls"
