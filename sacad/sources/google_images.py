@@ -24,7 +24,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
   is very agressively rate limiting its access.
   """
 
-  BASE_URL = "https://www.google.us/images"
+  BASE_URL = "https://www.google.com/images"
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
