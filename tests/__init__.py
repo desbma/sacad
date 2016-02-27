@@ -151,6 +151,9 @@ class TestSacad(unittest.TestCase):
       self.assertIn(result.format, sacad.cover.CoverImageFormat)
       self.assertGreaterEqual(result.size[0], size)
 
+  def test_unaccentuate(self):
+    self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
+
 
 if __name__ == "__main__":
   # logging
