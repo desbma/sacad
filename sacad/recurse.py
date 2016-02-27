@@ -125,7 +125,7 @@ def get_covers(work, args):
       path, artist, album = futures[future]
       try:
         status = future.result()
-      except:
+      except Exception:
         stats["errors"] += 1
         errors.append((path, artist, album))
       else:
