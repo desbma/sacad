@@ -9,8 +9,8 @@ import urllib.parse
 
 import appdirs
 
-from sacad import api_watcher
 from sacad import http
+from sacad import rate_watcher
 from sacad import web_cache
 from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
 
@@ -22,16 +22,14 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   """ Base class for all cover sources. """
 
-  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3):
+  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=0.1):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
-    db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
-                                                      appauthor=False),
-                               "api_watcher_%s.sqlite" % (self.__class__.__name__.lower()))
-    os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
-    self.api_watcher = api_watcher.ApiAccessRateWatcher(logging.getLogger(),
-                                                        db_filepath=db_filepath,
-                                                        min_delay_between_accesses=min_delay_between_accesses)
+    self.min_delay_between_accesses = min_delay_between_accesses
+    self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
+                                                                   appauthor=False),
+                                            "rate_watcher.sqlite")
+    os.makedirs(os.path.dirname(self.watcher_db_filepath), exist_ok=True)
     self.http_session = http.session()
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
@@ -151,7 +149,9 @@ class CoverSource(metaclass=abc.ABCMeta):
       self.updateHttpHeaders(headers)
       data = http.query(url,
                         session=self.http_session,
-                        watcher=self.api_watcher,
+                        watcher=api_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                              url,
+                                                              self.min_delay_between_accesses),
                         post_data=post_data,
                         headers=headers)
       # add cache entry only when parsing is successful
