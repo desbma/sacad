@@ -149,9 +149,9 @@ class CoverSource(metaclass=abc.ABCMeta):
       self.updateHttpHeaders(headers)
       data = http.query(url,
                         session=self.http_session,
-                        watcher=api_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                              url,
-                                                              self.min_delay_between_accesses),
+                        watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                               url,
+                                                               self.min_delay_between_accesses),
                         post_data=post_data,
                         headers=headers)
       # add cache entry only when parsing is successful
