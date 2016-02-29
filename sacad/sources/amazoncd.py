@@ -61,15 +61,16 @@ class AmazonCdCoverSource(CoverSource):
       check_metadata = CoverImageMetadata.SIZE
       # try to get higher res image...
       if ((self.target_size > size[0]) and  # ...only if needed
-              (rank < 3)):  # and only for first 3 results because this is time consuming (1 GET request per result)
+              (rank <= 3)):  # and only for first 3 results because this is time
+                             # consuming (1 more GET request per result)
         product_url = product_link_selector(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_url_query = urllib.parse.parse_qsl(product_url.query)
         product_url_query = collections.OrderedDict(product_url_query)
         del product_url_query["qid"]  # remove timestamp from url to improve future cache hit rate
         product_url_query = urllib.parse.urlencode(product_url_query)
-        product_url = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
-        cache_hit, product_page_data = self.fetchResults(product_url)
+        product_url_no_ts = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
+        cache_hit, product_page_data = self.fetchResults(product_url_no_ts)
         product_page_html = lxml.etree.XML(product_page_data.decode("latin-1"), parser)
         try:
           img_node = product_page_img_selector(product_page_html)[0]
@@ -87,9 +88,9 @@ class AmazonCdCoverSource(CoverSource):
             size_url_hint = int(size_url_hint[2:])
             size = (size_url_hint, size_url_hint)
             check_metadata = CoverImageMetadata.NONE
-          if not cache_hit:
-            # add cache entry only when parsing is successful
-            CoverSource.api_cache[product_url] = product_page_data
+        if not cache_hit:
+          CoverSource.api_cache[product_url_no_ts] = product_page_data
+
       # assume format is always jpg
       format = CoverImageFormat.JPEG
       # add result
