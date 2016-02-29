@@ -4,6 +4,7 @@ import itertools
 import logging
 import operator
 import os
+import pickle
 import unicodedata
 import urllib.parse
 
@@ -25,7 +26,7 @@ class CoverSource(metaclass=abc.ABCMeta):
   def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
-    self.min_delay_between_accesses = min_delay_between_accesses
+    self.min_delay_between_server_accesses = min_delay_between_accesses
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
@@ -36,18 +37,23 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                         appauthor=False),
                                  "sacad-cache.sqlite")
       os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
-      cache_name = "cover_source_api_data"
       __class__.api_cache = web_cache.WebCache(db_filepath,
-                                               cache_name,
+                                               "cover_source_api_data",
                                                caching_strategy=web_cache.CachingStrategy.FIFO,
-                                               expiration=60 * 60 * 24 * 90,  # 3 month
+                                               expiration=60 * 60 * 24 * 14,  # 2 weeks
                                                compression=web_cache.Compression.DEFLATE)
+      __class__.probe_cache = web_cache.WebCache(db_filepath,
+                                                 "cover_source_probe_data",
+                                                 caching_strategy=web_cache.CachingStrategy.FIFO,
+                                                 expiration=60 * 60 * 24 * 30 * 6)  # 6 months
       logging.getLogger().debug("Total size of file '%s': %s" % (db_filepath,
                                                                  __class__.api_cache.getDatabaseFileSize()))
-      purged_count = __class__.api_cache.purge()
-      logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))
-      row_count = len(__class__.api_cache)
-      logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
+      for cache, cache_name in zip((__class__.api_cache, __class__.probe_cache),
+                                   ("cover_source_api_data", "cover_source_probe_data")):
+        purged_count = cache.purge()
+        logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))
+        row_count = len(cache)
+        logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
@@ -151,11 +157,36 @@ class CoverSource(metaclass=abc.ABCMeta):
                         session=self.http_session,
                         watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                                url,
-                                                               self.min_delay_between_accesses),
+                                                               self.min_delay_between_server_accesses),
                         post_data=post_data,
                         headers=headers)
       # add cache entry only when parsing is successful
     return cache_hit, data
+
+  def probeUrl(self, url, response_headers=None):
+    """ Probe URL reachability from cache or HEAD request. """
+    if url in __class__.probe_cache:
+      logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
+      resp_ok, resp_headers = pickle.loads(__class__.probe_cache[url])
+
+    else:
+      logging.getLogger().debug("Probing URL '%s'..." % (url))
+      headers = {}
+      self.updateHttpHeaders(headers)
+      resp_headers = {}
+      resp_ok = http.is_reachable(url,
+                                  session=self.http_session,
+                                  watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                                         url,
+                                                                         self.min_delay_between_server_accesses),
+                                  headers=headers,
+                                  response_headers=resp_headers)
+      __class__.probe_cache[url] = pickle.dumps((resp_ok, resp_headers))
+
+    if response_headers is not None:
+      response_headers.update(resp_headers)
+
+    return resp_ok
 
   @staticmethod
   def assembleUrl(base_url, params):

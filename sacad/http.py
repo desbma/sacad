@@ -23,6 +23,7 @@ def query(url, *, session, watcher=None, post_data=None, headers=None, verify=Tr
     headers = {}
   if "User-Agent" not in headers:
     headers["User-Agent"] = DEFAULT_USER_AGENT
+
   for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
                                            sleeptime=1.5,
                                            max_sleeptime=5,
@@ -45,8 +46,10 @@ def query(url, *, session, watcher=None, post_data=None, headers=None, verify=Tr
                                  timeout=HTTP_NORMAL_TIMEOUT_S,
                                  verify=verify)
       break
+
     except requests.exceptions.SSLError:
       raise
+
     except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
       logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                    attempt,
@@ -55,16 +58,19 @@ def query(url, *, session, watcher=None, post_data=None, headers=None, verify=Tr
                                                                                    e))
       if attempt == HTTP_MAX_ATTEMPTS:
         raise
+
   response.raise_for_status()
+
   return response.content
 
 
-def is_reachable(url, *, session, headers=None, verify=True):
+def is_reachable(url, *, session, watcher=None, headers=None, verify=True, response_headers=None):
   """ Send a HEAD request with short timeout, return True if ressource has 2xx status code, False instead. """
   if headers is None:
     headers = {}
   if "User-Agent" not in headers:
     headers["User-Agent"] = DEFAULT_USER_AGENT
+
   try:
     for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
                                              sleeptime=1.5,
@@ -73,22 +79,33 @@ def is_reachable(url, *, session, headers=None, verify=True):
                                              jitter=1),
                                 1):
       try:
-        response = session.head(url,
-                                headers=headers,
-                                timeout=HTTP_SHORT_TIMEOUT_S,
-                                verify=verify)
-        break
+        with contextlib.ExitStack() as context_manager:
+          if watcher is not None:
+            context_manager.enter_context(watcher)
+          response = session.head(url,
+                                  headers=headers,
+                                  timeout=HTTP_SHORT_TIMEOUT_S,
+                                  verify=verify)
+          break
+
       except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                     attempt,
-                                                                                     HTTP_MAX_ATTEMPTS,
-                                                                                     e.__class__.__qualname__,
-                                                                                     e))
+        logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                    attempt,
+                                                                                    HTTP_MAX_ATTEMPTS,
+                                                                                    e.__class__.__qualname__,
+                                                                                    e))
         if attempt == HTTP_MAX_ATTEMPTS:
-          raise
+          return False
+
     response.raise_for_status()
-  except Exception:
+
+    if response_headers is not None:
+      response_headers.update(response.headers)
+
+  except requests.exceptions.HTTPError as e:
+    logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
     return False
+
   return True
 
 
@@ -98,12 +115,15 @@ def fast_streamed_query(url, *, session, headers=None, verify=True):
     headers = {}
   if "User-Agent" not in headers:
     headers["User-Agent"] = DEFAULT_USER_AGENT
+
   response = session.get(url,
                          headers=headers,
                          timeout=HTTP_SHORT_TIMEOUT_S,
                          verify=verify,
                          stream=True)
+
   response.raise_for_status()
+
   return response
 
 
