@@ -37,7 +37,7 @@ class AccessRateWatcher:
     self._releaseLock()
 
   def _access(self):
-    """ Notify the watcher that the API is accessed. """
+    """ Notify the watcher that the server is accessed. """
     with self.connexion:
       self.connexion.execute("""INSERT OR REPLACE INTO access_timestamp
                                (domain, timestamp) VALUES (?, ?)""",

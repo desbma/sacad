@@ -22,7 +22,7 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   """ Base class for all cover sources. """
 
-  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=0.1):
+  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
     self.min_delay_between_accesses = min_delay_between_accesses
