@@ -127,11 +127,12 @@ def fast_streamed_query(url, *, session, headers=None, verify=True):
   return response
 
 
-def session():
-  """ Return a HTTP session to use to benefit from TCP connection reuse. It also refuses cookies. """
+def session(allow_cookies=False):
+  """ Return a HTTP session to use to benefit from TCP connection reuse. It also optionally refuses cookies. """
   s = requests.Session()
-  cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
-  s.cookies.set_policy(cp)
+  if not allow_cookies:
+    cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
+    s.cookies.set_policy(cp)
   return s
 
 

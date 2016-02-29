@@ -23,7 +23,7 @@ class AmazonCdCoverSource(CoverSource):
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
-    super().__init__(*args, **kwargs)
+    super().__init__(*args, allow_cookies=True, **kwargs)
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """

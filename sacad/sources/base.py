@@ -23,7 +23,7 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   """ Base class for all cover sources. """
 
-  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3):
+  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3, allow_cookies=False):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
     self.min_delay_between_server_accesses = min_delay_between_accesses
@@ -31,7 +31,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
     os.makedirs(os.path.dirname(self.watcher_db_filepath), exist_ok=True)
-    self.http_session = http.session()
+    self.http_session = http.session(allow_cookies)
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                         appauthor=False),

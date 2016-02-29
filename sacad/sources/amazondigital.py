@@ -22,6 +22,9 @@ class AmazonDigitalCoverSource(CoverSource):
   BASE_URL = "https://www.amazon.com/gp"
   DYNAPI_KEY = "A17SFUTIVB227Z"
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, allow_cookies=True, **kwargs)
+
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     url = "%s/search" % (__class__.BASE_URL)
