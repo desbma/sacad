@@ -125,12 +125,13 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                                                          results_excluded_count + reference_only_count,
                                                                                          self.__class__.__name__))
     for result in itertools.filterfalse(operator.attrgetter("is_only_reference"), results_kept):
-      logging.getLogger().debug("\t- %s%s %4dx%4d %s%s" % (("(%02d) " % (result.rank)) if result.rank is not None else "",
-                                                           result.format.name,
-                                                           result.size[0],
-                                                           result.size[1],
-                                                           result.urls[0],
-                                                           " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
+      logging.getLogger().debug("%s %s%s %4dx%4d %s%s" % (result.__class__.__name__,
+                                                          ("(%02d) " % (result.rank)) if result.rank is not None else "",
+                                                          result.format.name,
+                                                          result.size[0],
+                                                          result.size[1],
+                                                          result.urls[0],
+                                                          " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
     return results_kept
 
   def fetchResults(self, url, post_data=None):
