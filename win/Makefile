@@ -129,10 +129,10 @@ ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
 #
 
 ${PYTHON_INSTALLER}:
-	${CURL} http://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
+	${CURL} https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
 
 ${CXFREEZE_INSTALLER}:
-	${CURL} http://sourceforge.net/projects/cx-freeze/files/${CXFREEZE_VERSION}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi > $@
+	${CURL} https://sourceforge.net/projects/cx-freeze/files/${CXFREEZE_VERSION}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi > $@
 
 ${PIP_INSTALLER}:
 	${CURL} https://bootstrap.pypa.io/get-pip.py > $@
@@ -141,7 +141,8 @@ ${LXML_INSTALLER}:
 	${CURL} https://dl.dropboxusercontent.com/u/70127955/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl > $@
 
 ${7ZIP_INSTALLER}:
-	${CURL} http://www.7-zip.org/a/7z938.msi > $@
+	${CURL} http://www.7-zip.org/a/7z938.msi > $@.unckecked
+	echo "673377a03f91ff0f7f384794934b767c3389e50d7dc308f7c73f4633121518b3e4af8d33cf282398a710577e12fbb963152591c3e29b1092c79530bb2d8aa882  $@.unckecked" | sha512sum --status -c - && mv $@.unckecked $@
 
 ${TEST_LIB_DIR}/zic.ogg:
 	mkdir -p $(dir $@)
@@ -154,7 +155,7 @@ ${TEST_LIB_DIR}/zic.ogg:
 
 clean:
 	@-rm -Rvf ${WINE_DIR}
-	@-rm -vf ${PYTHON_INSTALLER} ${CXFREEZE_INSTALLER} ${PIP_INSTALLER} ${LXML_INSTALLER} ${7ZIP_INSTALLER}
+	@-rm -vf ${PYTHON_INSTALLER} ${CXFREEZE_INSTALLER} ${PIP_INSTALLER} ${LXML_INSTALLER} ${7ZIP_INSTALLER}*
 	@-rm -Rvf sacad .requirements
 	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
 	@-rm -vf test.jpg
