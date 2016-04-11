@@ -2,7 +2,7 @@
 
 """ Smart Automatic Cover Art Downloader : search and download music album covers. """
 
-__version__ = "1.6.7"
+__version__ = "1.6.8"
 __author__ = "desbma"
 __license__ = "MPL 2.0"
 
@@ -37,7 +37,7 @@ def search_and_download(album, artist, format, size, size_tolerance_prct, amazon
 
   # search
   results = []
-  for cover_source in cover_sources:
+  for cover_source in cover_sources:  # TODO to that in processes
     results.extend(cover_source.search(album, artist))
 
   # sort results
