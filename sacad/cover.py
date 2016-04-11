@@ -408,7 +408,8 @@ class CoverSourceResult:
     # prefer size above preferred
     delta_size1 = ((first.size[0] + first.size[1]) / 2) - target_size
     delta_size2 = ((second.size[0] + second.size[1]) / 2) - target_size
-    if delta_size1 != delta_size2:
+    if (((delta_size1 < 0) and (delta_size2 >= 0)) or
+            (delta_size1 >= 0) and (delta_size2 < 0)):
       return -1 if (delta_size1 < delta_size2) else 1
 
     # prefer covers of reliable source
