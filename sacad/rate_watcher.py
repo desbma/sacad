@@ -16,6 +16,7 @@ class AccessRateWatcher:
   """ Access rate limiter, supporting concurrent access by threads and/or processes. """
 
   thread_locks = collections.defaultdict(threading.Lock)
+  thread_dict_lock = threading.Lock()
 
   def __init__(self, db_filepath, url, min_delay_between_accesses):
     self.domain = urllib.parse.urlsplit(url).netloc
@@ -64,7 +65,8 @@ class AccessRateWatcher:
         break
 
   def _getLock(self):
-    tlock = __class__.thread_locks[self.domain]
+    with __class__.thread_dict_lock:
+      tlock = __class__.thread_locks[self.domain]
     if tlock.acquire(blocking=False):
       plock = lockfile.FileLock(os.path.join(self.lock_dir, self.domain))
       try:
