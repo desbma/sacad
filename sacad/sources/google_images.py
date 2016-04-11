@@ -53,14 +53,17 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
     results_selector = lxml.cssselect.CSSSelector("#search #rg_s .rg_di")
     for rank, result in enumerate(results_selector(html), 1):
       # extract url
-      google_url = result.find("a").get("href")
-      query = urllib.parse.urlsplit(google_url).query
-      query = urllib.parse.parse_qs(query)
-      img_url = query["imgurl"][0]
-      # extract format
       metadata_div = result.find("div")
       metadata_json = lxml.etree.tostring(metadata_div, encoding="unicode", method="text")
       metadata_json = json.loads(metadata_json)
+      google_url = result.find("a").get("href")
+      if google_url is None:
+        img_url = metadata_json["ou"]
+      else:
+        query = urllib.parse.urlsplit(google_url).query
+        query = urllib.parse.parse_qs(query)
+        img_url = query["imgurl"][0]
+      # extract format
       check_metadata = CoverImageMetadata.NONE
       format = metadata_json["ity"].lower()
       try:
@@ -70,7 +73,10 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         format = None
         check_metadata = CoverImageMetadata.FORMAT
       # extract size
-      size = tuple(map(int, (query["w"][0], query["h"][0])))
+      if google_url is None:
+        size = metadata_json["ow"], metadata_json["oh"]
+      else:
+        size = tuple(map(int, (query["w"][0], query["h"][0])))
       # extract thumbnail url
       thumbnail_url = metadata_json["tu"]
       # result
