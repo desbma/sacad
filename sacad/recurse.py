@@ -56,7 +56,9 @@ def get_metadata(audio_filepaths):
                     mf.get("artist", None))
     if artist is not None:
       artist = artist[0]
-    album = mf.get("album", None)
+    album = mf.get("_album",
+                   mf.get("album",
+                          None))
     if album is not None:
       album = album[0]
     if artist and album:
