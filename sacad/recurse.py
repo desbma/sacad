@@ -7,6 +7,7 @@ import collections
 import concurrent.futures
 import itertools
 import logging
+import multiprocessing
 import os
 import shutil
 import sys
@@ -102,7 +103,7 @@ def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False)
 
 def get_covers(work, args):
   """ Get missing covers. """
-  with concurrent.futures.ProcessPoolExecutor() as executor:
+  with concurrent.futures.ProcessPoolExecutor(max_workers=min(4, multiprocessing.cpu_count())) as executor:
     # post work
     futures = {}
     for path, (artist, album) in work.items():
@@ -185,7 +186,7 @@ def cl_main():
     exit(1)
 
   # silence the logger
-  logging.getLogger().setLevel(logging.ERROR)
+  logging.basicConfig(format="%(process)d %(threadName)s: %(message)s", level=logging.ERROR)
 
   # do the job
   work = analyze_lib(args.lib_dir, args.filename)

@@ -63,6 +63,8 @@ class AccessRateWatcher:
 
       if self._getLock():
         break
+      else:
+        time.sleep(0.001)
 
   def _getLock(self):
     with __class__.thread_dict_lock:
