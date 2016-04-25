@@ -71,8 +71,11 @@ class AccessRateWatcher:
       plock = lockfile.FileLock(os.path.join(self.lock_dir, self.domain))
       try:
         plock.acquire(timeout=0)
-      except lockfile.LockTimeout:
+      except (lockfile.LockTimeout, lockfile.AlreadyLocked):
         tlock.release()
+      except:
+        tlock.release()
+        raise
       else:
         return True
     return False
