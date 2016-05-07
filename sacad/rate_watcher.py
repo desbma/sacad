@@ -21,12 +21,12 @@ class AccessRateWatcher:
   def __init__(self, db_filepath, url, min_delay_between_accesses):
     self.domain = urllib.parse.urlsplit(url).netloc
     self.min_delay_between_accesses = min_delay_between_accesses
-    self.connexion = sqlite3.connect(db_filepath)
-    with self.connexion:
-      self.connexion.executescript("""PRAGMA journal_mode = MEMORY;
-                                      PRAGMA synchronous = OFF;
-                                      CREATE TABLE IF NOT EXISTS access_timestamp (domain TEXT PRIMARY KEY,
-                                                                                   timestamp FLOAT NOT NULL);""")
+    self.connection = sqlite3.connect(db_filepath)
+    with self.connection:
+      self.connection.executescript("""PRAGMA journal_mode = MEMORY;
+                                       PRAGMA synchronous = OFF;
+                                       CREATE TABLE IF NOT EXISTS access_timestamp (domain TEXT PRIMARY KEY,
+                                                                                    timestamp FLOAT NOT NULL);""")
     self.lock_dir = os.path.join(os.path.dirname(db_filepath), "plocks")
     os.makedirs(self.lock_dir, exist_ok=True)
 
@@ -39,19 +39,19 @@ class AccessRateWatcher:
 
   def _access(self):
     """ Notify the watcher that the server is accessed. """
-    with self.connexion:
-      self.connexion.execute("""INSERT OR REPLACE INTO access_timestamp
-                               (domain, timestamp) VALUES (?, ?)""",
-                             (self.domain, time.time(),))
+    with self.connection:
+      self.connection.execute("""INSERT OR REPLACE INTO access_timestamp
+                                (domain, timestamp) VALUES (?, ?)""",
+                              (self.domain, time.time(),))
 
   def _waitAccess(self):
     """ Wait the needed time before sending a request to honor rate limit. """
     while True:
-      with self.connexion:
-        last_access_time = self.connexion.execute("""SELECT timestamp
-                                                     FROM access_timestamp
-                                                     WHERE domain = ?;""",
-                                                  (self.domain,)).fetchone()
+      with self.connection:
+        last_access_time = self.connection.execute("""SELECT timestamp
+                                                      FROM access_timestamp
+                                                      WHERE domain = ?;""",
+                                                   (self.domain,)).fetchone()
       if last_access_time is not None:
         last_access_time = last_access_time[0]
         now = time.time()
