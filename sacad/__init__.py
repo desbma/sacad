@@ -7,8 +7,10 @@ __author__ = "desbma"
 __license__ = "MPL 2.0"
 
 import argparse
+import concurrent.futures
 import functools
 import logging
+import operator
 import os
 import sys
 
@@ -37,8 +39,10 @@ def search_and_download(album, artist, format, size, size_tolerance_prct, amazon
 
   # search
   results = []
-  for cover_source in cover_sources:  # TODO to that in processes
-    results.extend(cover_source.search(album, artist))
+  with concurrent.futures.ThreadPoolExecutor(max_workers=len(cover_sources)) as executor:
+    for source_results in executor.map(operator.methodcaller("search", album, artist),
+                                       cover_sources):
+      results.extend(source_results)
 
   # sort results
   results = CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
