@@ -16,11 +16,11 @@ with open(os.path.join("sacad", "__init__.py"), "rt") as f:
 
 with open("requirements.txt", "rt") as f:
   requirements = f.read().splitlines()
-  # require enum34 if enum module is missing (Python 3.3)
-  try:
-    import enum
-  except ImportError:
-    requirements.append("enum34")
+# require enum34 if enum module is missing (Python 3.3)
+try:
+  import enum
+except ImportError:
+  requirements.append("enum34")
 
 try:
   import pypandoc
