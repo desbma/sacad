@@ -124,7 +124,7 @@ def get_covers(work, args):
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
     errors = []
     not_found = []
-    for i, future in enumerate(concurrent.futures.as_completed(futures)):
+    for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
       path, artist, album = futures[future]
       try:
         status = future.result()
@@ -143,7 +143,7 @@ def get_covers(work, args):
                                artist=artist,
                                album=album)
   if work:
-    show_get_covers_progress(i + 1, len(work), stats, end=True)
+    show_get_covers_progress(len(work), len(work), stats, end=True)
   for path, artist, album in not_found:
     print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
   for path, artist, album in errors:
