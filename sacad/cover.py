@@ -394,7 +394,7 @@ class CoverSourceResult:
     # prefer square covers #1
     delta_ratio1 = abs(first.size[0] / first.size[1] - 1)
     delta_ratio2 = abs(second.size[0] / second.size[1] - 1)
-    if abs(delta_ratio1 - delta_ratio2) > 0.04:
+    if abs(delta_ratio1 - delta_ratio2) > 0.15:
       return -1 if (delta_ratio1 > delta_ratio2) else 1
 
     # prefer similar to reference
