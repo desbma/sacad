@@ -34,14 +34,18 @@ class AmazonCdCoverSource(CoverSource):
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(self.base_url, params)
 
+  def updateHttpHeaders(self, headers):
+    """ See CoverSource.updateHttpHeaders. """
+    headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
+
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
 
     # parse page
     parser = lxml.etree.HTMLParser()
-    html = lxml.etree.XML(api_data.decode("utf-8"), parser)
-    results_selector = lxml.cssselect.CSSSelector("#atfResults li.s-result-item")
+    html = lxml.etree.XML(api_data.decode("utf-8", "ignore"), parser)
+    results_selector = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
     img_selector = lxml.cssselect.CSSSelector("img.s-access-image")
     product_link_selector = lxml.cssselect.CSSSelector("a.s-access-detail-page")
     product_page_img_selector = lxml.cssselect.CSSSelector("img#landingImage")
