@@ -130,7 +130,7 @@ class TestSacad(unittest.TestCase):
           results = source.search(album, artist)
           results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
           if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
-                  ((size > 600) and isinstance(source, sacad.sources.LastFmCoverSource)) or
+                  ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
                   (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
                    (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
             self.assertGreaterEqual(len(results), 1, "%s %s %s %u" % (source.__class__.__name__,
