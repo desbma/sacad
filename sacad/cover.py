@@ -378,11 +378,10 @@ class CoverSourceResult:
       4. Prefer covers of reliable source
       5. Prefer best ranked cover
     If all previous factors do not allow sorting of two results (very unlikely):
-      6. Prefer single image cover
+      6. Prefer covers with less images to join
       7. Prefer covers having the target size
-      8. Prefer covers with less images to join
-      9. Prefer PNG covers
-      10. Prefer exactly square covers
+      8. Prefer PNG covers
+      9. Prefer exactly square covers
 
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
