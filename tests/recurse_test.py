@@ -28,6 +28,14 @@ except AttributeError:
       sys.stdout = original_stdout
 
 
+def download(url, filepath):
+  with contextlib.closing(requests.get(url, stream=True)) as response:
+    response.raise_for_status()
+    with open(filepath, "wb") as f:
+      for chunk in response.iter_content(2 ** 14):
+        f.write(chunk)
+
+
 class TestRecursive(unittest.TestCase):
 
   @classmethod
@@ -36,12 +44,8 @@ class TestRecursive(unittest.TestCase):
     cls.album1_dir = os.path.join(cls.temp_dir.name, "album1")
     os.mkdir(cls.album1_dir)
     url = "https://upload.wikimedia.org/wikipedia/en/4/45/ACDC_-_Back_In_Black-sample.ogg"
-    with contextlib.closing(requests.get(url, stream=True)) as response:
-      response.raise_for_status()
-      filepath1 = os.path.join(cls.album1_dir, "2 track.ogg")
-      with open(filepath1, "wb") as f:
-        for chunk in response.iter_content(2 ** 14):
-          f.write(chunk)
+    filepath1 = os.path.join(cls.album1_dir, "2 track.ogg")
+    download(url, filepath1)
     mf = mutagen.File(filepath1)
     mf["artist"] = "ARTIST1"
     mf["album"] = "ALBUM1"
@@ -58,6 +62,11 @@ class TestRecursive(unittest.TestCase):
     mf["artist"] = "ARTIST2"
     mf["album"] = "ALBUM2"
     mf.save()
+
+    cls.album3_dir = os.path.join(cls.temp_dir.name, "album3")
+    os.mkdir(cls.album3_dir)
+    url = "http://www.tonycuffe.com/mp3/tail%20toddle.mp3"
+    download(url, os.path.join(cls.album3_dir, "1 track.mp3"))
 
     cls.not_album_dir = os.path.join(cls.temp_dir.name, "not an album")
     os.mkdir(cls.not_album_dir)
@@ -79,16 +88,20 @@ class TestRecursive(unittest.TestCase):
   def test_analyze_lib(self):
     with open(os.devnull, "wb") as dn, redirect_stdout(dn):
       work = recurse.analyze_lib(__class__.temp_dir.name, "a.jpg")
-      self.assertEqual(len(work), 2)
+      self.assertEqual(len(work), 3)
       self.assertIn(__class__.album1_dir, work)
       self.assertEqual(work[__class__.album1_dir], ("ARTIST1", "ALBUM1"))
       self.assertIn(__class__.album2_dir, work)
       self.assertEqual(work[__class__.album2_dir], ("ARTIST2", "ALBUM2"))
+      self.assertIn(__class__.album3_dir, work)
+      self.assertEqual(work[__class__.album3_dir], ("Tony Cuffe", "Sae Will We Yet"))
 
       work = recurse.analyze_lib(__class__.temp_dir.name, "1.dat")
-      self.assertEqual(len(work), 1)
+      self.assertEqual(len(work), 2)
       self.assertIn(__class__.album1_dir, work)
       self.assertEqual(work[__class__.album1_dir], ("ARTIST1", "ALBUM1"))
+      self.assertIn(__class__.album3_dir, work)
+      self.assertEqual(work[__class__.album3_dir], ("Tony Cuffe", "Sae Will We Yet"))
 
   def test_get_metadata(self):
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
@@ -99,6 +112,10 @@ class TestRecursive(unittest.TestCase):
                                                                 __class__.album2_dir),
                                               os.listdir(__class__.album2_dir))),
                      ("ARTIST2", "ALBUM2"))
+    self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
+                                                                __class__.album3_dir),
+                                              os.listdir(__class__.album3_dir))),
+                     ("Tony Cuffe", "Sae Will We Yet"))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.not_album_dir),
                                               os.listdir(__class__.not_album_dir))),

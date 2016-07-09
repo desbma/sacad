@@ -10,8 +10,6 @@ import PIL.Image
 import requests
 
 import sacad
-from . import rate_watcher_test
-from . import recurse_test
 
 
 sacad.web_cache.DISABLE_PERSISTENT_CACHING = True

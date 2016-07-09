@@ -52,15 +52,16 @@ def get_metadata(audio_filepaths):
     mf = mutagen.File(audio_filepath)
     if mf is None:
       continue
-    artist = mf.get("albumartist",
-                    mf.get("artist", None))
-    if artist is not None:
-      artist = artist[0]
-    album = mf.get("_album",
-                   mf.get("album",
-                          None))
-    if album is not None:
-      album = album[0]
+    for key in ("albumartist", "artist", "TPE1", "TPE2"):
+      val = mf.get(key, None)
+      if val is not None:
+        artist = val[0]
+        break
+    for key in ("_album", "album", "TALB"):
+      val = mf.get(key, None)
+      if val is not None:
+        album = val[0]
+        break
     if artist and album:
       # stop at the first file that succeeds (for performance)
       break
