@@ -35,13 +35,22 @@ def analyze_lib(lib_dir, cover_filename):
   work = {}
   scrobbler = itertools.cycle("|/-\\")
   stats = collections.OrderedDict(((k, 0) for k in("dirs", "files", "albums", "missing covers", "errors")))
+  failed_dirs = []
   time_progress_shown = show_analyze_progress(stats, scrobbler)
   for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
     stats["dirs"] += 1
-    metadata, time_progress_shown = analyze_dir(stats, rootpath, rel_filepaths, cover_filename, scrobbler, time_progress_shown)
+    metadata, time_progress_shown = analyze_dir(stats,
+                                                rootpath,
+                                                rel_filepaths,
+                                                cover_filename,
+                                                failed_dirs,
+                                                scrobbler,
+                                                time_progress_shown)
     if all(metadata):
       work[rootpath] = metadata
   show_analyze_progress(stats, scrobbler, end=True)
+  for failed_dir in failed_dirs:
+    print("Unable to read metadata for album directory '%s'" % (failed_dir))
   return work
 
 
@@ -49,7 +58,10 @@ def get_metadata(audio_filepaths):
   """ Return a tuple of album, artist from a list of audio files. """
   artist, album = None, None
   for audio_filepath in audio_filepaths:
-    mf = mutagen.File(audio_filepath)
+    try:
+      mf = mutagen.File(audio_filepath)
+    except Exception:
+      continue
     if mf is None:
       continue
     for key in ("albumartist", "artist", "TPE1", "TPE2"):
@@ -68,7 +80,7 @@ def get_metadata(audio_filepaths):
   return artist, album
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, scrobbler, time_progress_shown):
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, scrobbler, time_progress_shown):
   """ Analyze a directory (non recursively) to get its album metadata if it is one. """
   metadata = None, None
   audio_filepaths = []
@@ -89,6 +101,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, scrobbler, tim
       if not all(metadata):
         # failed to get metadata for this album
         stats["errors"] += 1
+        failed_dirs.append(parent_dir)
   return metadata, time_progress_shown
 
 
@@ -129,9 +142,9 @@ def get_covers(work, args):
       path, artist, album = futures[future]
       try:
         status = future.result()
-      except Exception:
+      except Exception as exception:
         stats["errors"] += 1
-        errors.append((path, artist, album))
+        errors.append((path, artist, album, exception))
       else:
         if status:
           stats["ok"] += 1
@@ -147,8 +160,12 @@ def get_covers(work, args):
     show_get_covers_progress(len(work), len(work), stats, end=True)
   for path, artist, album in not_found:
     print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
-  for path, artist, album in errors:
-    print("Error occured while searching cover for '%s' by '%s' from '%s'" % (album, artist, path))
+  for path, artist, album, exception in errors:
+    print("Error occured while searching cover for '%s' by '%s' from '%s': %s %s" % (album,
+                                                                                     artist,
+                                                                                     path,
+                                                                                     exception.__class__.__qualname__,
+                                                                                     exception))
   if errors:
     print("Please report this at https://github.com/desbma/sacad/issues")
 
