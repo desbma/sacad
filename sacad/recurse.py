@@ -18,16 +18,16 @@ import mutagen
 import sacad
 
 
-AUDIO_EXTENSIONS = ("aac",
-                    "ape",
-                    "flac",
-                    "m4a",
-                    "mp3",
-                    "mp4",
-                    "ogg",
-                    "oga",
-                    "opus",
-                    "wv")
+AUDIO_EXTENSIONS = frozenset(("aac",
+                              "ape",
+                              "flac",
+                              "m4a",
+                              "mp3",
+                              "mp4",
+                              "ogg",
+                              "oga",
+                              "opus",
+                              "wv"))
 
 
 def analyze_lib(lib_dir, cover_filename):
