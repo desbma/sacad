@@ -86,7 +86,7 @@ class TestRecursive(unittest.TestCase):
     cls.temp_dir.cleanup()
 
   def test_analyze_lib(self):
-    with open(os.devnull, "wb") as dn, redirect_stdout(dn):
+    with open(os.devnull, "wt") as dn, redirect_stdout(dn):
       work = recurse.analyze_lib(__class__.temp_dir.name, "a.jpg")
       self.assertEqual(len(work), 3)
       self.assertIn(__class__.album1_dir, work)
@@ -126,12 +126,14 @@ class TestRecursive(unittest.TestCase):
                      ("ARTIST1", None))
 
   def test_analyze_dir(self):
-    with open(os.devnull, "wb") as dn, redirect_stdout(dn):
+    with open(os.devnull, "wt") as dn, redirect_stdout(dn):
       stats = collections.defaultdict(int)
+      failed_dirs = []
       r = recurse.analyze_dir(stats,
                               __class__.album1_dir,
                               os.listdir(__class__.album1_dir),
                               "1.jpg",
+                              failed_dirs,
                               None,
                               0)
       self.assertIn("files", stats)
@@ -141,6 +143,7 @@ class TestRecursive(unittest.TestCase):
       self.assertIn("missing covers", stats)
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
+      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r[0], ("ARTIST1", "ALBUM1"))
 
       stats.clear()
@@ -148,6 +151,7 @@ class TestRecursive(unittest.TestCase):
                               __class__.album2_dir,
                               os.listdir(__class__.album2_dir),
                               "1.jpg",
+                              failed_dirs,
                               None,
                               0)
       self.assertIn("files", stats)
@@ -157,12 +161,14 @@ class TestRecursive(unittest.TestCase):
       self.assertIn("missing covers", stats)
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
+      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r[0], ("ARTIST2", "ALBUM2"))
       stats.clear()
       r = recurse.analyze_dir(stats,
                               __class__.album2_dir,
                               os.listdir(__class__.album2_dir),
                               "1.dat",
+                              failed_dirs,
                               None,
                               0)
       self.assertIn("files", stats)
@@ -171,13 +177,16 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(stats["albums"], 1)
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
+      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r[0], (None, None))
 
       stats.clear()
+      failed_dirs.clear()
       r = recurse.analyze_dir(stats,
                               __class__.not_album_dir,
                               os.listdir(__class__.not_album_dir),
                               "1.jpg",
+                              failed_dirs,
                               None,
                               0)
       self.assertIn("files", stats)
@@ -185,13 +194,16 @@ class TestRecursive(unittest.TestCase):
       self.assertNotIn("albums", stats)
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
+      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r[0], (None, None))
 
       stats.clear()
+      failed_dirs.clear()
       r = recurse.analyze_dir(stats,
                               __class__.invalid_album_dir,
                               os.listdir(__class__.invalid_album_dir),
                               "1.jpg",
+                              failed_dirs,
                               None,
                               0)
       self.assertIn("files", stats)
@@ -202,6 +214,7 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(stats["missing covers"], 1)
       self.assertIn("errors", stats)
       self.assertEqual(stats["errors"], 1)
+      self.assertSequenceEqual(failed_dirs, (__class__.invalid_album_dir,))
       self.assertEqual(r[0], ("ARTIST1", None))
 
 
