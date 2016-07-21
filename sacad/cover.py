@@ -41,8 +41,7 @@ SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
 
 def is_square(x):
   """ Return True if integer x is a perfect square, False otherwise. """
-  sqrt = math.sqrt(x)
-  return (sqrt == math.trunc(sqrt))
+  return math.sqrt(x).is_integer()
 
 
 class CoverSourceResult:

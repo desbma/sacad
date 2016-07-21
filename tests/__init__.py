@@ -153,6 +153,13 @@ class TestSacad(unittest.TestCase):
   def test_unaccentuate(self):
     self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
 
+  def test_is_square(self):
+    for x in range(1, 100):
+      if x in (1, 4, 9, 16, 25, 36, 49, 64, 81):
+        self.assertTrue(sacad.cover.is_square(x), x)
+      else:
+        self.assertFalse(sacad.cover.is_square(x), x)
+
 
 if __name__ == "__main__":
   # logging
