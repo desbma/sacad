@@ -9,10 +9,10 @@ import unicodedata
 import urllib.parse
 
 import appdirs
+import web_cache
 
 from sacad import http
 from sacad import rate_watcher
-from sacad import web_cache
 from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
 
 

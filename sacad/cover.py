@@ -16,10 +16,10 @@ import appdirs
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
+import web_cache
 
 from sacad import http
 from sacad import mkstemp_ctx
-from sacad import web_cache
 
 
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
