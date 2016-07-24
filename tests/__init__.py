@@ -8,11 +8,12 @@ import urllib.parse
 
 import PIL.Image
 import requests
+import web_cache
 
 import sacad
 
 
-sacad.web_cache.DISABLE_PERSISTENT_CACHING = True
+web_cache.DISABLE_PERSISTENT_CACHING = True
 
 
 def is_internet_reachable():
@@ -80,7 +81,7 @@ class TestSacad(unittest.TestCase):
     for url, (ref_fmt, ref_size, block_read) in refs.items():
       sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
       source = unittest.mock.Mock()
-      source.http_session = sacad.http.session()
+      source.http_session = sacad.http_helpers.session()
       cover = sacad.CoverSourceResult(url,
                                       None,
                                       None,
