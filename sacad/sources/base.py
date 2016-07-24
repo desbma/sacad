@@ -11,7 +11,7 @@ import urllib.parse
 import appdirs
 import web_cache
 
-from sacad import http
+from sacad import http_helpers
 from sacad import rate_watcher
 from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
 
@@ -31,7 +31,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
     os.makedirs(os.path.dirname(self.watcher_db_filepath), exist_ok=True)
-    self.http_session = http.session(allow_cookies)
+    self.http_session = http_helpers.session(allow_cookies)
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                         appauthor=False),
@@ -154,13 +154,13 @@ class CoverSource(metaclass=abc.ABCMeta):
         logging.getLogger().debug("Querying URL '%s'..." % (url))
       headers = {}
       self.updateHttpHeaders(headers)
-      data = http.query(url,
-                        session=self.http_session,
-                        watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                               url,
-                                                               self.min_delay_between_server_accesses),
-                        post_data=post_data,
-                        headers=headers)
+      data = http_helpers.query(url,
+                                session=self.http_session,
+                                watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                                       url,
+                                                                       self.min_delay_between_server_accesses),
+                                post_data=post_data,
+                                headers=headers)
       # add cache entry only when parsing is successful
     return cache_hit, data
 
@@ -175,13 +175,13 @@ class CoverSource(metaclass=abc.ABCMeta):
       headers = {}
       self.updateHttpHeaders(headers)
       resp_headers = {}
-      resp_ok = http.is_reachable(url,
-                                  session=self.http_session,
-                                  watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                                         url,
-                                                                         self.min_delay_between_server_accesses),
-                                  headers=headers,
-                                  response_headers=resp_headers)
+      resp_ok = http_helpers.is_reachable(url,
+                                          session=self.http_session,
+                                          watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                                                 url,
+                                                                                 self.min_delay_between_server_accesses),
+                                          headers=headers,
+                                          response_headers=resp_headers)
       __class__.probe_cache[url] = pickle.dumps((resp_ok, resp_headers))
 
     if response_headers is not None:

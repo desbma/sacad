@@ -18,7 +18,7 @@ import PIL.ImageFile
 import PIL.ImageFilter
 import web_cache
 
-from sacad import http
+from sacad import http_helpers
 from sacad import mkstemp_ctx
 
 
@@ -125,9 +125,9 @@ class CoverSourceResult:
       if cache_miss:
         # download
         logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-        image_data = http.query(url,
-                                session=self.source.http_session,
-                                verify=False)
+        image_data = http_helpers.query(url,
+                                        session=self.source.http_session,
+                                        verify=False)
 
         # crunch image
         image_data = __class__.crunch(image_data, self.format)
@@ -254,9 +254,9 @@ class CoverSourceResult:
         try:
           metadata = None
           img_data = bytearray()
-          with contextlib.closing(http.fast_streamed_query(url,
-                                                           session=self.source.http_session,
-                                                           verify=False)) as response:
+          with contextlib.closing(http_helpers.fast_streamed_query(url,
+                                                                   session=self.source.http_session,
+                                                                   verify=False)) as response:
             if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
               # try to get format from response mime type
               try:
@@ -341,8 +341,8 @@ class CoverSourceResult:
       # download
       logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
       try:
-        image_data = http.query(self.thumbnail_url,
-                                session=self.source.http_session)
+        image_data = http_helpers.query(self.thumbnail_url,
+                                        session=self.source.http_session)
       except Exception as e:
         logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                         e.__class__.__qualname__,
