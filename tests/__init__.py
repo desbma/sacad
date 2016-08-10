@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import contextlib
 import logging
 import socket
 import unittest
@@ -29,11 +30,11 @@ def is_internet_reachable():
 
 
 def download(url, filepath):
-  response = requests.get(url, timeout=5, verify=False, stream=True)
-  response.raise_for_status()
-  with open(filepath, "wb") as f:
-    for chunk in response.iter_content(2 ** 14):
-      f.write(chunk)
+  with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=True)) as response:
+    response.raise_for_status()
+    with open(filepath, "wb") as f:
+      for chunk in response.iter_content(2 ** 14):
+        f.write(chunk)
 
 
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
