@@ -83,7 +83,7 @@ sacad/readme.txt:
 # Tests
 #
 
-test_ut: ${LXML_INSTALLED} .requirements.
+test_ut: ${LXML_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} setup.py test
 
 test_freeze:: test.jpg ${TEST_LIB_DIR}/test.png
