@@ -15,7 +15,7 @@ install:
   - "sudo apt-get -V install wine p7zip-full"
 script:
   - "travis_retry coverage run --source=sacad setup.py test"
-  - "pushd win && make test && popd"
+  - "[ $TRAVIS_PYTHON_VERSION = '3.3' ] && pushd win && make test && popd"
 after_success:
   - "coveralls"
 before_deploy:
@@ -23,7 +23,7 @@ before_deploy:
   - "sudo apt-get -q update"
   - "sudo apt-get -V install pandoc"
   - "pip install pypandoc"
-  - "pushd win && make all && popd"
+  - "[ $TRAVIS_PYTHON_VERSION = '3.3' ] && pushd win && make all && popd"
 deploy:
   - provider: releases
     api_key:
