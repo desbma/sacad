@@ -3,6 +3,7 @@
 import collections
 import contextlib
 import functools
+import itertools
 import os
 import shutil
 import tempfile
@@ -126,6 +127,7 @@ class TestRecursive(unittest.TestCase):
                      ("ARTIST1", None))
 
   def test_analyze_dir(self):
+    scrobbler = itertools.cycle("|/-\\")
     with open(os.devnull, "wt") as dn, redirect_stdout(dn):
       stats = collections.defaultdict(int)
       failed_dirs = []
@@ -134,7 +136,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.album1_dir),
                               "1.jpg",
                               failed_dirs,
-                              None,
+                              scrobbler,
                               0)
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 1)
@@ -152,7 +154,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.album2_dir),
                               "1.jpg",
                               failed_dirs,
-                              None,
+                              scrobbler,
                               0)
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
@@ -169,7 +171,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.album2_dir),
                               "1.dat",
                               failed_dirs,
-                              None,
+                              scrobbler,
                               0)
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
@@ -187,7 +189,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.not_album_dir),
                               "1.jpg",
                               failed_dirs,
-                              None,
+                              scrobbler,
                               0)
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 1)
@@ -204,7 +206,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.invalid_album_dir),
                               "1.jpg",
                               failed_dirs,
-                              None,
+                              scrobbler,
                               0)
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
