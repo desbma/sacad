@@ -13,7 +13,7 @@ LXML_INSTALLER     := lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.
 7ZIP_INSTALLER     := 7z938.msi
 
 # env
-CURL     := curl -s -f -L -m 60 --retry 10 --retry-max-time 30
+CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
 WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine
 WINE     := WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
 
