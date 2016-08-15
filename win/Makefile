@@ -28,12 +28,12 @@ LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site
 TEST_LIB_DIR := ${WINE_DIR}/drive_c/zic
 
 
-.PHONY: all test
+.PHONY: all test test_ut test_freeze
 
 
 all:: sacad_win.7z sacad_win.zip sacad_win.exe
 
-test:: test.jpg ${TEST_LIB_DIR}/test.png
+test:: test_ut test_freeze
 
 print-%:
 	@echo $*=$($*)
@@ -82,6 +82,11 @@ sacad/readme.txt:
 #
 # Tests
 #
+
+test_ut: ${LXML_INSTALLED} .requirements.
+	cd .. && ${WINE} ${PYTHON_INSTALLED} setup.py test
+
+test_freeze:: test.jpg ${TEST_LIB_DIR}/test.png
 
 test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} $< "neu" "neu 2" 1000 $@
