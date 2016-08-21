@@ -1,0 +1,16 @@
+#!/bin/bash -eu
+
+set -o pipefail
+
+readonly VERSION=${1:?}
+
+
+cd "$(git rev-parse --show-toplevel)"
+
+sed -i "s/^\(__version__ = \"\).*\(\"\)/\1$VERSION\2/w /dev/stdout" sacad/__init__.py
+
+git add sacad/__init__.py
+
+git commit -m "Version ${VERSION}"
+
+git tag -m "Version ${VERSION}" ${VERSION}
