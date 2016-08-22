@@ -28,6 +28,7 @@ before_deploy:
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -q update; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
+  - "if [ $PYPI_DEPLOY -eq 1 ]; pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
   - "if [ $WINDOWS -eq 1 ]; then pushd win && make all && popd; fi"
 deploy:
   - provider: releases
