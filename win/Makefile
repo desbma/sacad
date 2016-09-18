@@ -91,7 +91,7 @@ test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.
 	${WINE} $< "neu" "neu 2" 1000 $@
 
 ${TEST_LIB_DIR}:
-	mkdir -p @
+	mkdir -p $@
 
 ${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg ${TEST_LIB_DIR}
 	cp $< $@
