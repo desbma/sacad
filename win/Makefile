@@ -6,11 +6,12 @@ CXFREEZE_VERSION     := 4.3.3
 LXML_VERSION         := 3.4.3
 
 # installers
-PYTHON_INSTALLER   := python-${PYTHON_VERSION}.msi
-CXFREEZE_INSTALLER := cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi
-PIP_INSTALLER      := get-pip.py
-LXML_INSTALLER     := lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl
-7ZIP_INSTALLER     := 7z938.msi
+DOWNLOAD_DIR       := ${HOME}/.cache/sacad-build
+PYTHON_INSTALLER   := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.msi
+CXFREEZE_INSTALLER := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi
+PIP_INSTALLER      := ${DOWNLOAD_DIR}/get-pip.py
+LXML_WHEEL         := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl
+7ZIP_INSTALLER     := ${DOWNLOAD_DIR}/7z938.msi
 
 # env
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
@@ -25,7 +26,7 @@ LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
 # test
-TEST_LIB_DIR := ${WINE_DIR}/drive_c/zic
+TEST_LIB_DIR := ${WINE_DIR}/drive_c/music
 
 
 .PHONY: all test test_ut test_freeze
@@ -57,25 +58,23 @@ sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 # Intermediate targets
 #
 
-sacad/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
-	mkdir -p $(dir $@)
+sacad:
+	mkdir -p $@
+
+sacad/sacad.exe: sacad ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
 	touch $@
 
-sacad/python${PYTHON_VERSION_SHORT}.dll: ${PYTHON_INSTALLED}
-	mkdir -p $(dir $@)
+sacad/python${PYTHON_VERSION_SHORT}.dll: sacad ${PYTHON_INSTALLED}
 	cp $(dir ${PYTHON_INSTALLED})$(notdir $@) $@
 
-sacad/sqlite3.dll: ${PYTHON_INSTALLED}
-	mkdir -p $(dir $@)
+sacad/sqlite3.dll: sacad ${PYTHON_INSTALLED}
 	cp $(dir ${PYTHON_INSTALLED})DLLs/$(notdir $@) $@
 
-sacad/LICENSE:
-	mkdir -p $(dir $@)
+sacad/LICENSE: sacad
 	cp ../LICENSE $@
 
-sacad/readme.txt:
-	mkdir -p $(dir $@)
+sacad/readme.txt: sacad
 	echo 'Get source, help and latest version at: https://github.com/desbma/sacad' > $@
 
 
@@ -91,7 +90,13 @@ test_freeze:: test.jpg ${TEST_LIB_DIR}/test.png
 test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} $< "neu" "neu 2" 1000 $@
 
-${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/zic.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+${TEST_LIB_DIR}:
+	mkdir -p @
+
+${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg ${TEST_LIB_DIR}
+	cp $< $@
+
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
 
 
@@ -119,7 +124,7 @@ ${PIP_INSTALLED}: ${PIP_INSTALLER} ${PYTHON_INSTALLED}
 	${WINE} ${PYTHON_INSTALLED} $< 2> /dev/null > /dev/null
 	touch $@
 
-${LXML_INSTALLED}: ${LXML_INSTALLER} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
+${LXML_INSTALLED}: ${LXML_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
 	${WINE} ${PYTHON_INSTALLED} -m pip install wheel 2> /dev/null > /dev/null
 	${WINE} ${PYTHON_INSTALLED} -m pip install $< 2> /dev/null > /dev/null
 	touch $@
@@ -133,24 +138,26 @@ ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
 # Downloads
 #
 
-${PYTHON_INSTALLER}:
+${DOWNLOAD_DIR}:
+	mkdir -p $@
+
+${PYTHON_INSTALLER}: ${DOWNLOAD_DIR}
 	${CURL} https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
 
-${CXFREEZE_INSTALLER}:
+${CXFREEZE_INSTALLER}: ${DOWNLOAD_DIR}
 	${CURL} https://sourceforge.net/projects/cx-freeze/files/${CXFREEZE_VERSION}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi > $@
 
-${PIP_INSTALLER}:
+${PIP_INSTALLER}: ${DOWNLOAD_DIR}
 	${CURL} https://bootstrap.pypa.io/get-pip.py > $@
 
-${LXML_INSTALLER}:
+${LXML_WHEEL}: ${DOWNLOAD_DIR}
 	${CURL} https://dl.dropboxusercontent.com/u/70127955/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl > $@
 
-${7ZIP_INSTALLER}:
+${7ZIP_INSTALLER}: ${DOWNLOAD_DIR}
 	${CURL} http://www.7-zip.org/a/7z938.msi > $@.unckecked
 	echo "673377a03f91ff0f7f384794934b767c3389e50d7dc308f7c73f4633121518b3e4af8d33cf282398a710577e12fbb963152591c3e29b1092c79530bb2d8aa882  $@.unckecked" | sha512sum --status -c - && mv $@.unckecked $@
 
-${TEST_LIB_DIR}/zic.ogg:
-	mkdir -p $(dir $@)
+${DOWNLOAD_DIR}/sample.ogg: ${DOWNLOAD_DIR}
 	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
 
 
@@ -160,7 +167,7 @@ ${TEST_LIB_DIR}/zic.ogg:
 
 clean:
 	@-rm -Rvf ${WINE_DIR}
-	@-rm -vf ${PYTHON_INSTALLER} ${CXFREEZE_INSTALLER} ${PIP_INSTALLER} ${LXML_INSTALLER} ${7ZIP_INSTALLER}*
+	@-rm -Rvf ${DOWNLOAD_DIR}
 	@-rm -Rvf sacad .requirements
 	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
 	@-rm -vf test.jpg

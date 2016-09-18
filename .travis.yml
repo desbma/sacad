@@ -1,5 +1,8 @@
 language: python
-cache: pip
+cache:
+  pip: true
+  directories:
+    - $HOME/.cache/sacad-build
 matrix:
   include:
     - python: "3.3"
