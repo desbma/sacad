@@ -69,6 +69,11 @@ class TestRecursive(unittest.TestCase):
     url = "http://www.stephaniequinn.com/Music/Vivaldi%20-%20Spring%20from%20Four%20Seasons.mp3"
     download(url, os.path.join(cls.album3_dir, "1 track.mp3"))
 
+    cls.album4_dir = os.path.join(cls.temp_dir.name, "album4")
+    os.mkdir(cls.album4_dir)
+    url = "https://auphonic.com/media/audio-examples/01.auphonic-demo-unprocessed.m4a"
+    download(url, os.path.join(cls.album4_dir, "1 track.m4a"))
+
     cls.not_album_dir = os.path.join(cls.temp_dir.name, "not an album")
     os.mkdir(cls.not_album_dir)
     shutil.copyfile(filepath2, os.path.join(cls.not_album_dir, "a.dat"))
@@ -89,20 +94,24 @@ class TestRecursive(unittest.TestCase):
   def test_analyze_lib(self):
     with open(os.devnull, "wt") as dn, redirect_stdout(dn):
       work = recurse.analyze_lib(__class__.temp_dir.name, "a.jpg")
-      self.assertEqual(len(work), 3)
+      self.assertEqual(len(work), 4)
       self.assertIn(__class__.album1_dir, work)
       self.assertEqual(work[__class__.album1_dir], ("ARTIST1", "ALBUM1"))
       self.assertIn(__class__.album2_dir, work)
       self.assertEqual(work[__class__.album2_dir], ("ARTIST2", "ALBUM2"))
       self.assertIn(__class__.album3_dir, work)
       self.assertEqual(work[__class__.album3_dir], ("Quinn String Quartet", "Israeli Concertino"))
+      self.assertIn(__class__.album4_dir, work)
+      self.assertEqual(work[__class__.album4_dir], ("Auphonic", "Auphonic Demonstration"))
 
       work = recurse.analyze_lib(__class__.temp_dir.name, "1.dat")
-      self.assertEqual(len(work), 2)
+      self.assertEqual(len(work), 3)
       self.assertIn(__class__.album1_dir, work)
       self.assertEqual(work[__class__.album1_dir], ("ARTIST1", "ALBUM1"))
       self.assertIn(__class__.album3_dir, work)
       self.assertEqual(work[__class__.album3_dir], ("Quinn String Quartet", "Israeli Concertino"))
+      self.assertIn(__class__.album4_dir, work)
+      self.assertEqual(work[__class__.album4_dir], ("Auphonic", "Auphonic Demonstration"))
 
   def test_get_metadata(self):
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
@@ -117,6 +126,10 @@ class TestRecursive(unittest.TestCase):
                                                                 __class__.album3_dir),
                                               os.listdir(__class__.album3_dir))),
                      ("Quinn String Quartet", "Israeli Concertino"))
+    self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
+                                                                __class__.album4_dir),
+                                              os.listdir(__class__.album4_dir))),
+                     ("Auphonic", "Auphonic Demonstration"))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.not_album_dir),
                                               os.listdir(__class__.not_album_dir))),

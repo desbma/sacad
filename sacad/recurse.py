@@ -64,13 +64,23 @@ def get_metadata(audio_filepaths):
       continue
     if mf is None:
       continue
-    for key in ("albumartist", "artist", "TPE1", "TPE2"):
-      val = mf.get(key, None)
+    for key in ("albumartist", "artist",  # ogg
+                "TPE1", "TPE2",  # mp3
+                "aART", "\xa9ART"):  # mp4
+      try:
+        val = mf.get(key, None)
+      except ValueError:
+        val = None
       if val is not None:
         artist = val[0]
         break
-    for key in ("_album", "album", "TALB"):
-      val = mf.get(key, None)
+    for key in ("_album", "album",  # ogg
+                "TALB",  # mp3
+                "\xa9alb"):  # mp4
+      try:
+        val = mf.get(key, None)
+      except ValueError:
+        val = None
       if val is not None:
         album = val[0]
         break
