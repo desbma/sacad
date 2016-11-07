@@ -129,7 +129,7 @@ def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False)
 
 def get_covers(work, args):
   """ Get missing covers. """
-  with concurrent.futures.ProcessPoolExecutor(max_workers=min(4, multiprocessing.cpu_count())) as executor:
+  with concurrent.futures.ProcessPoolExecutor(max_workers=min(8, multiprocessing.cpu_count())) as executor:
     # post work
     futures = {}
     for path, (artist, album) in work.items():

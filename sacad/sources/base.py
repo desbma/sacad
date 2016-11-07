@@ -5,6 +5,7 @@ import logging
 import operator
 import os
 import pickle
+import time
 import unicodedata
 import urllib.parse
 
@@ -136,56 +137,75 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   def fetchResults(self, url, post_data=None):
     """ Get search result of an URL from cache or HTTP. """
-    cache_hit = False
-    if post_data is not None:
-      if (url, post_data) in __class__.api_cache:
-        logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
-        data = __class__.api_cache[(url, post_data)]
-        cache_hit = True
-    elif url in __class__.api_cache:
-      logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
-      data = __class__.api_cache[url]
-      cache_hit = True
+    while True:
+      try:
+        cache_hit = False
+        if post_data is not None:
+          if (url, post_data) in __class__.api_cache:
+            logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
+            data = __class__.api_cache[(url, post_data)]
+            cache_hit = True
+        elif url in __class__.api_cache:
+          logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
+          data = __class__.api_cache[url]
+          cache_hit = True
 
-    if not cache_hit:
-      if post_data is not None:
-        logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+        if not cache_hit:
+          if post_data is not None:
+            logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+          else:
+            logging.getLogger().debug("Querying URL '%s'..." % (url))
+          headers = {}
+          self.updateHttpHeaders(headers)
+          data = http_helpers.query(url,
+                                    session=self.http_session,
+                                    watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                                           url,
+                                                                           self.min_delay_between_server_accesses),
+                                    post_data=post_data,
+                                    headers=headers)
+          # add cache entry only when parsing is successful
+
+      except rate_watcher.WaitNeeded as e:
+        logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
+        time.sleep(e.wait_s)
+
       else:
-        logging.getLogger().debug("Querying URL '%s'..." % (url))
-      headers = {}
-      self.updateHttpHeaders(headers)
-      data = http_helpers.query(url,
-                                session=self.http_session,
-                                watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                                       url,
-                                                                       self.min_delay_between_server_accesses),
-                                post_data=post_data,
-                                headers=headers)
-      # add cache entry only when parsing is successful
+        break
+
     return cache_hit, data
 
   def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
-    if url in __class__.probe_cache:
-      logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
-      resp_ok, resp_headers = pickle.loads(__class__.probe_cache[url])
+    while True:
+      try:
+        if url in __class__.probe_cache:
+          logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
+          resp_ok, resp_headers = pickle.loads(__class__.probe_cache[url])
 
-    else:
-      logging.getLogger().debug("Probing URL '%s'..." % (url))
-      headers = {}
-      self.updateHttpHeaders(headers)
-      resp_headers = {}
-      resp_ok = http_helpers.is_reachable(url,
-                                          session=self.http_session,
-                                          watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                                                 url,
-                                                                                 self.min_delay_between_server_accesses),
-                                          headers=headers,
-                                          response_headers=resp_headers)
-      __class__.probe_cache[url] = pickle.dumps((resp_ok, resp_headers))
+        else:
+          logging.getLogger().debug("Probing URL '%s'..." % (url))
+          headers = {}
+          self.updateHttpHeaders(headers)
+          resp_headers = {}
+          resp_ok = http_helpers.is_reachable(url,
+                                              session=self.http_session,
+                                              watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                                                     url,
+                                                                                     self.min_delay_between_server_accesses),
+                                              headers=headers,
+                                              response_headers=resp_headers)
+          __class__.probe_cache[url] = pickle.dumps((resp_ok, resp_headers))
 
-    if response_headers is not None:
-      response_headers.update(resp_headers)
+        if response_headers is not None:
+          response_headers.update(resp_headers)
+
+      except rate_watcher.WaitNeeded as e:
+        logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
+        time.sleep(e.wait_s)
+
+      else:
+        break
 
     return resp_ok
 

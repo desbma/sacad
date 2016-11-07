@@ -11,6 +11,17 @@ import urllib.parse
 import lockfile
 
 
+MIN_WAIT_TIME_S = 0.05
+
+
+class WaitNeeded(Exception):
+
+  """ Exception raised when access can not be granted without waiting. """
+
+  def __init__(self, wait_time_s):
+    self.wait_s = wait_time_s
+
+
 class AccessRateWatcher:
 
   """ Access rate limiter, supporting concurrent access by threads and/or processes. """
@@ -31,7 +42,7 @@ class AccessRateWatcher:
     os.makedirs(self.lock_dir, exist_ok=True)
 
   def __enter__(self):
-    self._waitAccess()
+    self._raiseOrLock()
 
   def __exit__(self, exc_type, exc_value, traceback):
     self._access()
@@ -44,27 +55,23 @@ class AccessRateWatcher:
                                 (domain, timestamp) VALUES (?, ?)""",
                               (self.domain, time.time(),))
 
-  def _waitAccess(self):
-    """ Wait the needed time before sending a request to honor rate limit. """
-    while True:
-      with self.connection:
-        last_access_time = self.connection.execute("""SELECT timestamp
-                                                      FROM access_timestamp
-                                                      WHERE domain = ?;""",
-                                                   (self.domain,)).fetchone()
-      if last_access_time is not None:
-        last_access_time = last_access_time[0]
-        now = time.time()
-        time_since_last_access = now - last_access_time
-        if time_since_last_access < self.min_delay_between_accesses:
-          time_to_wait = self.min_delay_between_accesses - time_since_last_access
-          logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (time_to_wait * 1000))
-          time.sleep(time_to_wait)
+  def _raiseOrLock(self):
+    """ Get lock or raise WaitNeeded exception. """
+    with self.connection:
+      last_access_time = self.connection.execute("""SELECT timestamp
+                                                    FROM access_timestamp
+                                                    WHERE domain = ?;""",
+                                                 (self.domain,)).fetchone()
+    if last_access_time is not None:
+      last_access_time = last_access_time[0]
+      now = time.time()
+      time_since_last_access = now - last_access_time
+      if time_since_last_access < self.min_delay_between_accesses:
+        time_to_wait = self.min_delay_between_accesses - time_since_last_access
+        raise WaitNeeded(time_to_wait)
 
-      if self._getLock():
-        break
-      else:
-        time.sleep(0.001)
+    if not self._getLock():
+      raise WaitNeeded(MIN_WAIT_TIME_S)
 
   def _getLock(self):
     with __class__.thread_dict_lock:
@@ -74,6 +81,7 @@ class AccessRateWatcher:
       try:
         plock.acquire(timeout=0)
       except (lockfile.LockTimeout, lockfile.AlreadyLocked):
+        # TODO detect and break locks of dead processes
         tlock.release()
       except:
         tlock.release()

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import logging
 import os
 import tempfile
 import time
 import unittest
 
-from sacad.rate_watcher import AccessRateWatcher
+from sacad.rate_watcher import AccessRateWatcher, WaitNeeded
 
 
 class TestRateWatcher(unittest.TestCase):
@@ -18,26 +17,39 @@ class TestRateWatcher(unittest.TestCase):
                              "http://1.domain.com/abcd",
                              min_delay_between_accesses=1):
         time_first_access_domain1 = time.time()
+
       with AccessRateWatcher(db_filepath,
                              "http://2.domain.com/abcd",
                              min_delay_between_accesses=1):
         time_first_access_domain2 = time.time()
       self.assertLess(time_first_access_domain2 - time_first_access_domain1, 1)
-      with AccessRateWatcher(db_filepath,
-                             "http://1.domain.com/efgh",
-                             min_delay_between_accesses=1):
-        time_second_access_domain1 = time.time()
-      self.assertGreater(time_second_access_domain1 - time_first_access_domain1, 1)
+
+      with self.assertRaises(WaitNeeded) as cm:
+        with AccessRateWatcher(db_filepath,
+                               "http://1.domain.com/efgh",
+                               min_delay_between_accesses=1):
+          pass
+      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 1)
+
+      with self.assertRaises(WaitNeeded) as cm:
+        with AccessRateWatcher(db_filepath,
+                               "http://2.domain.com/efgh",
+                               min_delay_between_accesses=1):
+          pass
+      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 1)
+
+      with self.assertRaises(WaitNeeded) as cm:
+        with AccessRateWatcher(db_filepath,
+                               "http://2.domain.com/ijkl",
+                               min_delay_between_accesses=2):
+          pass
+      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 2)
+
+      time.sleep(1)
       with AccessRateWatcher(db_filepath,
                              "http://2.domain.com/efgh",
                              min_delay_between_accesses=1):
-        time_second_access_domain2 = time.time()
-      self.assertLess(time_second_access_domain2 - time_second_access_domain1, 1)
-      with AccessRateWatcher(db_filepath,
-                             "http://2.domain.com/ijkl",
-                             min_delay_between_accesses=2):
-        time_third_access_domain2 = time.time()
-      self.assertGreater(time_third_access_domain2 - time_second_access_domain2, 2)
+        pass
 
 
 if __name__ == "__main__":
