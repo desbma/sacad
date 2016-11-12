@@ -85,6 +85,8 @@ class AccessRateWatcher:
         # detect and break locks of dead processes
         lock_age = time.time() - os.path.getmtime(plock.lock_file)
         if lock_age > SUSPICIOUS_LOCK_AGE_S:
+          logging.getLogger().warning("Breaking suspicious lock '%s' created %.2f seconds ago" % (plock.lock_file,
+                                                                                                  lock_age))
           plock.break_lock()
         tlock.release()
       except:
