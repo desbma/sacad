@@ -1,6 +1,6 @@
 appdirs>=1.4.0
 cssselect>=0.9.1
-lockfile>=0.12.2
+lockfile==0.12.2
 lxml>=3.3.3,<4.0.0
 mutagen>=1.31
 pillow>=2.7.0

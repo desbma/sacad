@@ -11,7 +11,8 @@ import urllib.parse
 import lockfile
 
 
-MIN_WAIT_TIME_S = 0.05
+MIN_WAIT_TIME_S = 0.01
+SUSPICIOUS_LOCK_AGE_S = 120
 
 
 class WaitNeeded(Exception):
@@ -81,7 +82,10 @@ class AccessRateWatcher:
       try:
         plock.acquire(timeout=0)
       except (lockfile.LockTimeout, lockfile.AlreadyLocked):
-        # TODO detect and break locks of dead processes
+        # detect and break locks of dead processes
+        lock_age = time.time() - os.path.getmtime(plock.lock_file)
+        if lock_age > SUSPICIOUS_LOCK_AGE_S:
+          plock.break_lock()
         tlock.release()
       except:
         tlock.release()
@@ -91,5 +95,5 @@ class AccessRateWatcher:
     return False
 
   def _releaseLock(self):
-    __class__.thread_locks[self.domain].release()
     lockfile.FileLock(os.path.join(self.lock_dir, self.domain)).release()
+    __class__.thread_locks[self.domain].release()
