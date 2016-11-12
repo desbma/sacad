@@ -6,7 +6,7 @@ CXFREEZE_VERSION     := 4.3.3
 LXML_VERSION         := 3.4.3
 
 # installers
-DOWNLOAD_DIR       := ${HOME}/.cache/sacad-build
+DOWNLOAD_DIR       ?= dl
 PYTHON_INSTALLER   := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.msi
 CXFREEZE_INSTALLER := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}.win32-py${PYTHON_VERSION_MAJOR}.msi
 PIP_INSTALLER      := ${DOWNLOAD_DIR}/get-pip.py

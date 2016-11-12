@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 import unittest
+import urllib.parse
 
 import mutagen
 import requests
@@ -30,11 +31,21 @@ except AttributeError:
 
 
 def download(url, filepath):
+  cache_dir = os.getenv("TEST_DL_CACHE_DIR")
+  if cache_dir is not None:
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_filepath = os.path.join(cache_dir,
+                                  os.path.basename(urllib.parse.urlsplit(url).path))
+    if os.path.isfile(cache_filepath):
+      shutil.copyfile(cache_filepath, filepath)
+      return
   with contextlib.closing(requests.get(url, stream=True)) as response:
     response.raise_for_status()
     with open(filepath, "wb") as f:
       for chunk in response.iter_content(2 ** 14):
         f.write(chunk)
+  if cache_dir is not None:
+    shutil.copyfile(filepath, cache_filepath)
 
 
 class TestRecursive(unittest.TestCase):
