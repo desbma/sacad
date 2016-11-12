@@ -141,7 +141,8 @@ def get_covers(work, args):
                                args.size_tolerance_prct,
                                args.amazon_tlds,
                                args.no_lq_sources,
-                               os.path.join(path, args.filename))
+                               os.path.join(path, args.filename),
+                               process_parallelism=True)
       futures[future] = (path, artist, album)
 
     # follow progress
@@ -216,7 +217,7 @@ def cl_main():
     exit(1)
 
   # silence the logger
-  logging.basicConfig(format="%(process)d %(threadName)s: %(message)s", level=logging.ERROR)
+  logging.basicConfig(format="%(asctime)s %(process)d %(threadName)s: %(message)s", level=logging.ERROR)
 
   # do the job
   work = analyze_lib(args.lib_dir, args.filename)

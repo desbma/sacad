@@ -12,14 +12,17 @@ import functools
 import logging
 import operator
 import os
+import random
 import sys
+import time
 
 from sacad import colored_logging
 from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath):
+def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath,
+                        *, process_parallelism=False):
   """ Search and download a cover, return True if success, False instead. """
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
@@ -37,9 +40,15 @@ def search_and_download(album, artist, format, size, size_tolerance_prct, amazon
   if not no_lq_sources:
     cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
 
+  if process_parallelism:
+    # to improve concurrency with rate limiting, randomize source order
+    random.seed(os.getpid() + int(time.time() * 1000))
+    random.shuffle(cover_sources)
+
   # search
   results = []
-  with concurrent.futures.ThreadPoolExecutor(max_workers=len(cover_sources)) as executor:
+  thread_count = 1 if process_parallelism else len(cover_sources)
+  with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
     for source_results in executor.map(operator.methodcaller("search", album, artist),
                                        cover_sources):
       results.extend(source_results)

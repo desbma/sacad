@@ -44,9 +44,9 @@ class AccessRateWatcher:
 
   def __enter__(self):
     self._raiseOrLock()
+    self._access()
 
   def __exit__(self, exc_type, exc_value, traceback):
-    self._access()
     self._releaseLock()
 
   def _access(self):
@@ -58,21 +58,26 @@ class AccessRateWatcher:
 
   def _raiseOrLock(self):
     """ Get lock or raise WaitNeeded exception. """
-    with self.connection:
-      last_access_time = self.connection.execute("""SELECT timestamp
-                                                    FROM access_timestamp
-                                                    WHERE domain = ?;""",
-                                                 (self.domain,)).fetchone()
-    if last_access_time is not None:
-      last_access_time = last_access_time[0]
-      now = time.time()
-      time_since_last_access = now - last_access_time
-      if time_since_last_access < self.min_delay_between_accesses:
-        time_to_wait = self.min_delay_between_accesses - time_since_last_access
-        raise WaitNeeded(time_to_wait)
+    for try_lock in (True, False):
+      with self.connection:
+        last_access_time = self.connection.execute("""SELECT timestamp
+                                                      FROM access_timestamp
+                                                      WHERE domain = ?;""",
+                                                   (self.domain,)).fetchone()
+      if last_access_time is not None:
+        last_access_time = last_access_time[0]
+        now = time.time()
+        time_since_last_access = now - last_access_time
+        if time_since_last_access < self.min_delay_between_accesses:
+          time_to_wait = self.min_delay_between_accesses - time_since_last_access
+          raise WaitNeeded(time_to_wait)
 
-    if not self._getLock():
-      raise WaitNeeded(MIN_WAIT_TIME_S)
+      if try_lock:
+        locked = self._getLock()
+        if locked:
+          break
+      else:
+        raise WaitNeeded(MIN_WAIT_TIME_S)
 
   def _getLock(self):
     with __class__.thread_dict_lock:
@@ -94,6 +99,11 @@ class AccessRateWatcher:
         raise
       else:
         return True
+    else:
+      # lock not availale: wait for it, release it immediately and return as if locking fails
+      # we do this to wait for the right amount of time but still re-read the cache
+      with tlock:
+        pass
     return False
 
   def _releaseLock(self):
