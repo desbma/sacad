@@ -65,6 +65,8 @@ sacad/sacad.exe: sacad ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
 	touch $@
 
+sacad/sacad_r.exe: sacad/sacad.exe
+
 sacad/python${PYTHON_VERSION_SHORT}.dll: sacad ${PYTHON_INSTALLED}
 	cp $(dir ${PYTHON_INSTALLED})$(notdir $@) $@
 
@@ -96,7 +98,7 @@ ${TEST_LIB_DIR}:
 ${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg ${TEST_LIB_DIR}
 	cp $< $@
 
-${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad.exe sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
 	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
 
 
