@@ -3,6 +3,7 @@ cache:
   pip: true
   directories:
     - $HOME/.cache/sacad-build
+    - $HOME/.cache/sacad-test
 matrix:
   include:
     - python: "3.3"
@@ -22,8 +23,8 @@ install:
   - "sudo apt-get -V install optipng jpegoptim"
   - "if [ $WINDOWS -eq 1 ]; then sudo apt-get -V install wine p7zip-full; fi"
 script:
-  - "travis_retry coverage run --source=sacad setup.py test"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && make test && popd; fi"
+  - "TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test travis_retry coverage run --source=sacad setup.py test"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build make test && popd; fi"
 after_success:
   - "coveralls"
 before_deploy:

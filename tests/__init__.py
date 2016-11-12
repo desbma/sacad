@@ -2,6 +2,7 @@
 
 import contextlib
 import logging
+import math
 import socket
 import unittest
 import unittest.mock
@@ -75,7 +76,7 @@ class TestSacad(unittest.TestCase):
     """ Download the beginning of image files to guess their format and resolution. """
     refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
                                                                                          (700, 700),
-                                                                                         5),
+                                                                                         math.ceil(18000 / sacad.CoverSourceResult.METADATA_PEEK_SIZE_INCREMENT)),
             "http://img2-ak.lst.fm/i/u/55ad95c53e6043e3b150ba8a0a3b20a1.png": (sacad.cover.CoverImageFormat.PNG,
                                                                                (600, 600),
                                                                                1)}
