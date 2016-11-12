@@ -1,6 +1,7 @@
 import concurrent.futures
 import contextlib
 import enum
+import imghdr
 import io
 import itertools
 import logging
@@ -48,7 +49,8 @@ class CoverSourceResult:
 
   """ Cover image returned by a source, candidate to be downloaded. """
 
-  MAX_FILE_METADATA_PEEK_SIZE = 2 ** 15
+  METADATA_PEEK_SIZE_INCREMENT = 2 ** 12
+  MAX_FILE_METADATA_PEEK_SIZE = 20 * 2 ** 12
   IMG_SIG_SIZE = 16
 
   def __init__(self, urls, size, format, *, thumbnail_url, source, source_quality, rank=None,
@@ -268,17 +270,21 @@ class CoverSourceResult:
               except KeyError:
                 pass
             if self.needMetadataUpdate():
-              for new_img_data in response.iter_content(chunk_size=2 ** 12):
+              for new_img_data in response.iter_content(chunk_size=__class__.METADATA_PEEK_SIZE_INCREMENT):
                 img_data.extend(new_img_data)
                 metadata = __class__.getImageMetadata(img_data)
-                if len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
-                  break
                 if metadata is not None:
                   format, width, height = metadata
                   if idx == idxs[-1][0]:
                     self.check_metadata = CoverImageMetadata.NONE
                   else:
                     # we may need to check size for other URLs
+                    self.check_metadata &= ~CoverImageMetadata.FORMAT
+                  break
+                if len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
+                  # we won't fetch image header any further, try to identify format
+                  format = __class__.getImageFormat(img_data)
+                  if format is not None:
                     self.check_metadata &= ~CoverImageMetadata.FORMAT
                   break
           if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
@@ -487,6 +493,12 @@ class CoverSourceResult:
     format = SUPPORTED_IMG_FORMATS.get(format, None)
     width, height = img.size
     return format, width, height
+
+  @staticmethod
+  def getImageFormat(img_data):
+    """ Identify an image format from its first bytes. """
+    r = imghdr.what(None, h=img_data)
+    return SUPPORTED_IMG_FORMATS.get(r, None)
 
   @staticmethod
   def preProcessForComparison(results, target_size, size_tolerance_prct):
