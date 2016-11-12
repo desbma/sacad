@@ -76,6 +76,7 @@ class AccessRateWatcher:
         locked = self._getLock()
         if locked:
           break
+        # loop again to find wait time
       else:
         raise WaitNeeded(MIN_WAIT_TIME_S)
 
@@ -100,7 +101,7 @@ class AccessRateWatcher:
       else:
         return True
     else:
-      # lock not availale: wait for it, release it immediately and return as if locking fails
+      # lock not available: wait for it, release it immediately and return as if locking fails
       # we do this to wait for the right amount of time but still re-read the cache
       with tlock:
         pass
