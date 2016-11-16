@@ -1,13 +1,17 @@
 """ Common HTTP code. """
 
-import contextlib
 import http.cookiejar
 import logging
 import os
+import pickle
 import socket
+import time
 
+import appdirs
 import redo
 import requests
+
+from sacad import rate_watcher
 
 
 IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
@@ -17,123 +21,166 @@ HTTP_MAX_ATTEMPTS = 20 if IS_TRAVIS else 3
 DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
-def query(url, *, session, watcher=None, post_data=None, headers=None, verify=True):
-  """ Send a GET/POST request, retry if it fails, and return response content. """
-  if headers is None:
-    headers = {}
-  if "User-Agent" not in headers:
-    headers["User-Agent"] = DEFAULT_USER_AGENT
+class Http:
 
-  for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
-                                           sleeptime=1.5,
-                                           max_sleeptime=5,
-                                           sleepscale=1.25,
-                                           jitter=1),
-                              1):
+  def __init__(self, *, allow_session_cookies, min_delay_between_accesses):
+    self.session = requests.Session()
+    if not allow_session_cookies:
+      cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
+      self.session.cookies.set_policy(cp)
+    self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
+                                                                   appauthor=False),
+                                            "rate_watcher.sqlite")
+    self.min_delay_between_accesses = min_delay_between_accesses
+
+  def query(self, url, *, post_data=None, headers=None, verify=True, cache=None):
+    """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
+    cache_hit = False
+    if cache is not None:
+      # try from cache first
+      if post_data is not None:
+        if (url, post_data) in cache:
+          logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
+          cache_hit = True
+          data = cache[(url, post_data)]
+      elif url in cache:
+        logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
+        cache_hit = True
+        data = cache[url]
+
+    if not cache_hit:
+      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
+                                               sleeptime=1.5,
+                                               max_sleeptime=5,
+                                               sleepscale=1.25,
+                                               jitter=1),
+                                  1):
+        try:
+          while True:  # rate watcher loop
+            try:
+              with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                  url,
+                                                  self.min_delay_between_accesses):
+                if post_data is not None:
+                  response = self.session.post(url,
+                                               data=post_data,
+                                               headers=self._buildHeaders(headers),
+                                               timeout=HTTP_NORMAL_TIMEOUT_S,
+                                               verify=verify)
+                else:
+                  response = self.session.get(url,
+                                              headers=headers,
+                                              timeout=HTTP_NORMAL_TIMEOUT_S,
+                                              verify=verify)
+
+            except rate_watcher.WaitNeeded as e:
+              logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
+              time.sleep(e.wait_s)
+
+            else:
+              break  # rate watcher loop
+
+          break  # http retry loop
+
+        except requests.exceptions.SSLError:
+          raise
+
+        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+          logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                       attempt,
+                                                                                       HTTP_MAX_ATTEMPTS,
+                                                                                       e.__class__.__qualname__,
+                                                                                       e))
+          if attempt == HTTP_MAX_ATTEMPTS:
+            raise
+
+      response.raise_for_status()
+
+      data = response.content
+      # cache storage is done by caller
+
+    return cache_hit, data
+
+  def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
+    """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
+    if (cache is not None) and (url in cache):
+      # try from cache first
+      logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
+      resp_ok, response_headers = pickle.loads(cache[url])
+      return resp_ok
+
+    resp_ok = True
     try:
-      with contextlib.ExitStack() as context_manager:
-        if watcher is not None:
-          context_manager.enter_context(watcher)
-        if post_data is not None:
-          response = session.post(url,
-                                  data=post_data,
-                                  headers=headers,
-                                  timeout=HTTP_NORMAL_TIMEOUT_S,
-                                  verify=verify)
-        else:
-          response = session.get(url,
-                                 headers=headers,
-                                 timeout=HTTP_NORMAL_TIMEOUT_S,
-                                 verify=verify)
-      break
+      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
+                                               sleeptime=1.5,
+                                               max_sleeptime=3,
+                                               sleepscale=1.25,
+                                               jitter=1),
+                                  1):
+        try:
+          while True:  # rate watcher loop
+            try:
+              with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                  url,
+                                                  self.min_delay_between_accesses):
+                response = self.session.head(url,
+                                             headers=self._buildHeaders(headers),
+                                             timeout=HTTP_SHORT_TIMEOUT_S,
+                                             verify=verify)
 
-    except requests.exceptions.SSLError:
-      raise
+            except rate_watcher.WaitNeeded as e:
+              logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
+              time.sleep(e.wait_s)
 
-    except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-      logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                   attempt,
-                                                                                   HTTP_MAX_ATTEMPTS,
-                                                                                   e.__class__.__qualname__,
-                                                                                   e))
-      if attempt == HTTP_MAX_ATTEMPTS:
-        raise
+            else:
+              break  # rate watcher loop
 
-  response.raise_for_status()
+          break  # http retry loop
 
-  return response.content
+        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+          logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                      attempt,
+                                                                                      HTTP_MAX_ATTEMPTS,
+                                                                                      e.__class__.__qualname__,
+                                                                                      e))
+          if attempt == HTTP_MAX_ATTEMPTS:
+            resp_ok = False
+            break  # http retry loop
 
+      response.raise_for_status()
 
-def is_reachable(url, *, session, watcher=None, headers=None, verify=True, response_headers=None):
-  """ Send a HEAD request with short timeout, return True if ressource has 2xx status code, False instead. """
-  if headers is None:
-    headers = {}
-  if "User-Agent" not in headers:
-    headers["User-Agent"] = DEFAULT_USER_AGENT
+      if response_headers is not None:
+        response_headers.update(response.headers)
 
-  try:
-    for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
-                                             sleeptime=1.5,
-                                             max_sleeptime=3,
-                                             sleepscale=1.25,
-                                             jitter=1),
-                                1):
-      try:
-        with contextlib.ExitStack() as context_manager:
-          if watcher is not None:
-            context_manager.enter_context(watcher)
-          response = session.head(url,
-                                  headers=headers,
-                                  timeout=HTTP_SHORT_TIMEOUT_S,
-                                  verify=verify)
-          break
+    except requests.exceptions.HTTPError as e:
+      logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
+      resp_ok = False
 
-      except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                    attempt,
-                                                                                    HTTP_MAX_ATTEMPTS,
-                                                                                    e.__class__.__qualname__,
-                                                                                    e))
-        if attempt == HTTP_MAX_ATTEMPTS:
-          return False
+    if cache is not None:
+      # store in cache
+      cache[url] = pickle.dumps((resp_ok, response_headers))
+
+    return resp_ok
+
+  def fastStreamedQuery(self, url, *, headers=None, verify=True):
+    """ Send a GET request with short timeout, do not retry, and return streamed response. """
+    response = self.session.get(url,
+                                headers=self._buildHeaders(headers),
+                                timeout=HTTP_SHORT_TIMEOUT_S,
+                                verify=verify,
+                                stream=True)
 
     response.raise_for_status()
 
-    if response_headers is not None:
-      response_headers.update(response.headers)
+    return response
 
-  except requests.exceptions.HTTPError as e:
-    logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
-    return False
-
-  return True
-
-
-def fast_streamed_query(url, *, session, headers=None, verify=True):
-  """ Send a GET request with short timeout, do not retry, and return streamed response. """
-  if headers is None:
-    headers = {}
-  if "User-Agent" not in headers:
-    headers["User-Agent"] = DEFAULT_USER_AGENT
-
-  response = session.get(url,
-                         headers=headers,
-                         timeout=HTTP_SHORT_TIMEOUT_S,
-                         verify=verify,
-                         stream=True)
-
-  response.raise_for_status()
-
-  return response
-
-
-def session(allow_cookies=False):
-  """ Return a HTTP session to use to benefit from TCP connection reuse. It also optionally refuses cookies. """
-  s = requests.Session()
-  if not allow_cookies:
-    cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
-    s.cookies.set_policy(cp)
-  return s
+  def _buildHeaders(self, headers):
+    """ Build HTTP headers dictionary. """
+    if headers is None:
+      headers = {}
+    if "User-Agent" not in headers:
+      headers["User-Agent"] = DEFAULT_USER_AGENT
+    return headers
 
 
 # silence third party module loggers

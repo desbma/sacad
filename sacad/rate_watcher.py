@@ -33,6 +33,7 @@ class AccessRateWatcher:
   def __init__(self, db_filepath, url, min_delay_between_accesses):
     self.domain = urllib.parse.urlsplit(url).netloc
     self.min_delay_between_accesses = min_delay_between_accesses
+    os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
     self.connection = sqlite3.connect(db_filepath)
     with self.connection:
       self.connection.executescript("""PRAGMA journal_mode = MEMORY;

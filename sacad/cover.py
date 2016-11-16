@@ -19,7 +19,6 @@ import PIL.ImageFile
 import PIL.ImageFilter
 import web_cache
 
-from sacad import http_helpers
 from sacad import mkstemp_ctx
 
 
@@ -113,24 +112,13 @@ class CoverSourceResult:
 
     images_data = []
     for i, url in enumerate(self.urls):
-      cache_miss = True
-      try:
-        image_data = __class__.image_cache[url]
-      except KeyError:
-        # cache miss
-        pass
-      else:
-        # cache hit
-        logging.getLogger().info("Got data for URL '%s' from cache" % (url))
-        cache_miss = False
+      # download
+      logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
+      cache_hit, image_data = self.source.http.query(url,
+                                                     verify=False,
+                                                     cache=__class__.image_cache)
 
-      if cache_miss:
-        # download
-        logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-        image_data = http_helpers.query(url,
-                                        session=self.source.http_session,
-                                        verify=False)
-
+      if not cache_hit:
         # crunch image
         image_data = __class__.crunch(image_data, self.format)
 
@@ -256,9 +244,8 @@ class CoverSourceResult:
         try:
           metadata = None
           img_data = bytearray()
-          with contextlib.closing(http_helpers.fast_streamed_query(url,
-                                                                   session=self.source.http_session,
-                                                                   verify=False)) as response:
+          with contextlib.closing(self.source.http.fastStreamedQuery(url,
+                                                                     verify=False)) as response:
             if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
               # try to get format from response mime type
               try:
@@ -332,33 +319,22 @@ class CoverSourceResult:
       logging.getLogger().warning("No thumbnail available for %s" % (self))
       return
 
-    cache_miss = True
+    # download
+    logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
     try:
-      image_data = __class__.image_cache[self.thumbnail_url]
-    except KeyError:
-      # cache miss
-      pass
-    else:
-      # cache hit
-      logging.getLogger().debug("Got data for URL '%s' from cache" % (self.thumbnail_url))
-      cache_miss = False
+      cache_hit, image_data = self.source.http.query(self.thumbnail_url,
+                                                     cache=__class__.image_cache)
+    except Exception as e:
+      logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
+                                                                      e.__class__.__qualname__,
+                                                                      e))
+      return self  # for use with concurrent.futures
 
-    if cache_miss:
-      # download
-      logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
-      try:
-        image_data = http_helpers.query(self.thumbnail_url,
-                                        session=self.source.http_session)
-      except Exception as e:
-        logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
-                                                                        e.__class__.__qualname__,
-                                                                        e))
-        return self  # for use with concurrent.futures
-      else:
-        # crunch image
-        image_data = __class__.crunch(image_data, CoverImageFormat.JPEG, silent=True)  # assume thumbnails are always JPG
-        # save it to cache
-        __class__.image_cache[self.thumbnail_url] = image_data
+    if not cache_hit:
+      # crunch image
+      image_data = __class__.crunch(image_data, CoverImageFormat.JPEG, silent=True)  # assume thumbnails are always JPG
+      # save it to cache
+      __class__.image_cache[self.thumbnail_url] = image_data
 
     # compute sig
     logging.getLogger().debug("Computing signature of %s..." % (self))

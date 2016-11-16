@@ -4,8 +4,6 @@ import itertools
 import logging
 import operator
 import os
-import pickle
-import time
 import unicodedata
 import urllib.parse
 
@@ -13,7 +11,6 @@ import appdirs
 import web_cache
 
 from sacad import http_helpers
-from sacad import rate_watcher
 from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
 
 
@@ -27,12 +24,8 @@ class CoverSource(metaclass=abc.ABCMeta):
   def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3, allow_cookies=False):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
-    self.min_delay_between_server_accesses = min_delay_between_accesses
-    self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
-                                                                   appauthor=False),
-                                            "rate_watcher.sqlite")
-    os.makedirs(os.path.dirname(self.watcher_db_filepath), exist_ok=True)
-    self.http_session = http_helpers.session(allow_cookies)
+    self.http = http_helpers.Http(allow_session_cookies=allow_cookies,
+                                  min_delay_between_accesses=min_delay_between_accesses)
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                         appauthor=False),
@@ -136,76 +129,34 @@ class CoverSource(metaclass=abc.ABCMeta):
     return results_kept
 
   def fetchResults(self, url, post_data=None):
-    """ Get search result of an URL from cache or HTTP. """
-    while True:
-      try:
-        cache_hit = False
-        if post_data is not None:
-          if (url, post_data) in __class__.api_cache:
-            logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
-            data = __class__.api_cache[(url, post_data)]
-            cache_hit = True
-        elif url in __class__.api_cache:
-          logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
-          data = __class__.api_cache[url]
-          cache_hit = True
-
-        if not cache_hit:
-          if post_data is not None:
-            logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
-          else:
-            logging.getLogger().debug("Querying URL '%s'..." % (url))
-          headers = {}
-          self.updateHttpHeaders(headers)
-          data = http_helpers.query(url,
-                                    session=self.http_session,
-                                    watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                                           url,
-                                                                           self.min_delay_between_server_accesses),
-                                    post_data=post_data,
-                                    headers=headers)
-          # add cache entry only when parsing is successful
-
-      except rate_watcher.WaitNeeded as e:
-        logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
-        time.sleep(e.wait_s)
-
-      else:
-        break
+    """ Get search results froam an URL. """
+    if post_data is not None:
+      logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+    else:
+      logging.getLogger().debug("Querying URL '%s'..." % (url))
+    headers = {}
+    self.updateHttpHeaders(headers)
+    cache_hit, data = self.http.query(url,
+                                      post_data=post_data,
+                                      headers=headers,
+                                      cache=__class__.api_cache)
+    # add cache entry only when parsing is successful
 
     return cache_hit, data
 
   def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
-    while True:
-      try:
-        if url in __class__.probe_cache:
-          logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
-          resp_ok, resp_headers = pickle.loads(__class__.probe_cache[url])
+    logging.getLogger().debug("Probing URL '%s'..." % (url))
+    headers = {}
+    self.updateHttpHeaders(headers)
+    resp_headers = {}
+    resp_ok = self.http.isReachable(url,
+                                    headers=headers,
+                                    response_headers=resp_headers,
+                                    cache=__class__.probe_cache)
 
-        else:
-          logging.getLogger().debug("Probing URL '%s'..." % (url))
-          headers = {}
-          self.updateHttpHeaders(headers)
-          resp_headers = {}
-          resp_ok = http_helpers.is_reachable(url,
-                                              session=self.http_session,
-                                              watcher=rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                                                     url,
-                                                                                     self.min_delay_between_server_accesses),
-                                              headers=headers,
-                                              response_headers=resp_headers)
-          __class__.probe_cache[url] = pickle.dumps((resp_ok, resp_headers))
-
-        if response_headers is not None:
-          response_headers.update(resp_headers)
-
-      except rate_watcher.WaitNeeded as e:
-        logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
-        time.sleep(e.wait_s)
-
-      else:
-        break
+    if response_headers is not None:
+      response_headers.update(resp_headers)
 
     return resp_ok
 
