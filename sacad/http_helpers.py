@@ -69,7 +69,7 @@ class Http:
                                                verify=verify)
                 else:
                   response = self.session.get(url,
-                                              headers=headers,
+                                              headers=self._buildHeaders(headers),
                                               timeout=HTTP_NORMAL_TIMEOUT_S,
                                               verify=verify)
 
