@@ -59,14 +59,8 @@ class CoverSource(metaclass=abc.ABCMeta):
       url = url_data
       post_data = None
     try:
-      cache_hit, api_data = self.fetchResults(url, post_data)
+      api_data = self.fetchResults(url, post_data)
       results = self.parseResults(api_data)
-      if not cache_hit:
-        # add cache entry only when parsing is successful
-        if post_data is not None:
-          CoverSource.api_cache[(url, post_data)] = api_data
-        else:
-          CoverSource.api_cache[url] = api_data
     except Exception as e:
       # raise
       logging.getLogger().warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
@@ -136,13 +130,10 @@ class CoverSource(metaclass=abc.ABCMeta):
       logging.getLogger().debug("Querying URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
-    cache_hit, data = self.http.query(url,
-                                      post_data=post_data,
-                                      headers=headers,
-                                      cache=__class__.api_cache)
-    # add cache entry only when parsing is successful
-
-    return cache_hit, data
+    return self.http.query(url,
+                           post_data=post_data,
+                           headers=headers,
+                           cache=__class__.api_cache)
 
   def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """

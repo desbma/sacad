@@ -114,16 +114,10 @@ class CoverSourceResult:
     for i, url in enumerate(self.urls):
       # download
       logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
-      cache_hit, image_data = self.source.http.query(url,
-                                                     verify=False,
-                                                     cache=__class__.image_cache)
-
-      if not cache_hit:
-        # crunch image
-        image_data = __class__.crunch(image_data, self.format)
-
-        # save it to cache
-        __class__.image_cache[url] = image_data
+      image_data = self.source.http.query(url,
+                                          verify=False,
+                                          cache=__class__.image_cache,
+                                          pre_cache_callback=lambda x: __class__.crunch(x, self.format))
 
       # append for multi images
       images_data.append(image_data)
@@ -322,19 +316,16 @@ class CoverSourceResult:
     # download
     logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
     try:
-      cache_hit, image_data = self.source.http.query(self.thumbnail_url,
-                                                     cache=__class__.image_cache)
+      image_data = self.source.http.query(self.thumbnail_url,
+                                          cache=__class__.image_cache,
+                                          pre_cache_callback=lambda x: __class__.crunch(x,
+                                                                                        CoverImageFormat.JPEG,
+                                                                                        silent=True))
     except Exception as e:
       logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                       e.__class__.__qualname__,
                                                                       e))
       return self  # for use with concurrent.futures
-
-    if not cache_hit:
-      # crunch image
-      image_data = __class__.crunch(image_data, CoverImageFormat.JPEG, silent=True)  # assume thumbnails are always JPG
-      # save it to cache
-      __class__.image_cache[self.thumbnail_url] = image_data
 
     # compute sig
     logging.getLogger().debug("Computing signature of %s..." % (self))

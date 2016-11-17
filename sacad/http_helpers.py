@@ -33,73 +33,82 @@ class Http:
                                             "rate_watcher.sqlite")
     self.min_delay_between_accesses = min_delay_between_accesses
 
-  def query(self, url, *, post_data=None, headers=None, verify=True, cache=None):
+  def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
-    cache_hit = False
     if cache is not None:
       # try from cache first
       if post_data is not None:
         if (url, post_data) in cache:
           logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
-          cache_hit = True
-          data = cache[(url, post_data)]
+          return cache[(url, post_data)]
       elif url in cache:
         logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
-        cache_hit = True
-        data = cache[url]
+        return cache[url]
 
-    if not cache_hit:
-      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
-                                               sleeptime=1.5,
-                                               max_sleeptime=5,
-                                               sleepscale=1.25,
-                                               jitter=1),
-                                  1):
-        try:
-          while True:  # rate watcher loop
-            try:
-              with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                  url,
-                                                  self.min_delay_between_accesses):
-                if post_data is not None:
-                  response = self.session.post(url,
-                                               data=post_data,
-                                               headers=self._buildHeaders(headers),
-                                               timeout=HTTP_NORMAL_TIMEOUT_S,
-                                               verify=verify)
+    for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
+                                             sleeptime=1.5,
+                                             max_sleeptime=5,
+                                             sleepscale=1.25,
+                                             jitter=1),
+                                1):
+      try:
+        while True:  # rate watcher loop
+          try:
+            with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                url,
+                                                self.min_delay_between_accesses):
+              if post_data is not None:
+                response = self.session.post(url,
+                                             data=post_data,
+                                             headers=self._buildHeaders(headers),
+                                             timeout=HTTP_NORMAL_TIMEOUT_S,
+                                             verify=verify)
+              else:
+                response = self.session.get(url,
+                                            headers=self._buildHeaders(headers),
+                                            timeout=HTTP_NORMAL_TIMEOUT_S,
+                                            verify=verify)
+
+              if cache is not None:
+                if pre_cache_callback is not None:
+                  # process
+                  try:
+                    data = pre_cache_callback(response.content)
+                  except Exception:
+                    data = response.content
                 else:
-                  response = self.session.get(url,
-                                              headers=self._buildHeaders(headers),
-                                              timeout=HTTP_NORMAL_TIMEOUT_S,
-                                              verify=verify)
+                  data = response.content
 
-            except rate_watcher.WaitNeeded as e:
-              logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
-              time.sleep(e.wait_s)
+                # add to cache
+                if post_data is not None:
+                  cache[(url, post_data)] = data
+                else:
+                  cache[url] = data
 
-            else:
-              break  # rate watcher loop
+          except rate_watcher.WaitNeeded as e:
+            logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
+            time.sleep(e.wait_s)
 
-          break  # http retry loop
+          else:
+            break  # rate watcher loop
 
-        except requests.exceptions.SSLError:
+        break  # http retry loop
+
+      except requests.exceptions.SSLError:
+        raise
+
+      except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                                     attempt,
+                                                                                     HTTP_MAX_ATTEMPTS,
+                                                                                     e.__class__.__qualname__,
+                                                                                     e))
+        if attempt == HTTP_MAX_ATTEMPTS:
           raise
 
-        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-          logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                       attempt,
-                                                                                       HTTP_MAX_ATTEMPTS,
-                                                                                       e.__class__.__qualname__,
-                                                                                       e))
-          if attempt == HTTP_MAX_ATTEMPTS:
-            raise
+    response.raise_for_status()
 
-      response.raise_for_status()
-
-      data = response.content
-      # cache storage is done by caller
-
-    return cache_hit, data
+    return response.content
 
   def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
     """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
