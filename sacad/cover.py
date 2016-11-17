@@ -430,7 +430,7 @@ class CoverSourceResult:
         tmp_out_file.write(image_data)
       size_before = len(image_data)
       if format is CoverImageFormat.PNG:
-        cmd = ["optipng", "-quiet", "-o5"]  # this can be very slow for big PNG files
+        cmd = ["optipng", "-quiet", "-o1"]
       elif format is CoverImageFormat.JPEG:
         cmd = ["jpegoptim", "-q", "--strip-all"]
       cmd.append(tmp_out_filepath)
