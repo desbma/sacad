@@ -11,12 +11,18 @@ import urllib.parse
 import lockfile
 
 
-MIN_WAIT_TIME_S = 0.01
 SUSPICIOUS_LOCK_AGE_S = 120
 DEBUG_LOCKING = False
 
 
-class WaitNeeded(Exception):
+class RetryNeeded(Exception):
+
+  """ Exception raised when access can not be granted, and call should be retried. """
+
+  pass
+
+
+class WaitNeeded(RetryNeeded):
 
   """ Exception raised when access can not be granted without waiting. """
 
@@ -59,28 +65,23 @@ class AccessRateWatcher:
                               (self.domain, time.time(),))
 
   def _raiseOrLock(self):
-    """ Get lock or raise WaitNeeded exception. """
-    for try_lock in (True, False):
-      with self.connection:
-        last_access_time = self.connection.execute("""SELECT timestamp
-                                                      FROM access_timestamp
-                                                      WHERE domain = ?;""",
-                                                   (self.domain,)).fetchone()
-      if last_access_time is not None:
-        last_access_time = last_access_time[0]
-        now = time.time()
-        time_since_last_access = now - last_access_time
-        if time_since_last_access < self.min_delay_between_accesses:
-          time_to_wait = self.min_delay_between_accesses - time_since_last_access
-          raise WaitNeeded(time_to_wait)
+    """ Get lock or raise WaitNeeded or RetryNeeded exception. """
+    with self.connection:
+      last_access_time = self.connection.execute("""SELECT timestamp
+                                                    FROM access_timestamp
+                                                    WHERE domain = ?;""",
+                                                 (self.domain,)).fetchone()
+    if last_access_time is not None:
+      last_access_time = last_access_time[0]
+      now = time.time()
+      time_since_last_access = now - last_access_time
+      if time_since_last_access < self.min_delay_between_accesses:
+        time_to_wait = self.min_delay_between_accesses - time_since_last_access
+        raise WaitNeeded(time_to_wait)
 
-      if try_lock:
-        locked = self._getLock()
-        if locked:
-          break
-        # loop again to find wait time
-      else:
-        raise WaitNeeded(MIN_WAIT_TIME_S)
+    locked = self._getLock()
+    if not locked:
+      raise RetryNeeded()
 
   def _getLock(self):
     with __class__.thread_dict_lock:
@@ -100,6 +101,11 @@ class AccessRateWatcher:
           logging.getLogger().warning("Breaking suspicious lock '%s' created %.2f seconds ago" % (plock.lock_file,
                                                                                                   lock_age))
           plock.break_lock()
+        else:
+          # lock not available: wait for it, release it immediately and return as if locking fails
+          # we do this to wait for the right amount of time but still re-read the cache
+          with plock:
+            pass
         tlock.release()
       except:
         tlock.release()

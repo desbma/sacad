@@ -89,6 +89,9 @@ class Http:
             logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
             time.sleep(e.wait_s)
 
+          except rate_watcher.RetryNeeded:
+            pass
+
           else:
             break  # rate watcher loop
 
@@ -140,6 +143,9 @@ class Http:
             except rate_watcher.WaitNeeded as e:
               logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
               time.sleep(e.wait_s)
+
+            except rate_watcher.RetryNeeded:
+              pass
 
             else:
               break  # rate watcher loop
