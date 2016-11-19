@@ -13,6 +13,7 @@ import lockfile
 
 MIN_WAIT_TIME_S = 0.01
 SUSPICIOUS_LOCK_AGE_S = 120
+DEBUG_LOCKING = False
 
 
 class WaitNeeded(Exception):
@@ -85,10 +86,14 @@ class AccessRateWatcher:
     with __class__.thread_dict_lock:
       tlock = __class__.thread_locks[self.domain]
     if tlock.acquire(blocking=False):
+      if DEBUG_LOCKING:
+        logging.getLogger().debug("Got thread lock for domain '%s'" % (self.domain))
       plock = lockfile.FileLock(os.path.join(self.lock_dir, self.domain))
       try:
         plock.acquire(timeout=0)
       except (lockfile.LockTimeout, lockfile.AlreadyLocked):
+        if DEBUG_LOCKING:
+          logging.getLogger().debug("Failed to get process lock for domain '%s'" % (self.domain))
         # detect and break locks of dead processes
         lock_age = time.time() - os.path.getmtime(plock.lock_file)
         if lock_age > SUSPICIOUS_LOCK_AGE_S:
@@ -100,8 +105,12 @@ class AccessRateWatcher:
         tlock.release()
         raise
       else:
+        if DEBUG_LOCKING:
+          logging.getLogger().debug("Got process lock for domain '%s'" % (self.domain))
         return True
     else:
+      if DEBUG_LOCKING:
+        logging.getLogger().debug("Failed to get thread lock for domain '%s'" % (self.domain))
       # lock not available: wait for it, release it immediately and return as if locking fails
       # we do this to wait for the right amount of time but still re-read the cache
       with tlock:
