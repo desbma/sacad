@@ -4,6 +4,7 @@ import itertools
 import logging
 import operator
 import os
+import random
 import unicodedata
 import urllib.parse
 
@@ -31,15 +32,16 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                         appauthor=False),
                                  "sacad-cache.sqlite")
       os.makedirs(os.path.dirname(db_filepath), exist_ok=True)
+      day_s = 60 * 60 * 24
       __class__.api_cache = web_cache.ThreadedWebCache(db_filepath,
                                                        "cover_source_api_data",
                                                        caching_strategy=web_cache.CachingStrategy.FIFO,
-                                                       expiration=60 * 60 * 24 * 14,  # 2 weeks
+                                                       expiration=random.randint(day_s * 2, day_s * 3),  # 2-3 days
                                                        compression=web_cache.Compression.DEFLATE)
       __class__.probe_cache = web_cache.ThreadedWebCache(db_filepath,
                                                          "cover_source_probe_data",
                                                          caching_strategy=web_cache.CachingStrategy.FIFO,
-                                                         expiration=60 * 60 * 24 * 30 * 6)  # 6 months
+                                                         expiration=day_s * 30 * 6)  # 6 months
       logging.getLogger().debug("Total size of file '%s': %s" % (db_filepath,
                                                                  __class__.api_cache.getDatabaseFileSize()))
       for cache, cache_name in zip((__class__.api_cache, __class__.probe_cache),
