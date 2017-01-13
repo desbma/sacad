@@ -145,6 +145,8 @@ class CoverSourceResult:
     if len(images_data) == 1:
       in_bytes = io.BytesIO(images_data[0])
       img = PIL.Image.open(in_bytes)
+      if img.mode != "RGB":
+        img = img.convert("RGB")
 
     else:
       # images need to be joined before further processing
@@ -187,13 +189,10 @@ class CoverSourceResult:
       target_format = new_format
     else:
       target_format = self.format
-    try:
-      img.save(out_bytes, format=target_format.name, quality=90, optimize=True)
-    except OSError:
-      # "OSError: cannot write mode P as JPEG"
-      # RGB conversion needed for GIF disguised as PNG, eg: http://img2-ak.lst.fm/i/u/aee57792c70048378601056a98435646.png
-      img = img.convert("RGB")
-      img.save(out_bytes, format=target_format.name, quality=90, optimize=True)
+    img.save(out_bytes,
+             format=target_format.name,
+             quality=90,
+             optimize=True)
     return out_bytes.getvalue()
 
   def updateImageMetadata(self):
