@@ -32,7 +32,7 @@ except ImportError:
 setup(name="sacad",
       version=version,
       author="desbma",
-      packages=find_packages(),
+      packages=find_packages(exclude=("tests",)),
       entry_points={"console_scripts": ["sacad = sacad:cl_main",
                                         "sacad_r = sacad.recurse:cl_main"]},
       test_suite="tests",
