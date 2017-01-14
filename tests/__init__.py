@@ -165,10 +165,11 @@ class TestSacad(unittest.TestCase):
         self.assertFalse(sacad.cover.is_square(x), x)
 
 
-if __name__ == "__main__":
-  # logging
-  #logging.getLogger().setLevel(logging.DEBUG)
-  logging.getLogger().setLevel(logging.CRITICAL + 1)
+# logging
+#logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.CRITICAL + 1)
 
+
+if __name__ == "__main__":
   # run tests
   unittest.main()

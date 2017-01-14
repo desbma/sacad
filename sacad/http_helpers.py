@@ -202,7 +202,4 @@ class Http:
 logging.getLogger("redo").setLevel(logging.ERROR)
 logging.getLogger("requests").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
-try:
-  requests.packages.urllib3.disable_warnings()
-except:
-  pass
+logging.captureWarnings(True)
