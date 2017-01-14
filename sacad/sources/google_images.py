@@ -57,10 +57,13 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
       metadata_json = lxml.etree.tostring(metadata_div, encoding="unicode", method="text")
       metadata_json = json.loads(metadata_json)
       google_url = result.find("a").get("href")
-      if google_url is None:
+      if google_url is not None:
+        query = urllib.parse.urlsplit(google_url).query
+      else:
+        query = None
+      if not query:
         img_url = metadata_json["ou"]
       else:
-        query = urllib.parse.urlsplit(google_url).query
         query = urllib.parse.parse_qs(query)
         img_url = query["imgurl"][0]
       # extract format
@@ -73,7 +76,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         format = None
         check_metadata = CoverImageMetadata.FORMAT
       # extract size
-      if google_url is None:
+      if not query:
         size = metadata_json["ow"], metadata_json["oh"]
       else:
         size = tuple(map(int, (query["w"][0], query["h"][0])))

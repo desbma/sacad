@@ -166,8 +166,8 @@ class TestSacad(unittest.TestCase):
 
 
 # logging
-#logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().setLevel(logging.CRITICAL + 1)
+#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL + 1)
 
 
 if __name__ == "__main__":
