@@ -15,7 +15,7 @@ LXML_WHEEL         := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SH
 # env
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
 WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine
-WINE     := WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
+WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
 
 # installed files
 PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
