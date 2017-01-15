@@ -7,13 +7,13 @@ cache:
 matrix:
   include:
     - python: "3.3"
-      env: WINDOWS=1 PYPI_DEPLOY=0
+      env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "3.4"
-      env: WINDOWS=0 PYPI_DEPLOY=1
+      env: WINDOWS=1 PYPI_DEPLOY=0
     - python: "3.5"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "3.6"
-      env: WINDOWS=0 PYPI_DEPLOY=0
+      env: WINDOWS=0 PYPI_DEPLOY=1
 before_install:
   - "sudo add-apt-repository -y ppa:ubuntu-wine/ppa"
   - "sudo apt-get -q update"
@@ -48,7 +48,7 @@ deploy:
     on:
       tags: true
       branch: master
-      python: "3.3"
+      python: "3.4"
   - provider: pypi
     user: desbma
     password:
@@ -56,7 +56,7 @@ deploy:
     on:
       tags: true
       branch: master
-      python: "3.4"
+      python: "3.6"
 notifications:
   email:
     recipients:
