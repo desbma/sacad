@@ -15,7 +15,7 @@ LXML_WHEEL         := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SH
 # env
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
 WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine
-WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=win32 wine
+WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=win32 WINEDEBUG=-all wine
 
 # installed files
 PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
@@ -106,29 +106,29 @@ ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/pyt
 #
 
 .requirements: ${PIP_INSTALLED}
-	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip install -r requirements.txt 2> /dev/null > /dev/null
-	${WINE} ${PYTHON_INSTALLED} -c "import enum" 2> /dev/null > /dev/null || ${PYTHON_INSTALLED} -m pip install enum34
+	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip -qqq install -r requirements.txt
+	${WINE} ${PYTHON_INSTALLED} -c "import enum" || ${WINE} ${PYTHON_INSTALLED} -m pip -qqq install enum34
 	touch $@
 
 ${PYTHON_INSTALLED}: ${PYTHON_INSTALLER}
-	${WINE} msiexec /i $< /qb 2> /dev/null
-	patch ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/ssl.py < fix-issue26313-python34.patch
+	${WINE} msiexec /i $< /qb > /dev/null 2> /dev/null
+	patch -s ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/ssl.py < fix-issue26313-python34.patch
 	touch $@
 
 ${CXFREEZE_INSTALLED}: ${CXFREEZE_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
-	${WINE} ${PYTHON_INSTALLED} -m pip install $< 2> /dev/null > /dev/null
+	${WINE} ${PYTHON_INSTALLED} -m pip -qqq install $<
 	touch $@
 
 ${PIP_INSTALLED}: ${PYTHON_INSTALLED}
-	${WINE} ${PYTHON_INSTALLED} -m pip install -U pip
+	${WINE} ${PYTHON_INSTALLED} -m pip -qqq install -U pip
 	touch $@
 
 ${LXML_INSTALLED}: ${LXML_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
-	${WINE} ${PYTHON_INSTALLED} -m pip install $< 2> /dev/null > /dev/null
+	${WINE} ${PYTHON_INSTALLED} -m pip -qqq install $<
 	touch $@
 
 ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
-	${WINE} msiexec /i $< /qb INSTALLDIR='c:\7-Zip' 2> /dev/null
+	${WINE} msiexec /i $< /qb INSTALLDIR='c:\7-Zip'
 	touch $@
 
 
@@ -163,10 +163,10 @@ ${DOWNLOAD_DIR}/sample.ogg:
 #
 
 fclean:
-	@-rm -Rvf ${WINE_DIR}
-	@-rm -Rvf sacad .requirements
-	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
-	@-rm -vf test.jpg
+	-rm -Rf ${WINE_DIR}
+	-rm -Rf sacad .requirements
+	-rm -f sacad_win.7z sacad_win.zip sacad_win.exe
+	-rm -f test.jpg
 
 clean: fclean
-	@-rm -Rvf ${DOWNLOAD_DIR}
+	-rm -Rf ${DOWNLOAD_DIR}
