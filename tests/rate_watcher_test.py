@@ -29,21 +29,21 @@ class TestRateWatcher(unittest.TestCase):
                                "http://1.domain.com/efgh",
                                min_delay_between_accesses=1):
           pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 1)
+      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 1)
 
       with self.assertRaises(WaitNeeded) as cm:
         with AccessRateWatcher(db_filepath,
                                "http://2.domain.com/efgh",
                                min_delay_between_accesses=1):
           pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 1)
+      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 1)
 
       with self.assertRaises(WaitNeeded) as cm:
         with AccessRateWatcher(db_filepath,
                                "http://2.domain.com/ijkl",
                                min_delay_between_accesses=2):
           pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.05, 2)
+      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 2)
 
       time.sleep(1)
       with AccessRateWatcher(db_filepath,
@@ -53,8 +53,5 @@ class TestRateWatcher(unittest.TestCase):
 
 
 if __name__ == "__main__":
-  # disable logging
-  logging.basicConfig(level=logging.CRITICAL + 1)
-
   # run tests
   unittest.main()
