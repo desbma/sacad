@@ -112,6 +112,7 @@ ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/pyt
 
 ${PYTHON_INSTALLED}: ${PYTHON_INSTALLER}
 	${WINE} msiexec /i $< /qb 2> /dev/null
+	patch ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/ssl.py < fix-issue26313-python34.patch
 	touch $@
 
 ${CXFREEZE_INSTALLED}: ${CXFREEZE_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}

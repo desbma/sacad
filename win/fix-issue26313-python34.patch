@@ -1,0 +1,12 @@
+--- ssl.py.orig	2015-12-06 16:25:30.000000000 +0100
++++ ssl.py	2017-01-15 16:56:54.126846368 +0100
+@@ -379,7 +379,8 @@
+             if encoding == "x509_asn":
+                 if trust is True or purpose.oid in trust:
+                     certs.extend(cert)
+-        self.load_verify_locations(cadata=certs)
++        if certs:
++            self.load_verify_locations(cadata=certs)
+         return certs
+ 
+     def load_default_certs(self, purpose=Purpose.SERVER_AUTH):
