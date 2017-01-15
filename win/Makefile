@@ -9,7 +9,6 @@ LXML_VERSION         := 3.7.2
 DOWNLOAD_DIR       ?= dl
 PYTHON_INSTALLER   := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.msi
 CXFREEZE_WHEEL     := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl
-PIP_INSTALLER      := ${DOWNLOAD_DIR}/get-pip.py
 LXML_WHEEL         := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl
 7ZIP_INSTALLER     := ${DOWNLOAD_DIR}/7z938.msi
 
@@ -119,12 +118,11 @@ ${CXFREEZE_INSTALLED}: ${CXFREEZE_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
 	${WINE} ${PYTHON_INSTALLED} -m pip install $< 2> /dev/null > /dev/null
 	touch $@
 
-${PIP_INSTALLED}: ${PIP_INSTALLER} ${PYTHON_INSTALLED}
-	${WINE} ${PYTHON_INSTALLED} $< 2> /dev/null > /dev/null
+${PIP_INSTALLED}: ${PYTHON_INSTALLED}
+	${WINE} ${PYTHON_INSTALLED} -m pip install -U pip
 	touch $@
 
 ${LXML_INSTALLED}: ${LXML_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
-	#${WINE} ${PYTHON_INSTALLED} -m pip install wheel 2> /dev/null > /dev/null
 	${WINE} ${PYTHON_INSTALLED} -m pip install $< 2> /dev/null > /dev/null
 	touch $@
 
@@ -144,10 +142,6 @@ ${PYTHON_INSTALLER}:
 ${CXFREEZE_WHEEL}:
 	mkdir -p $(dir $@)
 	${CURL} https://pypi.python.org/packages/82/0b/b8ce1a9aead6e873d1f2cb421d73c73eefb5d18889c2ddb803f24898760f/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
-
-${PIP_INSTALLER}:
-	mkdir -p $(dir $@)
-	${CURL} https://bootstrap.pypa.io/get-pip.py > $@
 
 ${LXML_WHEEL}:
 	mkdir -p $(dir $@)
