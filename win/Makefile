@@ -29,7 +29,7 @@ LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site
 TEST_LIB_DIR := ${WINE_DIR}/drive_c/music
 
 
-.PHONY: all test test_ut test_freeze
+.PHONY: all test test_ut test_freeze fclean clean
 
 
 all:: sacad_win.7z sacad_win.zip sacad_win.exe
@@ -167,9 +167,11 @@ ${DOWNLOAD_DIR}/sample.ogg:
 # Clean
 #
 
-clean:
+fclean:
 	@-rm -Rvf ${WINE_DIR}
-	@-rm -Rvf ${DOWNLOAD_DIR}
 	@-rm -Rvf sacad .requirements
 	@-rm -vf sacad_win.7z sacad_win.zip sacad_win.exe
 	@-rm -vf test.jpg
+
+clean: fclean
+	@-rm -Rvf ${DOWNLOAD_DIR}
