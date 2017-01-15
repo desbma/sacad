@@ -111,10 +111,7 @@ ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/pyt
 	${WINE} ${PYTHON_INSTALLED} -c "import enum" 2> /dev/null > /dev/null || ${PYTHON_INSTALLED} -m pip install enum34
 	touch $@
 
-${WINE_DIR}:
-	mkdir -p $(dir $@)
-
-${PYTHON_INSTALLED}: ${PYTHON_INSTALLER} ${WINE_DIR}
+${PYTHON_INSTALLED}: ${PYTHON_INSTALLER}
 	${WINE} msiexec /i $< /qb 2> /dev/null
 	touch $@
 
