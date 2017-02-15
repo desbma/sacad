@@ -114,7 +114,10 @@ class CoverSourceResult:
     for i, url in enumerate(self.urls):
       # download
       logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
+      headers = {}
+      self.source.updateHttpHeaders(headers)
       image_data = self.source.http.query(url,
+                                          headers=headers,
                                           verify=False,
                                           cache=__class__.image_cache,
                                           pre_cache_callback=lambda x: __class__.crunch(x, self.format))
@@ -237,7 +240,10 @@ class CoverSourceResult:
         try:
           metadata = None
           img_data = bytearray()
+          headers = {}
+          self.source.updateHttpHeaders(headers)
           with contextlib.closing(self.source.http.fastStreamedQuery(url,
+                                                                     headers=headers,
                                                                      verify=False)) as response:
             if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
               # try to get format from response mime type
@@ -314,9 +320,12 @@ class CoverSourceResult:
 
     # download
     logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
+    headers = {}
+    self.source.updateHttpHeaders(headers)
     try:
       image_data = self.source.http.query(self.thumbnail_url,
                                           cache=__class__.image_cache,
+                                          headers=headers,
                                           pre_cache_callback=lambda x: __class__.crunch(x,
                                                                                         CoverImageFormat.JPEG,
                                                                                         silent=True))
