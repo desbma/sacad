@@ -1,5 +1,6 @@
 import collections
 import logging
+import operator
 import urllib.parse
 
 import lxml.cssselect
@@ -7,6 +8,20 @@ import lxml.etree
 
 from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
 from sacad.sources.base import CoverSource
+
+
+AmazonDigitalImageFormat = collections.namedtuple("AmazonDigital",
+                                                  ("id",
+                                                   "slice_count",
+                                                   "total_res"))
+AMAZON_DIGITAL_IMAGE_FORMATS = [AmazonDigitalImageFormat(0, 1, 600),  # http://z2-ec2.images-amazon.com/R/1/a=B00BJ93R7O+c=A17SFUTIVB227Z+d=_SCR(0,0,0)_=.jpg
+                                AmazonDigitalImageFormat(1, 2, 700),  # http://z2-ec2.images-amazon.com/R/1/a=B00BJ93R7O+c=A17SFUTIVB227Z+d=_SCR(1,1,1)_=.jpg
+                                AmazonDigitalImageFormat(1, 4, 1280),  # http://z2-ec2.images-amazon.com/R/1/a=B01NBTSVDN+c=A17SFUTIVB227Z+d=_SCR(1,3,3)_=.jpg
+                                AmazonDigitalImageFormat(2, 3, 1025),  # http://z2-ec2.images-amazon.com/R/1/a=B00BJ93R7O+c=A17SFUTIVB227Z+d=_SCR(2,2,2)_=.jpg
+                                AmazonDigitalImageFormat(2, 5, 1920),  # http://z2-ec2.images-amazon.com/R/1/a=B01NBTSVDN+c=A17SFUTIVB227Z+d=_SCR(2,4,4)_=.jpg
+                                AmazonDigitalImageFormat(3, 4, 1500),  # http://z2-ec2.images-amazon.com/R/1/a=B00BJ93R7O+c=A17SFUTIVB227Z+d=_SCR(3,3,3)_=.jpg
+                                AmazonDigitalImageFormat(3, 7, 2560)]  # http://z2-ec2.images-amazon.com/R/1/a=B01NBTSVDN+c=A17SFUTIVB227Z+d=_SCR(3,6,6)_=.jpg
+AMAZON_DIGITAL_IMAGE_FORMATS.sort(key=operator.attrgetter("total_res"), reverse=True)
 
 
 class AmazonDigitalCoverSourceResult(CoverSourceResult):
@@ -52,7 +67,6 @@ class AmazonDigitalCoverSource(CoverSource):
     img_selectors = (lxml.cssselect.CSSSelector("img.productImage"),
                      lxml.cssselect.CSSSelector("img.s-access-image"))
     link_selector = lxml.cssselect.CSSSelector("a")
-    slice_count_to_res = {1: 600, 2: 700, 3: 1050, 4: 1400}
 
     for page_struct_version in range(len(results_selectors)):
       result_divs = results_selectors[page_struct_version](html)
@@ -77,31 +91,22 @@ class AmazonDigitalCoverSource(CoverSource):
         product_url = urllib.parse.urlsplit(product_url)
         product_id = product_url.path.split("/")[3]
 
-        found = False
-        for slice_count in range(4, 1, -1):
-          for square_sub_img in (True, False):
-            if square_sub_img and (slice_count == 4):
-              # unfortunately, this one is never available
-              continue
+        # TODO don't pick up highest res image if used asked less?
+        for amazon_img_format in AMAZON_DIGITAL_IMAGE_FORMATS:
+          logging.getLogger().debug("Trying %u subimages..." % (amazon_img_format.slice_count ** 2))
+          urls = tuple(self.generateImgUrls(product_id,
+                                            __class__.DYNAPI_KEY,
+                                            amazon_img_format.id,
+                                            amazon_img_format.slice_count))
+          url_ok = self.probeUrl(urls[-1])
+          if not url_ok:
+            # images at this size are not available
+            continue
 
-            logging.getLogger().debug("Trying %u %ssquare subimages..." % (slice_count ** 2,
-                                                                           "non " if not square_sub_img else ""))
-            urls = tuple(self.generateImgUrls(product_id, __class__.DYNAPI_KEY, slice_count, square_sub_img))
-            url_ok = self.probeUrl(urls[-1])
-            if not url_ok:
-              # images at this size are not available
-              continue
-
-            # images at this size are available
-            found = True
-            break
-
-          if found:
-            break
-
-        if found:
+          # images at this size are available
           img_url = urls
-          size = (slice_count_to_res[slice_count],) * 2
+          size = (amazon_img_format.total_res,) * 2
+          break
 
       # assume format is always jpg
       format = CoverImageFormat.JPEG
@@ -117,10 +122,10 @@ class AmazonDigitalCoverSource(CoverSource):
 
     return results
 
-  def generateImgUrls(self, product_id, dynapi_key, slice_count, square_sub_img):
+  def generateImgUrls(self, product_id, dynapi_key, format_id, slice_count):
     """ Generate URLs for slice_count^2 subimages of a product. """
     for x in range(slice_count):
       for y in range(slice_count):
         yield ("http://z2-ec2.images-amazon.com/R/1/a=" + product_id +
                "+c=" + dynapi_key +
-               "+d=_SCR%28" + str(slice_count - 1 + int(square_sub_img)) + "," + str(x) + "," + str(y) + "%29_=.jpg")
+               "+d=_SCR%28" + str(format_id) + "," + str(x) + "," + str(y) + "%29_=.jpg")

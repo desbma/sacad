@@ -205,13 +205,13 @@ class CoverSourceResult:
     width_sum, height_sum = 0, 0
     format, width, height = None, None, None
 
-    idxs = []
     # only download metadata for the needed images to get full size
+    idxs = []
     assert(is_square(len(self.urls)))
     sq = int(math.sqrt(len(self.urls)))
     for x in range(sq):
       for y in range(sq):
-        if (x == 0) or (y == 0):
+        if x == y:
           idxs.append((x * sq + y, x, y))
 
     for idx, x, y in idxs:
@@ -262,6 +262,7 @@ class CoverSourceResult:
                 if metadata is not None:
                   format, width, height = metadata
                   if idx == idxs[-1][0]:
+                    # we have size of all important subimages
                     self.check_metadata = CoverImageMetadata.NONE
                   else:
                     # we may need to check size for other URLs
@@ -291,10 +292,8 @@ class CoverSourceResult:
 
       # sum sizes
       if (width is not None) and (height is not None):
-        if y == 0:
-          width_sum += width
-        if x == 0:
-          height_sum += height
+        width_sum += width
+        height_sum += height
 
     self.check_metadata = CoverImageMetadata.NONE
     if format is not None:
