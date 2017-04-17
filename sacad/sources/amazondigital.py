@@ -27,7 +27,7 @@ AMAZON_DIGITAL_IMAGE_FORMATS.sort(key=operator.attrgetter("total_res"), reverse=
 class AmazonDigitalCoverSourceResult(CoverSourceResult):
 
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
+    super().__init__(*args, source_quality=CoverSourceQuality.REFERENCE, **kwargs)
 
 
 class AmazonDigitalCoverSource(CoverSource):
