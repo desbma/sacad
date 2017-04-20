@@ -146,7 +146,7 @@ ${CXFREEZE_WHEEL}:
 
 ${LXML_WHEEL}:
 	mkdir -p $(dir $@)
-	${CURL} https://dl.dropboxusercontent.com/u/70127955/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
+	${CURL} https://www.dropbox.com/s/fu3ob4yfeozjd3x/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
 
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)
