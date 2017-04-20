@@ -77,7 +77,7 @@ class TestRecursive(unittest.TestCase):
 
     cls.album3_dir = os.path.join(cls.temp_dir.name, "album3")
     os.mkdir(cls.album3_dir)
-    url = "http://www.stephaniequinn.com/Music/Vivaldi%20-%20Spring%20from%20Four%20Seasons.mp3"
+    url = "https://allthingsaudio.wikispaces.com/file/view/Shuffle%20for%20K.M.mp3/139190697/Shuffle%20for%20K.M.mp3"
     download(url, os.path.join(cls.album3_dir, "1 track.mp3"))
 
     cls.album4_dir = os.path.join(cls.temp_dir.name, "album4")
@@ -111,7 +111,7 @@ class TestRecursive(unittest.TestCase):
       self.assertIn(__class__.album2_dir, work)
       self.assertEqual(work[__class__.album2_dir], ("ARTIST2", "ALBUM2"))
       self.assertIn(__class__.album3_dir, work)
-      self.assertEqual(work[__class__.album3_dir], ("Quinn String Quartet", "Israeli Concertino"))
+      self.assertEqual(work[__class__.album3_dir], ("jpfmband", "Paris S.F""))
       self.assertIn(__class__.album4_dir, work)
       self.assertEqual(work[__class__.album4_dir], ("Auphonic", "Auphonic Demonstration"))
 
@@ -120,7 +120,7 @@ class TestRecursive(unittest.TestCase):
       self.assertIn(__class__.album1_dir, work)
       self.assertEqual(work[__class__.album1_dir], ("ARTIST1", "ALBUM1"))
       self.assertIn(__class__.album3_dir, work)
-      self.assertEqual(work[__class__.album3_dir], ("Quinn String Quartet", "Israeli Concertino"))
+      self.assertEqual(work[__class__.album3_dir], ("jpfmband", "Paris S.F"))
       self.assertIn(__class__.album4_dir, work)
       self.assertEqual(work[__class__.album4_dir], ("Auphonic", "Auphonic Demonstration"))
 
@@ -136,7 +136,7 @@ class TestRecursive(unittest.TestCase):
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album3_dir),
                                               os.listdir(__class__.album3_dir))),
-                     ("Quinn String Quartet", "Israeli Concertino"))
+                     ("jpfmband", "Paris S.F"))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album4_dir),
                                               os.listdir(__class__.album4_dir))),
