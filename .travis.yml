@@ -1,3 +1,5 @@
+dist: trusty
+sudo: required
 language: python
 cache:
   pip: true
@@ -26,8 +28,6 @@ matrix:
     - python: "3.7-dev"
   fast_finish: true
 before_install:
-  - "sudo add-apt-repository -y ppa:ubuntu-wine/ppa"
-  - "sudo apt-get -q update"
   - "pip install -U pip"
 install:
   - "sudo apt-get -V install libxml2-dev libxslt1-dev"  # lxml dependencies
@@ -41,8 +41,6 @@ script:
 after_success:
   - "coveralls"
 before_deploy:
-  - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo add-apt-repository -y ppa:marutter/c2d4u; fi"  # to get newer pandoc
-  - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -q update; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
