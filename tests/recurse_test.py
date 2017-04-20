@@ -111,7 +111,7 @@ class TestRecursive(unittest.TestCase):
       self.assertIn(__class__.album2_dir, work)
       self.assertEqual(work[__class__.album2_dir], ("ARTIST2", "ALBUM2"))
       self.assertIn(__class__.album3_dir, work)
-      self.assertEqual(work[__class__.album3_dir], ("jpfmband", "Paris S.F""))
+      self.assertEqual(work[__class__.album3_dir], ("jpfmband", "Paris S.F"))
       self.assertIn(__class__.album4_dir, work)
       self.assertEqual(work[__class__.album4_dir], ("Auphonic", "Auphonic Demonstration"))
 
