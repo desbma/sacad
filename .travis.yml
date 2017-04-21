@@ -23,7 +23,7 @@ matrix:
     - python: "3.7-dev"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "pypy3"
-      env: WINDOWS=0 PYPI_DEPLOY=0 PYPY3_VERSION=5.7.1 PYPY3_SHA256=8a6a194963eb58d582413c4bcdef6119f9f9f117a05032d1fb13192d934510c6
+      env: WINDOWS=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=5.7.1-beta PYPY3_SHA256=3d1b02f6ef50d4e9069885e0b3f19f26491c7f4f9c5ccc8aa118e38fd6a23997
   allow_failures:
     - python: "3.5-dev"
     - python: "3.6-dev"
@@ -33,8 +33,8 @@ matrix:
 before_install:
   - "sudo apt-get -q update"
   - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3' ]; then pip install -U pip; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy3.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > ~/.cache/sacad-build/pypy3.tar.bz2; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy3.tar.bz2 | sha256sum --status -c && tar -xjf ~/.cache/sacad-build/pypy3.tar.bz2 -C ~ && deactivate && ~/pypy-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy3.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
 install:
   - "sudo apt-get -V install libxml2-dev libxslt1-dev"  # lxml dependencies
   - "pip install -r requirements.txt"
