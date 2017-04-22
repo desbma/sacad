@@ -6,4 +6,4 @@ mutagen>=1.31
 pillow>=2.7.0
 redo>=1.4
 requests>=2.6.0
-web_cache>=1.0.0
+web_cache>=1.0.1
