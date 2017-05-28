@@ -10,7 +10,7 @@ import requests
 with open(os.path.join("sacad", "__init__.py"), "rt") as f:
   version = re.search("__version__ = \"([^\"]+)\"", f.read()).group(1)
 
-build_exe_options = {"includes": ["lxml._elementpath"],
+build_exe_options = {"includes": ["lxml._elementpath", "idna.idnadata"],
                      "packages": ["requests"],
                      "include_files": [(requests.certs.where(), "cacert.pem")],
                      "optimize": 0}
