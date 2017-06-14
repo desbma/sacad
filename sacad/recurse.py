@@ -5,15 +5,14 @@
 import argparse
 import collections
 import concurrent.futures
-import itertools
 import logging
 import multiprocessing
 import os
 import shutil
 import sys
-import time
 
 import mutagen
+import tqdm
 
 import sacad
 
@@ -33,22 +32,21 @@ AUDIO_EXTENSIONS = frozenset(("aac",
 def analyze_lib(lib_dir, cover_filename):
   """ Recursively analyze library, and return a dict of path -> (artist, album). """
   work = {}
-  scrobbler = itertools.cycle("|/-\\")
-  stats = collections.OrderedDict(((k, 0) for k in("dirs", "files", "albums", "missing covers", "errors")))
+  stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
   failed_dirs = []
-  time_progress_shown = show_analyze_progress(stats, scrobbler)
-  for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
-    stats["dirs"] += 1
-    metadata, time_progress_shown = analyze_dir(stats,
-                                                rootpath,
-                                                rel_filepaths,
-                                                cover_filename,
-                                                failed_dirs,
-                                                scrobbler,
-                                                time_progress_shown)
-    if all(metadata):
-      work[rootpath] = metadata
-  show_analyze_progress(stats, scrobbler, end=True)
+  with tqdm.tqdm(desc="Analyzing library",
+                 unit=" dirs",
+                 postfix=stats) as progress:
+    for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
+      metadata = analyze_dir(stats,
+                             rootpath,
+                             rel_filepaths,
+                             cover_filename,
+                             failed_dirs)
+      progress.set_postfix(stats)
+      progress.update(1)
+      if all(metadata):
+        work[rootpath] = metadata
   for failed_dir in failed_dirs:
     print("Unable to read metadata for album directory '%s'" % (failed_dir))
   return work
@@ -90,13 +88,12 @@ def get_metadata(audio_filepaths):
   return artist, album
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, scrobbler, time_progress_shown):
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
   """ Analyze a directory (non recursively) to get its album metadata if it is one. """
   metadata = None, None
   audio_filepaths = []
   for rel_filepath in rel_filepaths:
     stats["files"] += 1
-    time_progress_shown = show_analyze_progress(stats, scrobbler, time_progress_shown=time_progress_shown)
     try:
       ext = os.path.splitext(rel_filepath)[1][1:].lower()
     except IndexError:
@@ -112,19 +109,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, s
         # failed to get metadata for this album
         stats["errors"] += 1
         failed_dirs.append(parent_dir)
-  return metadata, time_progress_shown
-
-
-def show_analyze_progress(stats, scrobbler, *, time_progress_shown=0, end=False):
-  """ Display analysis global progress. """
-  now = time.monotonic()
-  if (sys.stdout.isatty() and
-     (end or (now - time_progress_shown > 0.1))):  # do not refresh display at each call (for performance)
-    time_progress_shown = now
-    print("Analyzing library %s | %s" % (next(scrobbler) if not end else "-",
-                                         "  ".join(("%u %s" % (v, k)) for k, v in stats.items())),
-          end="\r" if not end else "\n")
-  return time_progress_shown
+  return metadata
 
 
 def get_covers(work, args):
@@ -149,26 +134,27 @@ def get_covers(work, args):
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
     errors = []
     not_found = []
-    for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
-      path, artist, album = futures[future]
-      try:
-        status = future.result()
-      except Exception as exception:
-        stats["errors"] += 1
-        errors.append((path, artist, album, exception))
-      else:
-        if status:
-          stats["ok"] += 1
+    with tqdm.tqdm(concurrent.futures.as_completed(futures),
+                   total=len(futures),
+                   miniters=1,
+                   desc="Searching covers",
+                   unit=" covers",
+                   postfix=stats) as progress:
+      for i, future in enumerate(progress, 1):
+        path, artist, album = futures[future]
+        try:
+          status = future.result()
+        except Exception as exception:
+          stats["errors"] += 1
+          errors.append((path, artist, album, exception))
         else:
-          stats["no result found"] += 1
-          not_found.append((path, artist, album))
-      show_get_covers_progress(i,
-                               len(work),
-                               stats,
-                               artist=artist,
-                               album=album)
-  if work:
-    show_get_covers_progress(len(work), len(work), stats, end=True)
+          if status:
+            stats["ok"] += 1
+          else:
+            stats["no result found"] += 1
+            not_found.append((path, artist, album))
+        progress.set_postfix(stats)
+
   for path, artist, album in not_found:
     print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
   for path, artist, album, exception in errors:
@@ -179,20 +165,6 @@ def get_covers(work, args):
                                                                                      exception))
   if errors:
     print("Please report this at https://github.com/desbma/sacad/issues")
-
-
-def show_get_covers_progress(current_idx, total_count, stats, *, artist=None, album=None, end=False):
-  """ Display search and download global progress. """
-  if not sys.stdout.isatty():
-    return
-  line_width = shutil.get_terminal_size(fallback=(80, 0))[0] - 1
-  print(" " * line_width, end="\r")
-  print("Searching and downloading covers %u%% (%u/%u)%s | %s" % (100 * current_idx // total_count,
-                                                                  current_idx,
-                                                                  total_count,
-                                                                  (" | Current album: '%s' '%s'" % (artist, album)) if not end else "",
-                                                                  "  ".join(("%u %s" % (v, k)) for k, v in stats.items())),
-        end="\r" if not end else "\n")
 
 
 def cl_main():
