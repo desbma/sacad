@@ -114,7 +114,8 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
 
 def get_covers(work, args):
   """ Get missing covers. """
-  with concurrent.futures.ProcessPoolExecutor(max_workers=min(8, multiprocessing.cpu_count())) as executor:
+  with concurrent.futures.ProcessPoolExecutor(max_workers=min(1,  # TODO fix deadlock
+                                                              multiprocessing.cpu_count())) as executor:
     # post work
     futures = {}
     for path, (artist, album) in work.items():
