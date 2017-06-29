@@ -3,13 +3,16 @@
 """ Recursively search and download album covers for a music library. """
 
 import argparse
+import contextlib
+import base64
 import collections
 import concurrent.futures
+import inspect
 import logging
 import multiprocessing
+import operator
 import os
-import shutil
-import sys
+import tempfile
 
 import mutagen
 import tqdm
@@ -17,6 +20,7 @@ import tqdm
 import sacad
 
 
+EMBEDDED_ALBUM_ART_SYMBOL = "+"
 AUDIO_EXTENSIONS = frozenset(("aac",
                               "ape",
                               "flac",
@@ -45,16 +49,16 @@ def analyze_lib(lib_dir, cover_filename):
                              failed_dirs)
       progress.set_postfix(stats)
       progress.update(1)
-      if all(metadata):
-        work[rootpath] = metadata
+      if all(metadata[:-1]):
+        work[rootpath] = metadata[:-1]
   for failed_dir in failed_dirs:
     print("Unable to read metadata for album directory '%s'" % (failed_dir))
   return work
 
 
 def get_metadata(audio_filepaths):
-  """ Return a tuple of album, artist from a list of audio files. """
-  artist, album = None, None
+  """ Return a tuple of album, artist, has_embedded_album_art from a list of audio files. """
+  artist, album, has_embedded_album_art = None, None, None
   for audio_filepath in audio_filepaths:
     try:
       mf = mutagen.File(audio_filepath)
@@ -62,6 +66,8 @@ def get_metadata(audio_filepaths):
       continue
     if mf is None:
       continue
+
+    # artist
     for key in ("albumartist", "artist",  # ogg
                 "TPE1", "TPE2",  # mp3
                 "aART", "\xa9ART"):  # mp4
@@ -72,6 +78,8 @@ def get_metadata(audio_filepaths):
       if val is not None:
         artist = val[0]
         break
+
+    # album
     for key in ("_album", "album",  # ogg
                 "TALB",  # mp3
                 "\xa9alb"):  # mp4
@@ -82,15 +90,26 @@ def get_metadata(audio_filepaths):
       if val is not None:
         album = val[0]
         break
+
     if artist and album:
+      # album art
+      if isinstance(mf, mutagen.ogg.OggFileType):
+        has_embedded_album_art = "metadata_block_picture" in mf
+      elif isinstance(mf, mutagen.mp3.MP3):
+        has_embedded_album_art = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
+      elif isinstance(mf, mutagen.mp4.MP4):
+        has_embedded_album_art = "covr" in mf
+
       # stop at the first file that succeeds (for performance)
       break
-  return artist, album
+
+  return artist, album, has_embedded_album_art
 
 
 def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
   """ Analyze a directory (non recursively) to get its album metadata if it is one. """
-  metadata = None, None
+  no_metadata = None, None, None
+  metadata = no_metadata
   audio_filepaths = []
   for rel_filepath in rel_filepaths:
     stats["files"] += 1
@@ -102,23 +121,71 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
       audio_filepaths.append(os.path.join(parent_dir, rel_filepath))
   if audio_filepaths:
     stats["albums"] += 1
-    if not os.path.isfile(os.path.join(parent_dir, cover_filename)):
-      stats["missing covers"] += 1
+    if (cover_filename != EMBEDDED_ALBUM_ART_SYMBOL):
+      missing = not os.path.isfile(os.path.join(parent_dir, cover_filename))
+      if missing:
+        metadata = get_metadata(audio_filepaths)
+    else:
       metadata = get_metadata(audio_filepaths)
-      if not all(metadata):
+      missing = not metadata[2]
+    if missing:
+      stats["missing covers"] += 1
+      if not all(metadata[:-1]):
         # failed to get metadata for this album
         stats["errors"] += 1
         failed_dirs.append(parent_dir)
+    else:
+      metadata = no_metadata
   return metadata
 
+
+def embed_album_art(cover_filepath, path):
+  """ Embed album art into audio files. """
+  with open(cover_filepath, "rb") as f:
+    cover_data = f.read()
+
+  for filename in os.listdir(path):
+    try:
+      ext = os.path.splitext(filename)[1][1:].lower()
+    except IndexError:
+      continue
+
+    if ext in AUDIO_EXTENSIONS:
+      filepath = os.path.join(path, filename)
+      mf = mutagen.File(filepath)
+      if isinstance(mf, mutagen.ogg.OggFileType):
+        picture = mutagen.flac.Picture()
+        picture.data = cover_data
+        picture.type = mutagen.id3.PictureType.COVER_FRONT
+        picture.mime = "image/jpeg"
+        encoded_data = base64.b64encode(picture.write())
+        mf["metadata_block_picture"] = encoded_data.decode("ascii")
+      elif isinstance(mf, mutagen.mp3.MP3):
+        mf.tags.add(mutagen.id3.APIC(mime="image/jpeg",
+                                     type=mutagen.id3.PictureType.COVER_FRONT,
+                                     data=cover_data))
+      elif isinstance(mf, mutagen.mp4.MP4):
+        mf["covr"] = [mutagen.mp4.MP4Cover(cover_data,
+                                           imageformat=mutagen.mp4.AtomDataType.JPEG)]
+      mf.save()
 
 def get_covers(work, args):
   """ Get missing covers. """
   with concurrent.futures.ProcessPoolExecutor(max_workers=min(1,  # TODO fix deadlock
-                                                              multiprocessing.cpu_count())) as executor:
+                                                              multiprocessing.cpu_count())) as executor, \
+          contextlib.ExitStack() as cm:
+
+    if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+      tmp_prefix = "%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
+      tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
+
     # post work
     futures = {}
-    for path, (artist, album) in work.items():
+    for i, (path, (artist, album)) in enumerate(work.items()):
+      if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+        cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
+      else:
+        cover_filepath = os.path.join(path, args.filename)
       future = executor.submit(sacad.search_and_download,
                                album,
                                artist,
@@ -127,9 +194,9 @@ def get_covers(work, args):
                                args.size_tolerance_prct,
                                args.amazon_tlds,
                                args.no_lq_sources,
-                               os.path.join(path, args.filename),
+                               cover_filepath,
                                process_parallelism=True)
-      futures[future] = (path, artist, album)
+      futures[future] = (path, cover_filepath, artist, album)
 
     # follow progress
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
@@ -142,7 +209,7 @@ def get_covers(work, args):
                    unit=" covers",
                    postfix=stats) as progress:
       for i, future in enumerate(progress, 1):
-        path, artist, album = futures[future]
+        path, cover_filepath, artist, album = futures[future]
         try:
           status = future.result()
         except Exception as exception:
@@ -150,7 +217,18 @@ def get_covers(work, args):
           errors.append((path, artist, album, exception))
         else:
           if status:
-            stats["ok"] += 1
+            if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+              try:
+                embed_album_art(cover_filepath, path)
+              except Exception as exception:
+                stats["errors"] += 1
+                errors.append((path, artist, album, exception))
+              else:
+                stats["ok"] += 1
+              finally:
+                os.remove(cover_filepath)
+            else:
+              stats["ok"] += 1
           else:
             stats["no result found"] += 1
             not_found.append((path, artist, album))
@@ -159,11 +237,11 @@ def get_covers(work, args):
   for path, artist, album in not_found:
     print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
   for path, artist, album, exception in errors:
-    print("Error occured while searching cover for '%s' by '%s' from '%s': %s %s" % (album,
-                                                                                     artist,
-                                                                                     path,
-                                                                                     exception.__class__.__qualname__,
-                                                                                     exception))
+    print("Error occured while handling cover for '%s' by '%s' from '%s': %s %s" % (album,
+                                                                                    artist,
+                                                                                    path,
+                                                                                    exception.__class__.__qualname__,
+                                                                                    exception))
   if errors:
     print("Please report this at https://github.com/desbma/sacad/issues")
 
@@ -179,10 +257,13 @@ def cl_main():
                           type=int,
                           help="Target image size")
   arg_parser.add_argument("filename",
-                          help="Cover image filename")
+                          help="Cover image filename ('%s' to embed JPEG into audio files)" % (EMBEDDED_ALBUM_ART_SYMBOL))
   sacad.setup_common_args(arg_parser)
   args = arg_parser.parse_args()
-  args.format = os.path.splitext(args.filename)[1][1:].lower()
+  if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+    args.format = "jpg"
+  else:
+    args.format = os.path.splitext(args.filename)[1][1:].lower()
   try:
     args.format = sacad.SUPPORTED_IMG_FORMATS[args.format]
   except KeyError:

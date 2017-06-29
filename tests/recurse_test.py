@@ -128,27 +128,27 @@ class TestRecursive(unittest.TestCase):
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album1_dir),
                                               os.listdir(__class__.album1_dir))),
-                     ("ARTIST1", "ALBUM1"))
+                     ("ARTIST1", "ALBUM1", False))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album2_dir),
                                               os.listdir(__class__.album2_dir))),
-                     ("ARTIST2", "ALBUM2"))
+                     ("ARTIST2", "ALBUM2", False))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album3_dir),
                                               os.listdir(__class__.album3_dir))),
-                     ("jpfmband", "Paris S.F"))
+                     ("jpfmband", "Paris S.F", True))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.album4_dir),
                                               os.listdir(__class__.album4_dir))),
-                     ("Auphonic", "Auphonic Demonstration"))
+                     ("Auphonic", "Auphonic Demonstration", True))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.not_album_dir),
                                               os.listdir(__class__.not_album_dir))),
-                     (None, None))
+                     (None, None, None))
     self.assertEqual(recurse.get_metadata(map(functools.partial(os.path.join,
                                                                 __class__.invalid_album_dir),
                                               os.listdir(__class__.invalid_album_dir))),
-                     ("ARTIST1", None))
+                     ("ARTIST1", None, None))
 
   def test_analyze_dir(self):
     with open(os.devnull, "wt") as dn, redirect_stdout(dn):
@@ -167,7 +167,7 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
       self.assertEqual(len(failed_dirs), 0)
-      self.assertEqual(r, ("ARTIST1", "ALBUM1"))
+      self.assertEqual(r, ("ARTIST1", "ALBUM1", False))
 
       stats.clear()
       r = recurse.analyze_dir(stats,
@@ -183,7 +183,7 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
       self.assertEqual(len(failed_dirs), 0)
-      self.assertEqual(r, ("ARTIST2", "ALBUM2"))
+      self.assertEqual(r, ("ARTIST2", "ALBUM2", False))
       stats.clear()
       r = recurse.analyze_dir(stats,
                               __class__.album2_dir,
@@ -197,7 +197,7 @@ class TestRecursive(unittest.TestCase):
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
       self.assertEqual(len(failed_dirs), 0)
-      self.assertEqual(r, (None, None))
+      self.assertEqual(r, (None, None, None))
 
       stats.clear()
       failed_dirs.clear()
@@ -212,7 +212,7 @@ class TestRecursive(unittest.TestCase):
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
       self.assertEqual(len(failed_dirs), 0)
-      self.assertEqual(r, (None, None))
+      self.assertEqual(r, (None, None, None))
 
       stats.clear()
       failed_dirs.clear()
@@ -230,7 +230,7 @@ class TestRecursive(unittest.TestCase):
       self.assertIn("errors", stats)
       self.assertEqual(stats["errors"], 1)
       self.assertSequenceEqual(failed_dirs, (__class__.invalid_album_dir,))
-      self.assertEqual(r, ("ARTIST1", None))
+      self.assertEqual(r, ("ARTIST1", None, None))
 
 
 if __name__ == "__main__":
