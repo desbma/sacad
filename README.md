@@ -12,7 +12,7 @@ Smart Automatic Cover Art Downloader
 
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
-**Since version 1.6.0, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically.**
+**Since version 1.6.0, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically, optionally embedding the image into audio audio files (since version 1.9.0).**
 
 
 ## Features
