@@ -336,7 +336,12 @@ class CoverSourceResult:
 
     # compute sig
     logging.getLogger().debug("Computing signature of %s..." % (self))
-    self.thumbnail_sig = __class__.computeImgSignature(image_data)
+    try:
+      self.thumbnail_sig = __class__.computeImgSignature(image_data)
+    except Exception as e:
+      logging.getLogger().warning("Failed to compute signature of '%s' failed: %s %s" % (self,
+                                                                                         e.__class__.__qualname__,
+                                                                                         e))
 
     return self  # for use with concurrent.futures
 
