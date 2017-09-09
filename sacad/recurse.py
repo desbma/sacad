@@ -9,7 +9,6 @@ import collections
 import concurrent.futures
 import inspect
 import logging
-import multiprocessing
 import operator
 import os
 import tempfile
@@ -172,7 +171,7 @@ def embed_album_art(cover_filepath, path):
 def get_covers(work, args):
   """ Get missing covers. """
   with concurrent.futures.ProcessPoolExecutor(max_workers=min(1,  # TODO fix deadlock
-                                                              multiprocessing.cpu_count())) as executor, \
+                                                              len(os.sched_getaffinity(0)))) as executor, \
           contextlib.ExitStack() as cm:
 
     if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:

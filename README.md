@@ -8,7 +8,7 @@ Smart Automatic Cover Art Downloader
 [![Coverage](https://img.shields.io/coveralls/desbma/sacad/master.svg?style=flat)](https://coveralls.io/github/desbma/sacad?branch=master)
 [![Lines of code](https://tokei.rs/b1/github/desbma/sacad)](https://github.com/desbma/sacad)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
-[![License](https://img.shields.io/github/license/desbma/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+[![License](https://img.shields.io/github/license/desbma/sacad.svg?style=flat)](https://github.com/desbma/sacad/blob/master/LICENSE)
 
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
