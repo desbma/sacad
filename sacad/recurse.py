@@ -152,18 +152,21 @@ def embed_album_art(cover_filepath, path):
     if ext in AUDIO_EXTENSIONS:
       filepath = os.path.join(path, filename)
       mf = mutagen.File(filepath)
-      if isinstance(mf, mutagen.ogg.OggFileType):
+      if (isinstance(mf.tags, mutagen._vorbis.VComment) or
+              isinstance(mf, mutagen.ogg.OggFileType)):
         picture = mutagen.flac.Picture()
         picture.data = cover_data
         picture.type = mutagen.id3.PictureType.COVER_FRONT
         picture.mime = "image/jpeg"
         encoded_data = base64.b64encode(picture.write())
         mf["metadata_block_picture"] = encoded_data.decode("ascii")
-      elif isinstance(mf, mutagen.mp3.MP3):
+      elif (isinstance(mf.tags, mutagen.id3.ID3) or
+            isinstance(mf, mutagen.id3.ID3FileType)):
         mf.tags.add(mutagen.id3.APIC(mime="image/jpeg",
                                      type=mutagen.id3.PictureType.COVER_FRONT,
                                      data=cover_data))
-      elif isinstance(mf, mutagen.mp4.MP4):
+      elif (isinstance(mf.tags, mutagen.mp4.MP4Tags) or
+            isinstance(mf, mutagen.mp4.MP4)):
         mf["covr"] = [mutagen.mp4.MP4Cover(cover_data,
                                            imageformat=mutagen.mp4.AtomDataType.JPEG)]
       mf.save()
