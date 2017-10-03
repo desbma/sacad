@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import concurrent.futures
 import itertools
 import logging
@@ -51,6 +52,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         row_count = len(cache)
         logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
+  @asyncio.coroutine
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     logging.getLogger().debug("Searching with source '%s'..." % (self.__class__.__name__))

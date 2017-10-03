@@ -7,22 +7,20 @@ __author__ = "desbma"
 __license__ = "MPL 2.0"
 
 import argparse
-import concurrent.futures
+import asyncio
 import functools
 import logging
-import operator
 import os
-import random
 import sys
-import time
 
 from sacad import colored_logging
 from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-def search_and_download(album, artist, format, size, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath,
-                        *, process_parallelism=False):
+@asyncio.coroutine
+def search_and_download(album, artist, format, size, *, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath,
+                        async_loop):
   """ Search and download a cover, return True if success, False instead. """
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
@@ -40,18 +38,26 @@ def search_and_download(album, artist, format, size, size_tolerance_prct, amazon
   if not no_lq_sources:
     cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
 
-  if process_parallelism:
-    # to improve concurrency with rate limiting, randomize source order
-    random.seed(os.getpid() + int(time.time() * 1000))
-    random.shuffle(cover_sources)
+  # schedule search work
+  search_futures = []
+  for cover_source in cover_sources:
+    coroutine = cover_source.search(album, artist)
+    try:
+      # python >= 3.4.4
+      future = asyncio.ensure_future(coroutine, loop=async_loop)
+    except AttributeError:
+      # python < 3.4.4
+      future = asyncio.async(coroutine, loop=async_loop)
+    search_futures.append(future)
 
-  # search
+  # wait for it
+  yield from asyncio.wait(search_futures)
+
+  # get results
   results = []
-  thread_count = 1 if process_parallelism else len(cover_sources)
-  with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
-    for source_results in executor.map(operator.methodcaller("search", album, artist),
-                                       cover_sources):
-      results.extend(source_results)
+  for future in search_futures:
+    source_results = future.result()
+    results.extend(source_results)
 
   # sort results
   results = CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
@@ -147,14 +153,23 @@ def cl_main():
   logging.getLogger().addHandler(logging_handler)
 
   # search and download
-  search_and_download(args.album,
-                      args.artist,
-                      args.format,
-                      args.size,
-                      args.size_tolerance_prct,
-                      args.amazon_tlds,
-                      args.no_lq_sources,
-                      args.out_filepath)
+  async_loop = asyncio.get_event_loop()
+  coroutine = search_and_download(args.album,
+                                  args.artist,
+                                  args.format,
+                                  args.size,
+                                  size_tolerance_prct=args.size_tolerance_prct,
+                                  amazon_tlds=args.amazon_tlds,
+                                  no_lq_sources=args.no_lq_sources,
+                                  out_filepath=args.out_filepath,
+                                  async_loop=async_loop)
+  try:
+    # python >= 3.4.4
+    future = asyncio.ensure_future(coroutine, loop=async_loop)
+  except AttributeError:
+    # python < 3.4.4
+    future = asyncio.async(coroutine, loop=async_loop)
+  async_loop.run_until_complete(future)
 
 
 if getattr(sys, "frozen", False):
