@@ -22,12 +22,6 @@ from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED
 def search_and_download(album, artist, format, size, *, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath,
                         async_loop):
   """ Search and download a cover, return True if success, False instead. """
-  # display warning if optipng or jpegoptim are missing
-  if not HAS_JPEGOPTIM:
-    logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
-  if not HAS_OPTIPNG:
-    logging.getLogger().warning("optipng could not be found, PNG crunching will be disabled")
-
   # register sources
   source_args = (size, size_tolerance_prct)
   cover_sources = [sources.LastFmCoverSource(*source_args),
@@ -151,6 +145,12 @@ def cl_main():
   logging_handler = logging.StreamHandler()
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
+
+  # display warning if optipng or jpegoptim are missing
+  if not HAS_JPEGOPTIM:
+    logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
+  if not HAS_OPTIPNG:
+    logging.getLogger().warning("optipng could not be found, PNG crunching will be disabled")
 
   # search and download
   async_loop = asyncio.get_event_loop()
