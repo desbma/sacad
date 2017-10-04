@@ -29,7 +29,7 @@ matrix:
     - python: "pypy3"
   fast_finish: true
 before_install:
-    - "if [ $WINDOWS -eq 1 ]; then wget https://dl.winehq.org/wine-builds/Release.key && sudo apt-key add Release.key && sudo apt-add-repository 'https://dl.winehq.org/wine-builds/ubuntu/'; fi"
+  - "if [ $WINDOWS -eq 1 ]; then curl https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add - && sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/; fi"
   - "sudo apt-get -q update"
   - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3' ]; then pip install -U pip; fi"
   - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
