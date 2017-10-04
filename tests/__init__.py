@@ -74,10 +74,10 @@ class TestSacad(unittest.TestCase):
                                                   "Metallica",
                                                   format,
                                                   size,
+                                                  tmp_filepath,
                                                   size_tolerance_prct=size_tolerance,
                                                   amazon_tlds=(),
                                                   no_lq_sources=False,
-                                                  out_filepath=tmp_filepath,
                                                   async_loop=async_loop)
             sched_and_run(coroutine, async_loop)
             out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)

@@ -19,7 +19,7 @@ from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED
 
 
 @asyncio.coroutine
-def search_and_download(album, artist, format, size, *, size_tolerance_prct, amazon_tlds, no_lq_sources, out_filepath,
+def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources,
                         async_loop):
   """ Search and download a cover, return True if success, False instead. """
   # register sources
@@ -45,7 +45,7 @@ def search_and_download(album, artist, format, size, *, size_tolerance_prct, ama
     search_futures.append(future)
 
   # wait for it
-  yield from asyncio.wait(search_futures)
+  yield from asyncio.wait(search_futures, loop=async_loop)
 
   # get results
   results = []
@@ -158,10 +158,10 @@ def cl_main():
                                   args.artist,
                                   args.format,
                                   args.size,
+                                  args.out_filepath,
                                   size_tolerance_prct=args.size_tolerance_prct,
                                   amazon_tlds=args.amazon_tlds,
                                   no_lq_sources=args.no_lq_sources,
-                                  out_filepath=args.out_filepath,
                                   async_loop=async_loop)
   try:
     # python >= 3.4.4

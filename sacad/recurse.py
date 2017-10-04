@@ -3,10 +3,10 @@
 """ Recursively search and download album covers for a music library. """
 
 import argparse
+import asyncio
 import contextlib
 import base64
 import collections
-import concurrent.futures
 import inspect
 import logging
 import operator
@@ -171,71 +171,82 @@ def embed_album_art(cover_filepath, path):
                                            imageformat=mutagen.mp4.AtomDataType.JPEG)]
       mf.save()
 
+
 def get_covers(work, args):
   """ Get missing covers. """
-  with concurrent.futures.ProcessPoolExecutor(max_workers=min(1,  # TODO fix deadlock
-                                                              len(os.sched_getaffinity(0)))) as executor, \
-          contextlib.ExitStack() as cm:
+  with contextlib.ExitStack() as cm:
 
     if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
       tmp_prefix = "%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
       tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
 
     # post work
+    async_loop = asyncio.get_event_loop()
     futures = {}
     for i, (path, (artist, album)) in enumerate(work.items()):
       if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
         cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
       else:
         cover_filepath = os.path.join(path, args.filename)
-      future = executor.submit(sacad.search_and_download,
-                               album,
-                               artist,
-                               args.format,
-                               args.size,
-                               args.size_tolerance_prct,
-                               args.amazon_tlds,
-                               args.no_lq_sources,
-                               cover_filepath,
-                               process_parallelism=True)
+      coroutine = sacad.search_and_download(album,
+                                            artist,
+                                            args.format,
+                                            args.size,
+                                            cover_filepath,
+                                            size_tolerance_prct=args.size_tolerance_prct,
+                                            amazon_tlds=args.amazon_tlds,
+                                            no_lq_sources=args.no_lq_sources,
+                                            async_loop=async_loop)
+      try:
+        # python >= 3.4.4
+        future = asyncio.ensure_future(coroutine, loop=async_loop)
+      except AttributeError:
+        # python < 3.4.4
+        future = asyncio.async(coroutine, loop=async_loop)
       futures[future] = (path, cover_filepath, artist, album)
 
-    # follow progress
+    # setup progress report
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
     errors = []
     not_found = []
-    with tqdm.tqdm(concurrent.futures.as_completed(futures),
-                   total=len(futures),
+    with tqdm.tqdm(total=len(futures),
                    miniters=1,
                    desc="Searching covers",
                    unit=" covers",
                    postfix=stats) as progress:
-      for i, future in enumerate(progress, 1):
+      def update_progress(future):
         path, cover_filepath, artist, album = futures[future]
         try:
           status = future.result()
         except Exception as exception:
           stats["errors"] += 1
           errors.append((path, artist, album, exception))
-        else:
-          if status:
-            if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
-              try:
-                embed_album_art(cover_filepath, path)
-              except Exception as exception:
-                stats["errors"] += 1
-                errors.append((path, artist, album, exception))
-              else:
-                stats["ok"] += 1
-              finally:
-                os.remove(cover_filepath)
+        if status:
+          if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+            try:
+              embed_album_art(cover_filepath, path)
+            except Exception as exception:
+              stats["errors"] += 1
+              errors.append((path, artist, album, exception))
             else:
               stats["ok"] += 1
+            finally:
+              os.remove(cover_filepath)
           else:
-            stats["no result found"] += 1
-            not_found.append((path, artist, album))
+            stats["ok"] += 1
+        else:
+          stats["no result found"] += 1
+          not_found.append((path, artist, album))
+        progress.update(1)
         progress.set_postfix(stats)
+      for future in futures:
+        future.add_done_callback(update_progress)
 
+      # wait for end of work
+      root_future = asyncio.gather(*futures.keys(), loop=async_loop)
+      async_loop.run_until_complete(root_future)
+
+  # report accumulated errors
   for path, artist, album in not_found:
     print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
   for path, artist, album, exception in errors:
