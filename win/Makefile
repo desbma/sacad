@@ -2,8 +2,8 @@
 PYTHON_VERSION       := 3.4.4
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
-CXFREEZE_VERSION     := 5.0.1
-LXML_VERSION         := 3.7.2
+CXFREEZE_VERSION     := 5.0.2
+LXML_VERSION         := 3.8.0
 
 # installers
 DOWNLOAD_DIR       ?= dl
@@ -142,11 +142,11 @@ ${PYTHON_INSTALLER}:
 
 ${CXFREEZE_WHEEL}:
 	mkdir -p $(dir $@)
-	${CURL} https://pypi.python.org/packages/82/0b/b8ce1a9aead6e873d1f2cb421d73c73eefb5d18889c2ddb803f24898760f/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
+	${CURL} https://pypi.python.org/packages/67/87/7b376edca85e4cb24c06d7abde7c4b47c6369b2dadb3856ba8d7b6201106/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
 
 ${LXML_WHEEL}:
 	mkdir -p $(dir $@)
-	${CURL} https://www.dropbox.com/s/fu3ob4yfeozjd3x/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
+	${CURL} https://www.dropbox.com/s/h03crvc5muvim3e/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
 
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)
