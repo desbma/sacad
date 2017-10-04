@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import asyncio
 import contextlib
 import logging
 import math
@@ -38,6 +39,17 @@ def download(url, filepath):
         f.write(chunk)
 
 
+def sched_and_run(coroutine, async_loop):
+  try:
+    # python >= 3.4.4
+    future = asyncio.ensure_future(coroutine, loop=async_loop)
+  except AttributeError:
+    # python < 3.4.4
+    future = asyncio.async(coroutine, loop=async_loop)
+  async_loop.run_until_complete(future)
+  return future.result()
+
+
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
 class TestSacad(unittest.TestCase):
 
@@ -52,19 +64,22 @@ class TestSacad(unittest.TestCase):
 
   def test_getMasterOfPuppetsCover(self):
     """ Search and download cover for 'Master of Puppets' with different parameters. """
+    async_loop = asyncio.get_event_loop()
     for format in sacad.cover.CoverImageFormat:
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
           with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
                                          suffix=".%s" % (format.name.lower())) as tmp_filepath:
-            sacad.search_and_download("Master of Puppets",
-                                      "Metallica",
-                                      format,
-                                      size,
-                                      size_tolerance,
-                                      (),
-                                      False,
-                                      tmp_filepath)
+            coroutine = sacad.search_and_download("Master of Puppets",
+                                                  "Metallica",
+                                                  format,
+                                                  size,
+                                                  size_tolerance_prct=size_tolerance,
+                                                  amazon_tlds=(),
+                                                  no_lq_sources=False,
+                                                  out_filepath=tmp_filepath,
+                                                  async_loop=async_loop)
+            sched_and_run(coroutine, async_loop)
             out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
             self.assertEqual(out_format, format)
             self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
@@ -121,6 +136,7 @@ class TestSacad(unittest.TestCase):
 
   def test_coverSources(self):
     """ Check all sources return valid results with different parameters. """
+    async_loop = asyncio.get_event_loop()
     for size in range(300, 1200 + 1, 300):
       source_args = (size, 0)
       sources = [sacad.sources.LastFmCoverSource(*source_args),
@@ -129,7 +145,8 @@ class TestSacad(unittest.TestCase):
       sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
       for source in sources:
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
-          results = source.search(album, artist)
+          coroutine = source.search(album, artist)
+          results = sched_and_run(coroutine, async_loop)
           results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
           if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
                   ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
@@ -147,7 +164,8 @@ class TestSacad(unittest.TestCase):
     # test for specific cover not available on amazon.com, but on amazon.de
     size = 290
     source = sacad.sources.AmazonCdCoverSource(size, 0, tld="de")
-    results = source.search("Dream Dance 5", "Various")
+    coroutine = source.search("Dream Dance 5", "Various")
+    results = sched_and_run(coroutine, async_loop)
     self.assertGreaterEqual(len(results), 1)
     for result in results:
       self.assertTrue(result.urls)
