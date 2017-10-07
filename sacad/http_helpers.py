@@ -26,7 +26,8 @@ class Http:
       cookie_jar = aiohttp.helpers.DummyCookieJar()
     else:
       cookie_jar = None
-    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar)
+    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar,
+                                         loop=asyncio.get_event_loop())
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
