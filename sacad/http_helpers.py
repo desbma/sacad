@@ -7,9 +7,9 @@ import pickle
 
 import aiohttp
 import appdirs
-import redo
 
 from sacad import rate_watcher
+from sacad import redo
 
 
 IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
@@ -48,12 +48,11 @@ class Http:
         logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
         return cache[url]
 
-    for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
-                                             sleeptime=1.5,
-                                             max_sleeptime=5,
-                                             sleepscale=1.25,
-                                             jitter=1),
-                                1):
+    for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
+                                                         sleeptime=1,
+                                                         max_sleeptime=5,
+                                                         sleepscale=1.5),
+                                            1):
       yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                 url,
                                                 self.min_delay_between_accesses).waitAccessAsync()
@@ -86,8 +85,6 @@ class Http:
           else:
             cache[url] = data
 
-        break  # http retry loop
-
       except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                      attempt,
@@ -96,7 +93,14 @@ class Http:
                                                                                      e))
         if attempt == HTTP_MAX_ATTEMPTS:
           raise
+        else:
+          logging.getLogger().debug("Retrying in %.3fs" % (time_to_sleep))
+          yield from asyncio.sleep(time_to_sleep)
 
+      else:
+        break  # http retry loop
+
+    # TODO don't store in cache if this raises
     response.raise_for_status()
 
     return content
@@ -112,12 +116,11 @@ class Http:
 
     resp_ok = True
     try:
-      for attempt, _ in enumerate(redo.retrier(attempts=HTTP_MAX_ATTEMPTS,
-                                               sleeptime=1.5,
-                                               max_sleeptime=3,
-                                               sleepscale=1.25,
-                                               jitter=1),
-                                  1):
+      for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
+                                                           sleeptime=0.5,
+                                                           max_sleeptime=2,
+                                                           sleepscale=1.5),
+                                              1):
         yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                   url,
                                                   self.min_delay_between_accesses).waitAccessAsync()
@@ -127,11 +130,7 @@ class Http:
                                                   headers=self._buildHeaders(headers),
                                                   timeout=HTTP_SHORT_TIMEOUT_S)
 
-          break  # http retry loop
-
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-          if isinstance(e, aiohttp.ClientResponseError):
-            raise
           logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                       attempt,
                                                                                       HTTP_MAX_ATTEMPTS,
@@ -139,12 +138,17 @@ class Http:
                                                                                       e))
           if attempt == HTTP_MAX_ATTEMPTS:
             resp_ok = False
-            break  # http retry loop
+          else:
+            logging.getLogger().debug("Retrying in %.3fs" % (time_to_sleep))
+            yield from asyncio.sleep(time_to_sleep)
 
-      response.raise_for_status()
+        else:
+          response.raise_for_status()
 
-      if response_headers is not None:
-        response_headers.update(response.headers)
+          if response_headers is not None:
+            response_headers.update(response.headers)
+
+          break  # http retry loop
 
     except aiohttp.ClientResponseError as e:
       logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
@@ -174,7 +178,3 @@ class Http:
     if "User-Agent" not in headers:
       headers["User-Agent"] = DEFAULT_USER_AGENT
     return headers
-
-
-# silence third party module loggers
-logging.getLogger("redo").setLevel(logging.ERROR)

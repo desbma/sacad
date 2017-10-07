@@ -137,11 +137,7 @@ def cl_main():
                    "normal": logging.INFO,
                    "debug": logging.DEBUG}
   logging.getLogger().setLevel(logging_level[args.verbosity])
-  if logging_level[args.verbosity] == logging.DEBUG:
-    fmt = "%(threadName)s: %(message)s"
-  else:
-    fmt = "%(message)s"
-  logging_formatter = colored_logging.ColoredFormatter(fmt=fmt)
+  logging_formatter = colored_logging.ColoredFormatter(fmt="%(message)s")
   logging_handler = logging.StreamHandler()
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
