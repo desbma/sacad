@@ -214,6 +214,7 @@ def get_covers(work, args):
                    desc="Searching covers",
                    unit=" covers",
                    postfix=stats) as progress:
+
       def update_progress(future):
         path, cover_filepath, artist, album = futures[future]
         try:
@@ -237,8 +238,9 @@ def get_covers(work, args):
         else:
           stats["no result found"] += 1
           not_found.append((path, artist, album))
-        progress.update(1)
         progress.set_postfix(stats)
+        progress.update(1)
+
       for future in futures:
         future.add_done_callback(update_progress)
 
