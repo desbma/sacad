@@ -54,7 +54,7 @@ def search_and_download(album, artist, format, size, out_filepath, *, size_toler
     results.extend(source_results)
 
   # sort results
-  results = CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
+  results = yield from CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
   results.sort(reverse=True,
                key=functools.cmp_to_key(functools.partial(CoverSourceResult.compare,
                                                           target_size=size,
@@ -65,7 +65,7 @@ def search_and_download(album, artist, format, size, out_filepath, *, size_toler
   # download
   for result in results:
     try:
-      result.get(format, size, size_tolerance_prct, out_filepath)
+      yield from result.get(format, size, size_tolerance_prct, out_filepath)
     except Exception as e:
       logging.getLogger().warning("Download of %s failed: %s %s" % (result,
                                                                     e.__class__.__qualname__,

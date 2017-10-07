@@ -16,11 +16,10 @@ with open(os.path.join("sacad", "__init__.py"), "rt") as f:
 
 with open("requirements.txt", "rt") as f:
   requirements = f.read().splitlines()
-# require enum34 if enum module is missing (Python 3.3)
-try:
-  import enum
-except ImportError:
-  requirements.append("enum34")
+
+with open("test-requirements.txt", "rt") as f:
+  test_requirements = f.read().splitlines()
+
 
 try:
   import pypandoc
@@ -37,6 +36,7 @@ setup(name="sacad",
                                         "sacad_r = sacad.recurse:cl_main"]},
       test_suite="tests",
       install_requires=requirements,
+      tests_require=test_requirements,
       description="Search and download music album covers",
       long_description=readme,
       url="https://github.com/desbma/sacad",

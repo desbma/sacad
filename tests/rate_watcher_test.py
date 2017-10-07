@@ -1,55 +1,69 @@
 #!/usr/bin/env python3
 
+import asyncio
 import os
 import tempfile
 import time
 import unittest
 
-from sacad.rate_watcher import AccessRateWatcher, WaitNeeded
+from sacad.rate_watcher import AccessRateWatcher
+from . import sched_and_run
+
+
+ALMOST_NO_TIME = 0.05
 
 
 class TestRateWatcher(unittest.TestCase):
 
   def test_minDelayBetweenAccesses(self):
+    async_loop = asyncio.get_event_loop()
     with tempfile.TemporaryDirectory() as tmp_dir:
       db_filepath = os.path.join(tmp_dir, "db.sqlite")
-      with AccessRateWatcher(db_filepath,
-                             "http://1.domain.com/abcd",
-                             min_delay_between_accesses=1):
-        time_first_access_domain1 = time.time()
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://1.domain.com/abcd",
+                                      min_delay_between_accesses=1).waitAccessAsync(),
+                    async_loop)
+      time_first_access_domain1 = time.monotonic()
 
-      with AccessRateWatcher(db_filepath,
-                             "http://2.domain.com/abcd",
-                             min_delay_between_accesses=1):
-        time_first_access_domain2 = time.time()
-      self.assertLess(time_first_access_domain2 - time_first_access_domain1, 1)
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://2.domain.com/efgh",
+                                      min_delay_between_accesses=1).waitAccessAsync(),
+                    async_loop)
+      time_first_access_domain2 = time.monotonic()
+      self.assertAlmostEqual(time_first_access_domain2, time_first_access_domain1, delta=ALMOST_NO_TIME)
 
-      with self.assertRaises(WaitNeeded) as cm:
-        with AccessRateWatcher(db_filepath,
-                               "http://1.domain.com/efgh",
-                               min_delay_between_accesses=1):
-          pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 1)
+      before = time.monotonic()
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://1.domain.com/ijkl",
+                                      min_delay_between_accesses=1).waitAccessAsync(),
+                    async_loop)
+      after = time.monotonic()
+      self.assertAlmostEqual(after - before, 1, delta=ALMOST_NO_TIME)
 
-      with self.assertRaises(WaitNeeded) as cm:
-        with AccessRateWatcher(db_filepath,
-                               "http://2.domain.com/efgh",
-                               min_delay_between_accesses=1):
-          pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 1)
+      before = time.monotonic()
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://2.domain.com/mnop",
+                                      min_delay_between_accesses=2).waitAccessAsync(),
+                    async_loop)
+      after = time.monotonic()
+      self.assertAlmostEqual(after - before, 1, delta=ALMOST_NO_TIME)
 
-      with self.assertRaises(WaitNeeded) as cm:
-        with AccessRateWatcher(db_filepath,
-                               "http://2.domain.com/ijkl",
-                               min_delay_between_accesses=2):
-          pass
-      self.assertGreaterEqual(cm.exception.wait_s + 0.1, 2)
+      before = time.monotonic()
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://2.domain.com/qrst",
+                                      min_delay_between_accesses=2).waitAccessAsync(),
+                    async_loop)
+      after = time.monotonic()
+      self.assertAlmostEqual(after - before, 2, delta=ALMOST_NO_TIME)
 
       time.sleep(1)
-      with AccessRateWatcher(db_filepath,
-                             "http://2.domain.com/efgh",
-                             min_delay_between_accesses=1):
-        pass
+      before = time.monotonic()
+      sched_and_run(AccessRateWatcher(db_filepath,
+                                      "http://2.domain.com/ufwx",
+                                      min_delay_between_accesses=1).waitAccessAsync(),
+                    async_loop)
+      after = time.monotonic()
+      self.assertAlmostEqual(after - before, 0, delta=ALMOST_NO_TIME)
 
 
 if __name__ == "__main__":

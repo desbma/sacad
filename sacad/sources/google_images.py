@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import json
 import urllib.parse
@@ -43,6 +44,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
     """ See CoverSource.updateHttpHeaders. """
     headers["User-Agent"] = "Mozilla/5.0 Firefox/25.0"
 
+  @asyncio.coroutine
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []

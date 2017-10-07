@@ -89,6 +89,7 @@ class TestSacad(unittest.TestCase):
 
   def test_getImageUrlMetadata(self):
     """ Download the beginning of image files to guess their format and resolution. """
+    async_loop = asyncio.get_event_loop()
     refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
                                                                                          (700, 700),
                                                                                          math.ceil(18000 / sacad.CoverSourceResult.METADATA_PEEK_SIZE_INCREMENT)),
@@ -107,7 +108,8 @@ class TestSacad(unittest.TestCase):
                                       thumbnail_url=None,
                                       source_quality=None,
                                       check_metadata=sacad.cover.CoverImageMetadata.ALL)
-      cover.updateImageMetadata()
+      coroutine = cover.updateImageMetadata()
+      sched_and_run(coroutine, async_loop)
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)
       self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
@@ -147,7 +149,8 @@ class TestSacad(unittest.TestCase):
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
           coroutine = source.search(album, artist)
           results = sched_and_run(coroutine, async_loop)
-          results = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
+          coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
+          results = sched_and_run(coroutine, async_loop)
           if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
                   ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
                   (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and

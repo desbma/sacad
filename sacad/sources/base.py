@@ -1,6 +1,5 @@
 import abc
 import asyncio
-import concurrent.futures
 import itertools
 import logging
 import operator
@@ -63,8 +62,8 @@ class CoverSource(metaclass=abc.ABCMeta):
       url = url_data
       post_data = None
     try:
-      api_data = self.fetchResults(url, post_data)
-      results = self.parseResults(api_data)
+      api_data = yield from self.fetchResults(url, post_data)
+      results = yield from self.parseResults(api_data)
     except Exception as e:
       # raise
       logging.getLogger().warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
@@ -72,25 +71,21 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                                              e))
       return ()
 
-    # get metadata using thread pool
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-      futures = []
-      for result in filter(operator.methodcaller("needMetadataUpdate"), results):
-        futures.append(executor.submit(CoverSourceResult.updateImageMetadata, result))
-      results = list(itertools.filterfalse(operator.methodcaller("needMetadataUpdate"), results))
-      concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
-      # raise first exception in future if any
-      for future in futures:
-        try:
-          e = future.exception(timeout=0)
-        except concurrent.futures.TimeoutError:
-          continue
-        if e is not None:
-          # try to stop all pending futures
-          for future_to_cancel in futures:
-            future_to_cancel.cancel()
-          raise e
-      results.extend(future.result() for future in futures)
+    # get metadata
+    futures = []
+    for result in filter(operator.methodcaller("needMetadataUpdate"), results):
+      coroutine = result.updateImageMetadata()
+      try:
+        # python >= 3.4.4
+        future = asyncio.ensure_future(coroutine)
+      except AttributeError:
+        # python < 3.4.4
+        future = asyncio.async(coroutine)
+      futures.append(future)
+    if futures:
+      yield from asyncio.wait(futures)
+    for future in futures:
+      future.result()  # raise pending exception if any
 
     # filter
     results_excluded_count = 0
@@ -126,6 +121,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                           " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
     return results_kept
 
+  @asyncio.coroutine
   def fetchResults(self, url, post_data=None):
     """ Get search results froam an URL. """
     if post_data is not None:
@@ -134,21 +130,22 @@ class CoverSource(metaclass=abc.ABCMeta):
       logging.getLogger().debug("Querying URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
-    return self.http.query(url,
-                           post_data=post_data,
-                           headers=headers,
-                           cache=__class__.api_cache)
+    return (yield from self.http.query(url,
+                                       post_data=post_data,
+                                       headers=headers,
+                                       cache=__class__.api_cache))
 
+  @asyncio.coroutine
   def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
     logging.getLogger().debug("Probing URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
     resp_headers = {}
-    resp_ok = self.http.isReachable(url,
-                                    headers=headers,
-                                    response_headers=resp_headers,
-                                    cache=__class__.probe_cache)
+    resp_ok = yield from self.http.isReachable(url,
+                                               headers=headers,
+                                               response_headers=resp_headers,
+                                               cache=__class__.probe_cache)
 
     if response_headers is not None:
       response_headers.update(resp_headers)
@@ -183,6 +180,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     pass
 
   @abc.abstractmethod
+  @asyncio.coroutine
   def parseResults(self, api_data):
     """ Parse API data and return an iterable of results. """
     pass

@@ -1,15 +1,13 @@
 """ Common HTTP code. """
 
-import http.cookiejar
+import asyncio
 import logging
 import os
 import pickle
-import socket
-import time
 
+import aiohttp
 import appdirs
 import redo
-import requests
 
 from sacad import rate_watcher
 
@@ -24,15 +22,20 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 class Http:
 
   def __init__(self, *, allow_session_cookies, min_delay_between_accesses):
-    self.session = requests.Session()
     if not allow_session_cookies:
-      cp = http.cookiejar.DefaultCookiePolicy(allowed_domains=[])
-      self.session.cookies.set_policy(cp)
+      cookie_jar = aiohttp.helpers.DummyCookieJar()
+    else:
+      cookie_jar = None
+    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar)
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
     self.min_delay_between_accesses = min_delay_between_accesses
 
+  def __del__(self):
+    self.session.close()  # silences a warning on shutdown
+
+  @asyncio.coroutine
   def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
     if cache is not None:
@@ -51,56 +54,41 @@ class Http:
                                              sleepscale=1.25,
                                              jitter=1),
                                 1):
-      try:
-        while True:  # rate watcher loop
-          try:
-            with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+      yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                 url,
-                                                self.min_delay_between_accesses):
-              if post_data is not None:
-                response = self.session.post(url,
-                                             data=post_data,
-                                             headers=self._buildHeaders(headers),
-                                             timeout=HTTP_NORMAL_TIMEOUT_S,
-                                             verify=verify)
-              else:
-                response = self.session.get(url,
-                                            headers=self._buildHeaders(headers),
-                                            timeout=HTTP_NORMAL_TIMEOUT_S,
-                                            verify=verify)
+                                                self.min_delay_between_accesses).waitAccessAsync()
 
-              if cache is not None:
-                if pre_cache_callback is not None:
-                  # process
-                  try:
-                    data = pre_cache_callback(response.content)
-                  except Exception:
-                    data = response.content
-                else:
-                  data = response.content
+      try:
+        if post_data is not None:
+          response = yield from self.session.post(url,
+                                                  data=post_data,
+                                                  headers=self._buildHeaders(headers),
+                                                  timeout=HTTP_NORMAL_TIMEOUT_S)
+        else:
+          response = yield from self.session.get(url,
+                                                 headers=self._buildHeaders(headers),
+                                                 timeout=HTTP_NORMAL_TIMEOUT_S)
+        content = yield from response.read()
 
-                # add to cache
-                if post_data is not None:
-                  cache[(url, post_data)] = data
-                else:
-                  cache[url] = data
-
-          except rate_watcher.WaitNeeded as e:
-            logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
-            time.sleep(e.wait_s)
-
-          except rate_watcher.RetryNeeded:
-            pass
-
+        if cache is not None:
+          if pre_cache_callback is not None:
+            # process
+            try:
+              data = yield from pre_cache_callback(content)
+            except Exception:
+              data = content
           else:
-            break  # rate watcher loop
+            data = content
+
+          # add to cache
+          if post_data is not None:
+            cache[(url, post_data)] = data
+          else:
+            cache[url] = data
 
         break  # http retry loop
 
-      except requests.exceptions.SSLError:
-        raise
-
-      except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+      except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                      attempt,
                                                                                      HTTP_MAX_ATTEMPTS,
@@ -111,8 +99,9 @@ class Http:
 
     response.raise_for_status()
 
-    return response.content
+    return content
 
+  @asyncio.coroutine
   def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
     """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
     if (cache is not None) and (url in cache):
@@ -129,30 +118,20 @@ class Http:
                                                sleepscale=1.25,
                                                jitter=1),
                                   1):
-        try:
-          while True:  # rate watcher loop
-            try:
-              with rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+        yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                   url,
-                                                  self.min_delay_between_accesses):
-                response = self.session.head(url,
-                                             headers=self._buildHeaders(headers),
-                                             timeout=HTTP_SHORT_TIMEOUT_S,
-                                             verify=verify)
+                                                  self.min_delay_between_accesses).waitAccessAsync()
 
-            except rate_watcher.WaitNeeded as e:
-              logging.getLogger().debug("Sleeping for %.2fms because of rate limit" % (e.wait_s * 1000))
-              time.sleep(e.wait_s)
-
-            except rate_watcher.RetryNeeded:
-              pass
-
-            else:
-              break  # rate watcher loop
+        try:
+          response = yield from self.session.head(url,
+                                                  headers=self._buildHeaders(headers),
+                                                  timeout=HTTP_SHORT_TIMEOUT_S)
 
           break  # http retry loop
 
-        except (socket.timeout, requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+          if isinstance(e, aiohttp.ClientResponseError):
+            raise
           logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
                                                                                       attempt,
                                                                                       HTTP_MAX_ATTEMPTS,
@@ -167,7 +146,7 @@ class Http:
       if response_headers is not None:
         response_headers.update(response.headers)
 
-    except requests.exceptions.HTTPError as e:
+    except aiohttp.ClientResponseError as e:
       logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
       resp_ok = False
 
@@ -177,13 +156,12 @@ class Http:
 
     return resp_ok
 
+  @asyncio.coroutine
   def fastStreamedQuery(self, url, *, headers=None, verify=True):
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
-    response = self.session.get(url,
-                                headers=self._buildHeaders(headers),
-                                timeout=HTTP_SHORT_TIMEOUT_S,
-                                verify=verify,
-                                stream=True)
+    response = yield from self.session.get(url,
+                                           headers=self._buildHeaders(headers),
+                                           timeout=HTTP_SHORT_TIMEOUT_S)
 
     response.raise_for_status()
 
@@ -200,6 +178,3 @@ class Http:
 
 # silence third party module loggers
 logging.getLogger("redo").setLevel(logging.ERROR)
-logging.getLogger("requests").setLevel(logging.ERROR)
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-logging.captureWarnings(True)

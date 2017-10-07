@@ -4,15 +4,13 @@ import os
 import re
 
 from cx_Freeze import setup, Executable
-import requests
 
 
 with open(os.path.join("sacad", "__init__.py"), "rt") as f:
   version = re.search("__version__ = \"([^\"]+)\"", f.read()).group(1)
 
-build_exe_options = {"includes": ["lxml._elementpath", "idna.idnadata"],
-                     "packages": ["requests", "asyncio"],
-                     "include_files": [(requests.certs.where(), "cacert.pem")],
+build_exe_options = {"includes": ["lxml._elementpath"],
+                     "packages": ["asyncio"],
                      "optimize": 0}
 
 setup(name="sacad",

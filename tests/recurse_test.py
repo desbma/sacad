@@ -3,7 +3,6 @@
 import collections
 import contextlib
 import functools
-import itertools
 import os
 import shutil
 import tempfile
@@ -21,6 +20,7 @@ try:
 except AttributeError:
   # contextlib.redirect_stdout is not available (Python 3.3), build our own
   import sys
+
   @contextlib.contextmanager
   def redirect_stdout(s):
     original_stdout, sys.stdout = sys.stdout, s

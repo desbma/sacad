@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import urllib.parse
 
@@ -38,6 +39,7 @@ class AmazonCdCoverSource(CoverSource):
     """ See CoverSource.updateHttpHeaders. """
     headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
 
+  @asyncio.coroutine
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
@@ -74,7 +76,7 @@ class AmazonCdCoverSource(CoverSource):
         del product_url_query["qid"]  # remove timestamp from url to improve future cache hit rate
         product_url_query = urllib.parse.urlencode(product_url_query)
         product_url_no_ts = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
-        product_page_data = self.fetchResults(product_url_no_ts)
+        product_page_data = yield from self.fetchResults(product_url_no_ts)
         product_page_html = lxml.etree.XML(product_page_data.decode("latin-1"), parser)
         try:
           img_node = product_page_img_selector(product_page_html)[0]

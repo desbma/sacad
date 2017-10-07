@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import logging
 import operator
@@ -55,6 +56,7 @@ class AmazonDigitalCoverSource(CoverSource):
     """ See CoverSource.updateHttpHeaders. """
     headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
 
+  @asyncio.coroutine
   def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
@@ -98,7 +100,7 @@ class AmazonDigitalCoverSource(CoverSource):
                                             __class__.DYNAPI_KEY,
                                             amazon_img_format.id,
                                             amazon_img_format.slice_count))
-          url_ok = self.probeUrl(urls[-1])
+          url_ok = yield from self.probeUrl(urls[-1])
           if not url_ok:
             # images at this size are not available
             continue

@@ -1,5 +1,4 @@
-import concurrent.futures
-import contextlib
+import asyncio
 import enum
 import imghdr
 import io
@@ -11,7 +10,6 @@ import operator
 import os
 import pickle
 import shutil
-import subprocess
 
 import appdirs
 import PIL.Image
@@ -105,6 +103,7 @@ class CoverSourceResult:
       s += " [x%u]" % (len(self.urls))
     return s
 
+  @asyncio.coroutine
   def get(self, target_format, target_size, size_tolerance_prct, out_filepath):
     """ Download cover and process it. """
     if self.source_quality.value <= CoverSourceQuality.LOW.value:
@@ -116,11 +115,16 @@ class CoverSourceResult:
       logging.getLogger().info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
       headers = {}
       self.source.updateHttpHeaders(headers)
-      image_data = self.source.http.query(url,
-                                          headers=headers,
-                                          verify=False,
-                                          cache=__class__.image_cache,
-                                          pre_cache_callback=lambda x: __class__.crunch(x, self.format))
+
+      @asyncio.coroutine
+      def pre_cache_callback(img_data):
+        return (yield from __class__.crunch(img_data, self.format))
+
+      image_data = yield from self.source.http.query(url,
+                                                     headers=headers,
+                                                     verify=False,
+                                                     cache=__class__.image_cache,
+                                                     pre_cache_callback=pre_cache_callback)
 
       # append for multi images
       images_data.append(image_data)
@@ -137,7 +141,7 @@ class CoverSourceResult:
                                     target_size if need_size_change else None)
 
       # crunch image again
-      image_data = __class__.crunch(image_data, target_format)
+      image_data = yield from __class__.crunch(image_data, target_format)
 
     # write it
     with open(out_filepath, "wb") as file:
@@ -198,6 +202,7 @@ class CoverSourceResult:
              optimize=True)
     return out_bytes.getvalue()
 
+  @asyncio.coroutine
   def updateImageMetadata(self):
     """ Partially download image file(s) to get its real metadata, or get it from cache. """
     assert(self.needMetadataUpdate())
@@ -242,9 +247,10 @@ class CoverSourceResult:
           img_data = bytearray()
           headers = {}
           self.source.updateHttpHeaders(headers)
-          with contextlib.closing(self.source.http.fastStreamedQuery(url,
-                                                                     headers=headers,
-                                                                     verify=False)) as response:
+          response = yield from self.source.http.fastStreamedQuery(url,
+                                                                   headers=headers,
+                                                                   verify=False)
+          try:
             if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
               # try to get format from response mime type
               try:
@@ -256,7 +262,10 @@ class CoverSourceResult:
               except KeyError:
                 pass
             if self.needMetadataUpdate():
-              for new_img_data in response.iter_content(chunk_size=__class__.METADATA_PEEK_SIZE_INCREMENT):
+              while True:
+                new_img_data = yield from response.content.read(__class__.METADATA_PEEK_SIZE_INCREMENT)
+                if not new_img_data:
+                  break
                 img_data.extend(new_img_data)
                 metadata = __class__.getImageMetadata(img_data)
                 if metadata is not None:
@@ -274,18 +283,20 @@ class CoverSourceResult:
                   if format is not None:
                     self.check_metadata &= ~CoverImageMetadata.FORMAT
                   break
+          finally:
+            response.release()
           if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
             # if we get here, file is probably not reachable, or not even an image
             logging.getLogger().debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
                                       "skipping this result" % (url))
-            return self  # for use with concurrent.futures
+            return
         except Exception as e:
           logging.getLogger().debug("Unable to get file metadata for URL '%s' (%s %s), "
                                     "falling back to API data" % (url,
                                                                   e.__class__.__qualname__,
                                                                   e))
           self.check_metadata = CoverImageMetadata.NONE
-          return self  # for use with concurrent.futures
+          return
 
         # save it to cache
         __class__.metadata_cache[url] = pickle.dumps((format, width, height))
@@ -301,17 +312,14 @@ class CoverSourceResult:
     if (width_sum > 0) and (height_sum > 0):
       self.size = (width_sum, height_sum)
 
-    return self  # for use with concurrent.futures
-
   def needMetadataUpdate(self):
     """ Return True if image metadata needs to be checked, False instead. """
     return self.check_metadata != CoverImageMetadata.NONE
 
+  @asyncio.coroutine
   def updateSignature(self):
     """ Calculate a cover's "signature" using its thumbnail url. """
-    if self.thumbnail_sig is not None:
-      # TODO understand how it is possible to get here (only with Python 3.4 it seems)
-      return self
+    assert(self.thumbnail_sig is None)
 
     if self.thumbnail_url is None:
       logging.getLogger().warning("No thumbnail available for %s" % (self))
@@ -321,18 +329,21 @@ class CoverSourceResult:
     logging.getLogger().info("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
     headers = {}
     self.source.updateHttpHeaders(headers)
+
+    @asyncio.coroutine
+    def pre_cache_callback(img_data):
+      return (yield from __class__.crunch(img_data, CoverImageFormat.JPEG, silent=True))
+
     try:
-      image_data = self.source.http.query(self.thumbnail_url,
-                                          cache=__class__.image_cache,
-                                          headers=headers,
-                                          pre_cache_callback=lambda x: __class__.crunch(x,
-                                                                                        CoverImageFormat.JPEG,
-                                                                                        silent=True))
+      image_data = yield from self.source.http.query(self.thumbnail_url,
+                                                     cache=__class__.image_cache,
+                                                     headers=headers,
+                                                     pre_cache_callback=pre_cache_callback)
     except Exception as e:
       logging.getLogger().warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                       e.__class__.__qualname__,
                                                                       e))
-      return self  # for use with concurrent.futures
+      return
 
     # compute sig
     logging.getLogger().debug("Computing signature of %s..." % (self))
@@ -342,8 +353,6 @@ class CoverSourceResult:
       logging.getLogger().warning("Failed to compute signature of '%s': %s %s" % (self,
                                                                                   e.__class__.__qualname__,
                                                                                   e))
-
-    return self  # for use with concurrent.futures
 
   @staticmethod
   def compare(first, second, *, target_size, size_tolerance_prct):
@@ -430,6 +439,7 @@ class CoverSourceResult:
     return 0
 
   @staticmethod
+  @asyncio.coroutine
   def crunch(image_data, format, silent=False):
     """ Crunch image data, and return the processed data, or orignal data if operation failed. """
     if (((format is CoverImageFormat.PNG) and (not HAS_OPTIPNG)) or
@@ -446,9 +456,12 @@ class CoverSourceResult:
       elif format is CoverImageFormat.JPEG:
         cmd = ["jpegoptim", "-q", "--strip-all"]
       cmd.append(tmp_out_filepath)
-      try:
-        subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-      except subprocess.CalledProcessError:
+      p = yield from asyncio.create_subprocess_exec(*cmd,
+                                                    stdin=asyncio.subprocess.DEVNULL,
+                                                    stdout=asyncio.subprocess.DEVNULL,
+                                                    stderr=asyncio.subprocess.DEVNULL)
+      yield from p.wait()
+      if p.returncode != 0:
         if not silent:
           logging.getLogger().warning("Crunching image failed")
         return image_data
@@ -480,6 +493,7 @@ class CoverSourceResult:
     return SUPPORTED_IMG_FORMATS.get(r, None)
 
   @staticmethod
+  @asyncio.coroutine
   def preProcessForComparison(results, target_size, size_tolerance_prct):
     """ Process results to prepare them for future comparison and sorting. """
     # find reference (=image most likely to match target cover ignoring factors like size and format)
@@ -520,27 +534,31 @@ class CoverSourceResult:
       logging.getLogger().info("Reference is: %s" % (reference))
       reference.is_similar_to_reference = True
 
-      # calculate sigs using thread pool
-      with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-        futures = []
-        for result in results:
-          futures.append(executor.submit(CoverSourceResult.updateSignature, result))
-        if reference.is_only_reference:
-          assert(reference not in results)
-          futures.append(executor.submit(CoverSourceResult.updateSignature, reference))
-        concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_EXCEPTION)
-        # raise first exception in future if any
-        for future in futures:
-          try:
-            e = future.exception(timeout=0)
-          except concurrent.futures.TimeoutError:
-            continue
-          if e is not None:
-            # try to stop all pending futures
-            for future_to_cancel in futures:
-              future_to_cancel.cancel()
-            raise e
-        results = list(future.result() for future in futures if not future.result().is_only_reference)
+      # calculate sigs
+      futures = []
+      for result in results:
+        coroutine = result.updateSignature()
+        try:
+          # python >= 3.4.4
+          future = asyncio.ensure_future(coroutine)
+        except AttributeError:
+          # python < 3.4.4
+          future = asyncio.async(coroutine)
+        futures.append(future)
+      if reference.is_only_reference:
+        assert(reference not in results)
+        coroutine = reference.updateSignature()
+        try:
+          # python >= 3.4.4
+          future = asyncio.ensure_future(coroutine)
+        except AttributeError:
+          # python < 3.4.4
+          future = asyncio.async(coroutine)
+        futures.append(future)
+      if futures:
+        yield from asyncio.wait(futures)
+      for future in futures:
+        future.result()  # raise pending exception if any
 
       # compare other results to reference
       for result in results:
