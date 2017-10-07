@@ -15,21 +15,6 @@ import requests
 import sacad.recurse as recurse
 
 
-try:
-  redirect_stdout = contextlib.redirect_stdout
-except AttributeError:
-  # contextlib.redirect_stdout is not available (Python 3.3), build our own
-  import sys
-
-  @contextlib.contextmanager
-  def redirect_stdout(s):
-    original_stdout, sys.stdout = sys.stdout, s
-    try:
-      yield
-    finally:
-      sys.stdout = original_stdout
-
-
 def download(url, filepath):
   cache_dir = os.getenv("TEST_DL_CACHE_DIR")
   if cache_dir is not None:
@@ -103,7 +88,7 @@ class TestRecursive(unittest.TestCase):
     cls.temp_dir.cleanup()
 
   def test_analyze_lib(self):
-    with open(os.devnull, "wt") as dn, redirect_stdout(dn):
+    with open(os.devnull, "wt") as dn, contextlib.redirect_stdout(dn):
       work = recurse.analyze_lib(__class__.temp_dir.name, "a.jpg")
       self.assertEqual(len(work), 4)
       self.assertIn(__class__.album1_dir, work)
@@ -151,7 +136,7 @@ class TestRecursive(unittest.TestCase):
                      ("ARTIST1", None, None))
 
   def test_analyze_dir(self):
-    with open(os.devnull, "wt") as dn, redirect_stdout(dn):
+    with open(os.devnull, "wt") as dn, contextlib.redirect_stdout(dn):
       stats = collections.defaultdict(int)
       failed_dirs = []
       r = recurse.analyze_dir(stats,
