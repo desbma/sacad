@@ -68,24 +68,25 @@ class TestSacad(unittest.TestCase):
     for format in sacad.cover.CoverImageFormat:
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
-          with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
-                                         suffix=".%s" % (format.name.lower())) as tmp_filepath:
-            coroutine = sacad.search_and_download("Master of Puppets",
-                                                  "Metallica",
-                                                  format,
-                                                  size,
-                                                  tmp_filepath,
-                                                  size_tolerance_prct=size_tolerance,
-                                                  amazon_tlds=(),
-                                                  no_lq_sources=False,
-                                                  async_loop=async_loop)
-            sched_and_run(coroutine, async_loop)
-            out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
-            self.assertEqual(out_format, format)
-            self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
-            self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
-            self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
-            self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
+          with self.subTest(format=format, size=size, size_tolerance=size_tolerance):
+            with sacad.mkstemp_ctx.mkstemp(prefix="sacad_test_",
+                                           suffix=".%s" % (format.name.lower())) as tmp_filepath:
+              coroutine = sacad.search_and_download("Master of Puppets",
+                                                    "Metallica",
+                                                    format,
+                                                    size,
+                                                    tmp_filepath,
+                                                    size_tolerance_prct=size_tolerance,
+                                                    amazon_tlds=(),
+                                                    no_lq_sources=False,
+                                                    async_loop=async_loop)
+              sched_and_run(coroutine, async_loop)
+              out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
+              self.assertEqual(out_format, format)
+              self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
+              self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
+              self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
+              self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
 
   def test_getImageUrlMetadata(self):
     """ Download the beginning of image files to guess their format and resolution. """
@@ -148,22 +149,21 @@ class TestSacad(unittest.TestCase):
       sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
       for source in sources:
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
-          coroutine = source.search(album, artist)
-          results = sched_and_run(coroutine, async_loop)
-          coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
-          results = sched_and_run(coroutine, async_loop)
-          if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
-                  ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
-                  (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
-                   (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
-            self.assertGreaterEqual(len(results), 1, "%s %s %s %u" % (source.__class__.__name__,
-                                                                      artist,
-                                                                      album,
-                                                                      size))
-          for result in results:
-            self.assertTrue(result.urls)
-            self.assertIn(result.format, sacad.cover.CoverImageFormat)
-            self.assertGreaterEqual(result.size[0], size)
+          with self.subTest(size=size, source=source, artist=artist, album=album):
+            coroutine = source.search(album, artist)
+            results = sched_and_run(coroutine, async_loop)
+            coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
+            results = sched_and_run(coroutine, async_loop)
+            if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
+                    ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
+                    (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
+                     (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
+              self.assertGreaterEqual(len(results), 1)
+
+            for result in results:
+              self.assertTrue(result.urls)
+              self.assertIn(result.format, sacad.cover.CoverImageFormat)
+              self.assertGreaterEqual(result.size[0], size)
 
     # test for specific cover not available on amazon.com, but on amazon.de
     size = 290
