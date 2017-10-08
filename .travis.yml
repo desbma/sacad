@@ -42,22 +42,27 @@ install:
   - "if [ $WINDOWS -eq 1 ]; then sudo apt-get -V install winehq-stable p7zip-full; fi"
 script:
   - "TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test travis_retry coverage run --source=sacad setup.py test"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build make test && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win32 make test && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win64 make test && popd; fi"
 after_success:
   - "coveralls"
 before_deploy:
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && make all && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && WINEARCH=win32 make all && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && WINEARCH=win64 make all && popd; fi"
 deploy:
   - provider: releases
     api_key:
       secure: "B6gBCH4ecbVXrGKwEehal5tbYOtyvzbDvdwCXnAf87h18CIuRdzIMRkFIYd06cIYXzTtkptaSvC1euZYWUP8NVSoiZmpLNumQCJMANh/eDcBKrfm4fFvsTwq5fQ3NDauJH4VJreh73pex8ke+NmyRy+BfgEj4FO8pxBbN9/Q/Sw="
     file:
-      - "win/sacad_win.zip"
-      - "win/sacad_win.7z"
-      - "win/sacad_win.exe"
+      - "win/sacad_win32.zip"
+      - "win/sacad_win32.7z"
+      - "win/sacad_win32.exe"
+      - "win/sacad_win64.zip"
+      - "win/sacad_win64.7z"
+      - "win/sacad_win64.exe"
     skip_cleanup: true
     on:
       tags: true

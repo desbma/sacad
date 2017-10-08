@@ -1,3 +1,5 @@
+WINEARCH ?= win32
+
 # versions
 PYTHON_VERSION       := 3.4.4
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
@@ -6,16 +8,22 @@ CXFREEZE_VERSION     := 5.0.2
 LXML_VERSION         := 3.8.0
 
 # installers
-DOWNLOAD_DIR       ?= dl
-PYTHON_INSTALLER   := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.msi
-CXFREEZE_WHEEL     := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl
-LXML_WHEEL         := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win32.whl
-7ZIP_INSTALLER     := ${DOWNLOAD_DIR}/7z938.msi
+DOWNLOAD_DIR            ?= dl
+PYTHON_INSTALLER-win32  := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.msi
+PYTHON_INSTALLER-win64  := ${DOWNLOAD_DIR}/python-${PYTHON_VERSION}.amd64.msi
+PYTHON_INSTALLER        := ${PYTHON_INSTALLER-${WINEARCH}}
+CXFREEZE_WHEEL-win32    := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-${WINEARCH}.whl
+CXFREEZE_WHEEL-win64    := ${DOWNLOAD_DIR}/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win_amd64.whl
+CXFREEZE_WHEEL          := ${CXFREEZE_WHEEL-${WINEARCH}}
+LXML_WHEEL-win32        := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-${WINEARCH}.whl
+LXML_WHEEL-win64        := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win_amd64.whl
+LXML_WHEEL              := ${LXML_WHEEL-${WINEARCH}}
+7ZIP_INSTALLER          := ${DOWNLOAD_DIR}/7z938.msi
 
 # env
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
-WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine
-WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=win32 WINEDEBUG=-all wine
+WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine-${WINEARCH}
+WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=${WINEARCH} WINEDEBUG=-all wine
 
 # installed files
 PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
@@ -24,14 +32,15 @@ PIP_INSTALLED      := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/
 LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site-packages/lxml/__init__.py
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
-# test
+# temp dirs
 TEST_LIB_DIR := ${WINE_DIR}/drive_c/music
+OUTPUT_DIR   := sacad-${WINEARCH}
 
 
 .PHONY: all test test_ut test_freeze fclean clean
 
 
-all:: sacad_win.7z sacad_win.zip sacad_win.exe
+all:: sacad_${WINEARCH}.7z sacad_${WINEARCH}.zip sacad_${WINEARCH}.exe
 
 test:: test_ut test_freeze
 
@@ -43,13 +52,13 @@ print-%:
 # End targets
 #
 
-sacad_win.7z: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	7z a -t7z -mx9 $@ sacad > /dev/null
+sacad_${WINEARCH}.7z: ${OUTPUT_DIR}/sacad.exe ${OUTPUT_DIR}/sacad_r.exe ${OUTPUT_DIR}/LICENSE ${OUTPUT_DIR}/readme.txt ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
+	7z a -t7z -mx9 $@ ${OUTPUT_DIR} > /dev/null
 
-sacad_win.zip: sacad/sacad.exe sacad/sacad_r.exe sacad/LICENSE sacad/readme.txt sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	7z a -tzip -mx9 $@ sacad > /dev/null
+sacad_${WINEARCH}.zip: ${OUTPUT_DIR}/sacad.exe ${OUTPUT_DIR}/sacad_r.exe ${OUTPUT_DIR}/LICENSE ${OUTPUT_DIR}/readme.txt ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
+	7z a -tzip -mx9 $@ ${OUTPUT_DIR} > /dev/null
 
-sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
+sacad_${WINEARCH}.exe: ${7ZIP_INSTALLED} sacad_${WINEARCH}.7z
 	cat $^ > $@
 
 
@@ -57,25 +66,25 @@ sacad_win.exe: ${7ZIP_INSTALLED} sacad_win.7z
 # Intermediate targets
 #
 
-sacad:
+${OUTPUT_DIR}:
 	mkdir -p $@
 
-sacad/sacad.exe: sacad ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
-	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/sacad 2> /dev/null > /dev/null
+${OUTPUT_DIR}/sacad.exe: ${OUTPUT_DIR} ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/${OUTPUT_DIR} 2> /dev/null > /dev/null
 	touch $@
 
-sacad/sacad_r.exe: sacad/sacad.exe
+${OUTPUT_DIR}/sacad_r.exe: ${OUTPUT_DIR}/sacad.exe
 
-sacad/python${PYTHON_VERSION_SHORT}.dll: sacad ${PYTHON_INSTALLED}
+${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll: ${OUTPUT_DIR} ${PYTHON_INSTALLED}
 	cp $(dir ${PYTHON_INSTALLED})$(notdir $@) $@
 
-sacad/sqlite3.dll: sacad ${PYTHON_INSTALLED}
+${OUTPUT_DIR}/sqlite3.dll: ${OUTPUT_DIR} ${PYTHON_INSTALLED}
 	cp $(dir ${PYTHON_INSTALLED})DLLs/$(notdir $@) $@
 
-sacad/LICENSE: sacad
+${OUTPUT_DIR}/LICENSE: ${OUTPUT_DIR}
 	cp ../LICENSE $@
 
-sacad/readme.txt: sacad
+${OUTPUT_DIR}/readme.txt: ${OUTPUT_DIR}
 	echo 'Get source, help and latest version at: https://github.com/desbma/sacad' > $@
 
 
@@ -86,9 +95,9 @@ sacad/readme.txt: sacad
 test_ut: ${LXML_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} setup.py test
 
-test_freeze:: test.jpg ${TEST_LIB_DIR}/test.png
+test_freeze:: ${TEST_LIB_DIR}/test.jpg ${TEST_LIB_DIR}/test.png
 
-test.jpg: sacad/sacad.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
+${TEST_LIB_DIR}/test.jpg: ${OUTPUT_DIR}/sacad.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
 	${WINE} $< "neu" "neu 2" 1000 $@
 
 ${TEST_LIB_DIR}:
@@ -97,8 +106,8 @@ ${TEST_LIB_DIR}:
 ${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg ${TEST_LIB_DIR}
 	cp $< $@
 
-${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/python${PYTHON_VERSION_SHORT}.dll sacad/sqlite3.dll
-	${WINE} sacad/sacad_r.exe $(dir $@) 300 $(notdir $@)
+${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg ${OUTPUT_DIR}/sacad_r.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
+	${WINE} ${OUTPUT_DIR}/sacad_r.exe $(dir $@) 300 $(notdir $@)
 
 
 #
@@ -107,7 +116,6 @@ ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg sacad/sacad_r.exe sacad/pyt
 
 .requirements: ${PIP_INSTALLED}
 	cd .. && ${WINE} ${PYTHON_INSTALLED} -m pip -qqq install -r requirements.txt
-	${WINE} ${PYTHON_INSTALLED} -c "import enum" || ${WINE} ${PYTHON_INSTALLED} -m pip -qqq install enum34
 	touch $@
 
 ${PYTHON_INSTALLED}: ${PYTHON_INSTALLER}
@@ -138,19 +146,27 @@ ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
 
 ${PYTHON_INSTALLER}:
 	mkdir -p $(dir $@)
-	${CURL} https://www.python.org/ftp/python/${PYTHON_VERSION}/python-${PYTHON_VERSION}.msi > $@
+	${CURL} https://www.python.org/ftp/python/${PYTHON_VERSION}/$(notdir $@) > $@
 
-${CXFREEZE_WHEEL}:
+${CXFREEZE_WHEEL-win32}:
 	mkdir -p $(dir $@)
-	${CURL} https://pypi.python.org/packages/67/87/7b376edca85e4cb24c06d7abde7c4b47c6369b2dadb3856ba8d7b6201106/cx_Freeze-${CXFREEZE_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
+	${CURL} https://pypi.python.org/packages/67/87/7b376edca85e4cb24c06d7abde7c4b47c6369b2dadb3856ba8d7b6201106/$(notdir $@) > $@
 
-${LXML_WHEEL}:
+${CXFREEZE_WHEEL-win64}:
 	mkdir -p $(dir $@)
-	${CURL} https://www.dropbox.com/s/h03crvc5muvim3e/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win32.whl > $@
+	${CURL} https://pypi.python.org/packages/27/b1/04d5c1851995767ee260b835496a1f681774f776665a80e05746f25f5304/$(notdir $@) > $@
+
+${LXML_WHEEL-win32}:
+	mkdir -p $(dir $@)
+	${CURL} https://www.dropbox.com/s/h03crvc5muvim3e/$(notdir $@) > $@
+
+${LXML_WHEEL-win64}:
+	mkdir -p $(dir $@)
+	${CURL} https://www.dropbox.com/s/ck060ajajen2q90/$(notdir $@) > $@
 
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)
-	${CURL} http://www.7-zip.org/a/7z938.msi > $@.unckecked
+	${CURL} http://www.7-zip.org/a/$(notdir $@) > $@.unckecked
 	echo "673377a03f91ff0f7f384794934b767c3389e50d7dc308f7c73f4633121518b3e4af8d33cf282398a710577e12fbb963152591c3e29b1092c79530bb2d8aa882  $@.unckecked" | sha512sum --status -c - && mv $@.unckecked $@
 
 ${DOWNLOAD_DIR}/sample.ogg:
@@ -164,9 +180,8 @@ ${DOWNLOAD_DIR}/sample.ogg:
 
 fclean:
 	-rm -Rf ${WINE_DIR}
-	-rm -Rf sacad .requirements
-	-rm -f sacad_win.7z sacad_win.zip sacad_win.exe
-	-rm -f test.jpg
+	-rm -Rf ${OUTPUT_DIR} .requirements
+	-rm -f sacad_${WINEARCH}.7z sacad_${WINEARCH}.zip sacad_${WINEARCH}.exe
 
 clean: fclean
 	-rm -Rf ${DOWNLOAD_DIR}
