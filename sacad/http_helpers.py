@@ -49,15 +49,17 @@ class Http:
         self.logger.debug("Got data for URL '%s' from cache" % (url))
         return cache[url]
 
+    domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                         url,
+                                                         self.min_delay_between_accesses,
+                                                         logger=self.logger)
+
     for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
                                                          sleeptime=1,
                                                          max_sleeptime=5,
                                                          sleepscale=1.5),
                                             1):
-      yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                url,
-                                                self.min_delay_between_accesses,
-                                                logger=self.logger).waitAccessAsync()
+      yield from domain_rate_watcher.waitAccessAsync()
 
       try:
         if post_data is not None:
@@ -116,6 +118,10 @@ class Http:
       resp_ok, response_headers = pickle.loads(cache[url])
       return resp_ok
 
+    domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                         url,
+                                                         self.min_delay_between_accesses,
+                                                         logger=self.logger)
     resp_ok = True
     try:
       for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
@@ -123,10 +129,7 @@ class Http:
                                                            max_sleeptime=2,
                                                            sleepscale=1.5),
                                               1):
-        yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                  url,
-                                                  self.min_delay_between_accesses,
-                                                  logger=self.logger).waitAccessAsync()
+        yield from domain_rate_watcher.waitAccessAsync()
 
         try:
           response = yield from self.session.head(url,
