@@ -12,7 +12,7 @@ import appdirs
 import web_cache
 
 from sacad import http_helpers
-from sacad.cover import CoverImageFormat, CoverSourceResult, CoverSourceQuality
+from sacad.cover import CoverImageFormat, CoverSourceQuality
 
 
 MAX_THUMBNAIL_SIZE = 256
@@ -25,8 +25,10 @@ class CoverSource(metaclass=abc.ABCMeta):
   def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3, allow_cookies=False):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
+    self.logger = logging.getLogger(self.__class__.__name__)
     self.http = http_helpers.Http(allow_session_cookies=allow_cookies,
-                                  min_delay_between_accesses=min_delay_between_accesses)
+                                  min_delay_between_accesses=min_delay_between_accesses,
+                                  logger=self.logger)
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                         appauthor=False),
@@ -42,19 +44,20 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                          "cover_source_probe_data",
                                                          caching_strategy=web_cache.CachingStrategy.FIFO,
                                                          expiration=day_s * 30 * 6)  # 6 months
-      logging.getLogger().debug("Total size of file '%s': %s" % (db_filepath,
-                                                                 __class__.api_cache.getDatabaseFileSize()))
+      logging.getLogger("Cache").debug("Total size of file '%s': %s" % (db_filepath,
+                                                                        __class__.api_cache.getDatabaseFileSize()))
       for cache, cache_name in zip((__class__.api_cache, __class__.probe_cache),
                                    ("cover_source_api_data", "cover_source_probe_data")):
         purged_count = cache.purge()
-        logging.getLogger().debug("%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name))
+        logging.getLogger("Cache").debug("%u obsolete entries have been removed from cache '%s'" % (purged_count,
+                                                                                                    cache_name))
         row_count = len(cache)
-        logging.getLogger().debug("Cache '%s' contains %u entries" % (cache_name, row_count))
+        logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
   @asyncio.coroutine
   def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
-    logging.getLogger().debug("Searching with source '%s'..." % (self.__class__.__name__))
+    self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
     url_data = self.getSearchUrl(album, artist)
     if isinstance(url_data, tuple):
       url, post_data = url_data
@@ -66,9 +69,9 @@ class CoverSource(metaclass=abc.ABCMeta):
       results = yield from self.parseResults(api_data)
     except Exception as e:
       # raise
-      logging.getLogger().warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
-                                                                             e.__class__.__qualname__,
-                                                                             e))
+      self.logger.warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
+                                                                     e.__class__.__qualname__,
+                                                                     e))
       return ()
 
     # get metadata
@@ -108,26 +111,26 @@ class CoverSource(metaclass=abc.ABCMeta):
     result_kept_count = len(results_kept) - reference_only_count
 
     # log
-    logging.getLogger().info("Got %u relevant (%u excluded) results from source '%s'" % (result_kept_count,
-                                                                                         results_excluded_count + reference_only_count,
-                                                                                         self.__class__.__name__))
+    self.logger.info("Got %u relevant (%u excluded) results from source '%s'" % (result_kept_count,
+                                                                                 results_excluded_count + reference_only_count,
+                                                                                 self.__class__.__name__))
     for result in itertools.filterfalse(operator.attrgetter("is_only_reference"), results_kept):
-      logging.getLogger().debug("%s %s%s %4dx%4d %s%s" % (result.__class__.__name__,
-                                                          ("(%02d) " % (result.rank)) if result.rank is not None else "",
-                                                          result.format.name,
-                                                          result.size[0],
-                                                          result.size[1],
-                                                          result.urls[0],
-                                                          " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
+      self.logger.debug("%s %s%s %4dx%4d %s%s" % (result.__class__.__name__,
+                                                  ("(%02d) " % (result.rank)) if result.rank is not None else "",
+                                                  result.format.name,
+                                                  result.size[0],
+                                                  result.size[1],
+                                                  result.urls[0],
+                                                  " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
     return results_kept
 
   @asyncio.coroutine
   def fetchResults(self, url, post_data=None):
     """ Get search results froam an URL. """
     if post_data is not None:
-      logging.getLogger().debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+      self.logger.debug("Querying URL '%s' %s..." % (url, dict(post_data)))
     else:
-      logging.getLogger().debug("Querying URL '%s'..." % (url))
+      self.logger.debug("Querying URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
     return (yield from self.http.query(url,
@@ -138,7 +141,7 @@ class CoverSource(metaclass=abc.ABCMeta):
   @asyncio.coroutine
   def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
-    logging.getLogger().debug("Probing URL '%s'..." % (url))
+    self.logger.debug("Probing URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
     resp_headers = {}

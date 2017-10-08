@@ -60,16 +60,16 @@ def search_and_download(album, artist, format, size, out_filepath, *, size_toler
                                                           target_size=size,
                                                           size_tolerance_prct=size_tolerance_prct)))
   if not results:
-    logging.getLogger().info("No results")
+    logging.getLogger("Main").info("No results")
 
   # download
   for result in results:
     try:
       yield from result.get(format, size, size_tolerance_prct, out_filepath)
     except Exception as e:
-      logging.getLogger().warning("Download of %s failed: %s %s" % (result,
-                                                                    e.__class__.__qualname__,
-                                                                    e))
+      logging.getLogger("Main").warning("Download of %s failed: %s %s" % (result,
+                                                                          e.__class__.__qualname__,
+                                                                          e))
       continue
     else:
       return True
@@ -137,16 +137,21 @@ def cl_main():
                    "normal": logging.INFO,
                    "debug": logging.DEBUG}
   logging.getLogger().setLevel(logging_level[args.verbosity])
-  logging_formatter = colored_logging.ColoredFormatter(fmt="%(message)s")
+  if logging_level[args.verbosity] == logging.DEBUG:
+    fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+  else:
+    fmt = "%(name)s: %(message)s"
+  logging_formatter = colored_logging.ColoredFormatter(fmt=fmt)
   logging_handler = logging.StreamHandler()
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
+  logging.getLogger("asyncio").setLevel(logging.WARNING)
 
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
-    logging.getLogger().warning("jpegoptim could not be found, JPEG crunching will be disabled")
+    logging.getLogger("Main").warning("jpegoptim could not be found, JPEG crunching will be disabled")
   if not HAS_OPTIPNG:
-    logging.getLogger().warning("optipng could not be found, PNG crunching will be disabled")
+    logging.getLogger("Main").warning("optipng could not be found, PNG crunching will be disabled")
 
   # search and download
   async_loop = asyncio.get_event_loop()

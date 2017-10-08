@@ -88,14 +88,14 @@ class AmazonDigitalCoverSource(CoverSource):
 
       # try to get higher res image...
       if self.target_size > size[0]:  # ...but only if needed
-        logging.getLogger().debug("Looking for optimal subimages configuration...")
+        self.logger.debug("Looking for optimal subimages configuration...")
         product_url = link_selector(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_id = product_url.path.split("/")[3]
 
         # TODO don't pick up highest res image if used asked less?
         for amazon_img_format in AMAZON_DIGITAL_IMAGE_FORMATS:
-          logging.getLogger().debug("Trying %u subimages..." % (amazon_img_format.slice_count ** 2))
+          self.logger.debug("Trying %u subimages..." % (amazon_img_format.slice_count ** 2))
           urls = tuple(self.generateImgUrls(product_id,
                                             __class__.DYNAPI_KEY,
                                             amazon_img_format.id,

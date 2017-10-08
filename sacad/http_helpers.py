@@ -21,7 +21,7 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 class Http:
 
-  def __init__(self, *, allow_session_cookies, min_delay_between_accesses):
+  def __init__(self, *, allow_session_cookies, min_delay_between_accesses, logger):
     if not allow_session_cookies:
       cookie_jar = aiohttp.helpers.DummyCookieJar()
     else:
@@ -32,6 +32,7 @@ class Http:
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
     self.min_delay_between_accesses = min_delay_between_accesses
+    self.logger = logger
 
   def __del__(self):
     self.session.close()  # silences a warning on shutdown
@@ -43,10 +44,10 @@ class Http:
       # try from cache first
       if post_data is not None:
         if (url, post_data) in cache:
-          logging.getLogger().debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
+          self.logger.debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
           return cache[(url, post_data)]
       elif url in cache:
-        logging.getLogger().debug("Got data for URL '%s' from cache" % (url))
+        self.logger.debug("Got data for URL '%s' from cache" % (url))
         return cache[url]
 
     for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
@@ -56,7 +57,8 @@ class Http:
                                             1):
       yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                 url,
-                                                self.min_delay_between_accesses).waitAccessAsync()
+                                                self.min_delay_between_accesses,
+                                                logger=self.logger).waitAccessAsync()
 
       try:
         if post_data is not None:
@@ -87,15 +89,15 @@ class Http:
             cache[url] = data
 
       except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-        logging.getLogger().warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                     attempt,
-                                                                                     HTTP_MAX_ATTEMPTS,
-                                                                                     e.__class__.__qualname__,
-                                                                                     e))
+        self.logger.warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                             attempt,
+                                                                             HTTP_MAX_ATTEMPTS,
+                                                                             e.__class__.__qualname__,
+                                                                             e))
         if attempt == HTTP_MAX_ATTEMPTS:
           raise
         else:
-          logging.getLogger().debug("Retrying in %.3fs" % (time_to_sleep))
+          self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
           yield from asyncio.sleep(time_to_sleep)
 
       else:
@@ -111,7 +113,7 @@ class Http:
     """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
     if (cache is not None) and (url in cache):
       # try from cache first
-      logging.getLogger().debug("Got headers for URL '%s' from cache" % (url))
+      self.logger.debug("Got headers for URL '%s' from cache" % (url))
       resp_ok, response_headers = pickle.loads(cache[url])
       return resp_ok
 
@@ -124,7 +126,8 @@ class Http:
                                               1):
         yield from rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                   url,
-                                                  self.min_delay_between_accesses).waitAccessAsync()
+                                                  self.min_delay_between_accesses,
+                                                  logger=self.logger).waitAccessAsync()
 
         try:
           response = yield from self.session.head(url,
@@ -132,15 +135,15 @@ class Http:
                                                   timeout=HTTP_SHORT_TIMEOUT_S)
 
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
-          logging.getLogger().warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
-                                                                                      attempt,
-                                                                                      HTTP_MAX_ATTEMPTS,
-                                                                                      e.__class__.__qualname__,
-                                                                                      e))
+          self.logger.warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
+                                                                              attempt,
+                                                                              HTTP_MAX_ATTEMPTS,
+                                                                              e.__class__.__qualname__,
+                                                                              e))
           if attempt == HTTP_MAX_ATTEMPTS:
             resp_ok = False
           else:
-            logging.getLogger().debug("Retrying in %.3fs" % (time_to_sleep))
+            self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
             yield from asyncio.sleep(time_to_sleep)
 
         else:
@@ -152,7 +155,7 @@ class Http:
           break  # http retry loop
 
     except aiohttp.ClientResponseError as e:
-      logging.getLogger().warning("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
+      self.logger.debug("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
       resp_ok = False
 
     if cache is not None:
