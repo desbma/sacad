@@ -100,7 +100,8 @@ class TestSacad(unittest.TestCase):
       sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
       source = unittest.mock.Mock()
       source.http = sacad.http_helpers.Http(allow_session_cookies=False,
-                                            min_delay_between_accesses=1 / 3)
+                                            min_delay_between_accesses=1 / 3,
+                                            logger=logging.getLogger())
       cover = sacad.CoverSourceResult(url,
                                       None,
                                       None,
