@@ -97,7 +97,7 @@ class TestSacad(unittest.TestCase):
                                                                                (600, 600),
                                                                                1)}
     for url, (ref_fmt, ref_size, block_read) in refs.items():
-      sacad.CoverSourceResult.getImageMetadata = unittest.mock.Mock(wraps=sacad.CoverSourceResult.getImageMetadata)
+      sacad.CoverSourceResult.guessImageMetadataFromData = unittest.mock.Mock(wraps=sacad.CoverSourceResult.guessImageMetadataFromData)
       source = unittest.mock.Mock()
       source.http = sacad.http_helpers.Http(allow_session_cookies=False,
                                             min_delay_between_accesses=1 / 3,
@@ -107,14 +107,14 @@ class TestSacad(unittest.TestCase):
                                       None,
                                       source=source,
                                       thumbnail_url=None,
-                                      source_quality=None,
+                                      source_quality=sacad.cover.CoverSourceQuality.NORMAL,
                                       check_metadata=sacad.cover.CoverImageMetadata.ALL)
       coroutine = cover.updateImageMetadata()
       sched_and_run(coroutine, async_loop)
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)
-      self.assertGreaterEqual(sacad.CoverSourceResult.getImageMetadata.call_count, 0)
-      self.assertLessEqual(sacad.CoverSourceResult.getImageMetadata.call_count, block_read)
+      self.assertGreaterEqual(sacad.CoverSourceResult.guessImageMetadataFromData.call_count, 0)
+      self.assertLessEqual(sacad.CoverSourceResult.guessImageMetadataFromData.call_count, block_read)
 
   def test_compareImageSignatures(self):
     """ Compare images using their signatures. """

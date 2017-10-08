@@ -10,6 +10,7 @@ import operator
 import os
 import pickle
 import shutil
+import urllib.parse
 
 import appdirs
 import PIL.Image
@@ -47,7 +48,7 @@ class CoverSourceResult:
   """ Cover image returned by a source, candidate to be downloaded. """
 
   METADATA_PEEK_SIZE_INCREMENT = 2 ** 12
-  MAX_FILE_METADATA_PEEK_SIZE = 20 * 2 ** 12
+  MAX_FILE_METADATA_PEEK_SIZE = 20 * METADATA_PEEK_SIZE_INCREMENT
   IMG_SIG_SIZE = 16
 
   def __init__(self, urls, size, format, *, thumbnail_url, source, source_quality, rank=None,
@@ -68,10 +69,12 @@ class CoverSourceResult:
     else:
       self.urls = (urls,)
     self.size = size
+    assert((format is None) or (format in CoverImageFormat))
     self.format = format
     self.thumbnail_url = thumbnail_url
     self.thumbnail_sig = None
     self.source = source
+    assert(source_quality in CoverSourceQuality)
     self.source_quality = source_quality
     self.rank = rank
     self.check_metadata = check_metadata
@@ -209,7 +212,6 @@ class CoverSourceResult:
     assert(self.needMetadataUpdate())
 
     width_sum, height_sum = 0, 0
-    format, width, height = None, None, None
 
     # only download metadata for the needed images to get full size
     idxs = []
@@ -222,6 +224,7 @@ class CoverSourceResult:
 
     for idx, x, y in idxs:
       url = self.urls[idx]
+      format, width, height = None, None, None
 
       try:
         format, width, height = pickle.loads(__class__.metadata_cache[url])
@@ -236,61 +239,41 @@ class CoverSourceResult:
         # cache hit
         logging.getLogger("Cover").debug("Got metadata for URL '%s' from cache" % (url))
         if format is not None:
-          self.check_metadata &= ~CoverImageMetadata.FORMAT
-        if (width is not None) and (height is not None):
-          self.check_metadata &= ~CoverImageMetadata.SIZE
+          self.setFormatMetadata(format)
 
-      if self.needMetadataUpdate():
+      if self.needMetadataUpdate() and ((width is None) or (height is None)):
         # download
         logging.getLogger("Cover").debug("Downloading file header for URL '%s'..." % (url))
         try:
-          metadata = None
-          img_data = bytearray()
           headers = {}
           self.source.updateHttpHeaders(headers)
           response = yield from self.source.http.fastStreamedQuery(url,
                                                                    headers=headers,
                                                                    verify=False)
           try:
-            if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
-              # try to get format from response mime type
-              try:
-                content_type = response.headers["Content-Type"]
-                ext = mimetypes.guess_extension(content_type, strict=False)
-                if ext is not None:
-                  format = SUPPORTED_IMG_FORMATS[ext[1:]]
-                  self.check_metadata &= ~CoverImageMetadata.FORMAT
-              except KeyError:
-                pass
+            if self.needMetadataUpdate(CoverImageMetadata.FORMAT):
+              # try to get format from response
+              format = __class__.guessImageFormatFromHttpResponse(response)
+              if format is not None:
+                self.setFormatMetadata(format)
+
             if self.needMetadataUpdate():
-              while True:
-                new_img_data = yield from response.content.read(__class__.METADATA_PEEK_SIZE_INCREMENT)
-                if not new_img_data:
-                  break
-                img_data.extend(new_img_data)
-                metadata = __class__.getImageMetadata(img_data)
-                if metadata is not None:
-                  format, width, height = metadata
-                  if idx == idxs[-1][0]:
-                    # we have size of all important subimages
-                    self.check_metadata = CoverImageMetadata.NONE
-                  else:
-                    # we may need to check size for other URLs
-                    self.check_metadata &= ~CoverImageMetadata.FORMAT
-                  break
-                if len(img_data) >= CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
-                  # we won't fetch image header any further, try to identify format
-                  format = __class__.getImageFormat(img_data)
-                  if format is not None:
-                    self.check_metadata &= ~CoverImageMetadata.FORMAT
-                  break
+              # try to get metadata from HTTP data
+              metadata = yield from __class__.guessImageMetadataFromHttpData(response)
+              if metadata is not None:
+                format, width, height = metadata
+                if format is not None:
+                  self.setFormatMetadata(format)
+
           finally:
             response.release()
-          if (self.check_metadata & CoverImageMetadata.FORMAT) != 0:
+
+          if self.needMetadataUpdate(CoverImageMetadata.FORMAT):
             # if we get here, file is probably not reachable, or not even an image
             logging.getLogger("Cover").debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
                                              "skipping this result" % (url))
             return
+
         except Exception as e:
           logging.getLogger("Cover").debug("Unable to get file metadata for URL '%s' (%s %s), "
                                            "falling back to API data" % (url,
@@ -307,15 +290,26 @@ class CoverSourceResult:
         width_sum += width
         height_sum += height
 
-    self.check_metadata = CoverImageMetadata.NONE
-    if format is not None:
-      self.format = format
     if (width_sum > 0) and (height_sum > 0):
-      self.size = (width_sum, height_sum)
+      self.setSizeMetadata((width_sum, height_sum))
 
-  def needMetadataUpdate(self):
+  def needMetadataUpdate(self, what=CoverImageMetadata.ALL):
     """ Return True if image metadata needs to be checked, False instead. """
-    return self.check_metadata != CoverImageMetadata.NONE
+    return (self.check_metadata & what) != 0
+
+  def setFormatMetadata(self, format):
+    """ Set format image metadata to what has been reliably identified. """
+    assert((self.needMetadataUpdate(CoverImageMetadata.FORMAT)) or
+           (self.format is format))
+    self.format = format
+    self.check_metadata &= ~CoverImageMetadata.FORMAT
+
+  def setSizeMetadata(self, size):
+    """ Set size image metadata to what has been reliably identified. """
+    assert((self.needMetadataUpdate(CoverImageMetadata.SIZE)) or
+           (self.size == size))
+    self.size = size
+    self.check_metadata &= ~CoverImageMetadata.SIZE
 
   @asyncio.coroutine
   def updateSignature(self):
@@ -475,23 +469,68 @@ class CoverSourceResult:
     return crunched_image_data
 
   @staticmethod
-  def getImageMetadata(img_data):
+  def guessImageMetadataFromData(img_data):
     """ Identify an image format and size from its first bytes. """
+    format, width, height = None, None, None
     img_stream = io.BytesIO(img_data)
     try:
       img = PIL.Image.open(img_stream)
     except IOError:
-      return None
-    format = img.format.lower()
-    format = SUPPORTED_IMG_FORMATS.get(format, None)
-    width, height = img.size
+      format = imghdr.what(None, h=img_data)
+      format = SUPPORTED_IMG_FORMATS.get(format, None)
+    else:
+      format = img.format.lower()
+      format = SUPPORTED_IMG_FORMATS.get(format, None)
+      width, height = img.size
     return format, width, height
 
   @staticmethod
-  def getImageFormat(img_data):
-    """ Identify an image format from its first bytes. """
-    r = imghdr.what(None, h=img_data)
-    return SUPPORTED_IMG_FORMATS.get(r, None)
+  @asyncio.coroutine
+  def guessImageMetadataFromHttpData(response):
+    """ Identify an image format and size from the beginning of its HTTP data. """
+    metadata = None
+    img_data = bytearray()
+
+    while len(img_data) < CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
+      new_img_data = yield from response.content.read(__class__.METADATA_PEEK_SIZE_INCREMENT)
+      if not new_img_data:
+        break
+      img_data.extend(new_img_data)
+
+      metadata = __class__.guessImageMetadataFromData(img_data)
+      if (metadata is not None) and all(metadata):
+        return metadata
+
+    return metadata
+
+  @staticmethod
+  def guessImageFormatFromHttpResponse(response):
+    """ Guess file format from HTTP response, return format or None. """
+    extensions = []
+
+    # try to guess extension from response content-type header
+    try:
+      content_type = response.headers["Content-Type"]
+    except KeyError:
+      pass
+    else:
+      ext = mimetypes.guess_extension(content_type, strict=False)
+      if ext is not None:
+        extensions.append(ext)
+
+    # try to extract extension from URL
+    urls = list(response.history) + [response.url]
+    for url in map(str, urls):
+      ext = os.path.splitext(urllib.parse.urlsplit(url).path)[-1]
+      if (ext is not None) and (ext not in extensions):
+        extensions.append(ext)
+
+    # now guess from the extensions
+    for ext in extensions:
+      try:
+        return SUPPORTED_IMG_FORMATS[ext[1:]]
+      except KeyError:
+        pass
 
   @staticmethod
   @asyncio.coroutine

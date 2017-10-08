@@ -1,6 +1,5 @@
 import asyncio
 import collections
-import logging
 import operator
 import urllib.parse
 
