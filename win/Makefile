@@ -5,7 +5,7 @@ PYTHON_VERSION       := 3.4.4
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
 CXFREEZE_VERSION     := 5.0.2
-LXML_VERSION         := 3.8.0
+LXML_VERSION         := 4.0.0
 
 # installers
 DOWNLOAD_DIR            ?= dl
@@ -159,11 +159,11 @@ ${CXFREEZE_WHEEL-win64}:
 
 ${LXML_WHEEL-win32}:
 	mkdir -p $(dir $@)
-	${CURL} https://www.dropbox.com/s/h03crvc5muvim3e/$(notdir $@) > $@
+	${CURL} https://www.dropbox.com/s/9wm90p0glcg4kup/$(notdir $@) > $@
 
 ${LXML_WHEEL-win64}:
 	mkdir -p $(dir $@)
-	${CURL} https://www.dropbox.com/s/ck060ajajen2q90/$(notdir $@) > $@
+	${CURL} https://www.dropbox.com/s/zz4d7ipwubei51k/$(notdir $@) > $@
 
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)

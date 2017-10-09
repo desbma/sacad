@@ -1,7 +1,7 @@
 aiohttp>=2.2.5
 appdirs>=1.4.0
 cssselect>=0.9.1
-lxml>=3.3.3,<4.0.0
+lxml>=4.0.0
 mutagen>=1.31
 pillow>=2.7.0
 tqdm>=4.14.0
