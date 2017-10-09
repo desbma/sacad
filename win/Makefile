@@ -66,25 +66,27 @@ sacad_${WINEARCH}.exe: ${7ZIP_INSTALLED} sacad_${WINEARCH}.7z
 # Intermediate targets
 #
 
-${OUTPUT_DIR}:
-	mkdir -p $@
-
-${OUTPUT_DIR}/sacad.exe: ${OUTPUT_DIR} ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+${OUTPUT_DIR}/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+	mkdir -p $(dir $@)
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/${OUTPUT_DIR} 2> /dev/null > /dev/null
 	touch $@
 
 ${OUTPUT_DIR}/sacad_r.exe: ${OUTPUT_DIR}/sacad.exe
 
-${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll: ${OUTPUT_DIR} ${PYTHON_INSTALLED}
+${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll: ${PYTHON_INSTALLED}
+	mkdir -p $(dir $@)
 	cp $(dir ${PYTHON_INSTALLED})$(notdir $@) $@
 
-${OUTPUT_DIR}/sqlite3.dll: ${OUTPUT_DIR} ${PYTHON_INSTALLED}
+${OUTPUT_DIR}/sqlite3.dll: ${PYTHON_INSTALLED}
+	mkdir -p $(dir $@)
 	cp $(dir ${PYTHON_INSTALLED})DLLs/$(notdir $@) $@
 
-${OUTPUT_DIR}/LICENSE: ${OUTPUT_DIR}
+${OUTPUT_DIR}/LICENSE:
+	mkdir -p $(dir $@)
 	cp ../LICENSE $@
 
-${OUTPUT_DIR}/readme.txt: ${OUTPUT_DIR}
+${OUTPUT_DIR}/readme.txt:
+	mkdir -p $(dir $@)
 	echo 'Get source, help and latest version at: https://github.com/desbma/sacad' > $@
 
 
@@ -98,12 +100,11 @@ test_ut: ${LXML_INSTALLED} .requirements
 test_freeze:: ${TEST_LIB_DIR}/test.jpg ${TEST_LIB_DIR}/test.png
 
 ${TEST_LIB_DIR}/test.jpg: ${OUTPUT_DIR}/sacad.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
+	mkdir -p $(dir $@)
 	${WINE} $< "neu" "neu 2" 1000 $@
 
-${TEST_LIB_DIR}:
-	mkdir -p $@
-
-${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg ${TEST_LIB_DIR}
+${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg
+	mkdir -p $(dir $@)
 	cp $< $@
 
 ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg ${OUTPUT_DIR}/sacad_r.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
