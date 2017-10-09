@@ -77,7 +77,10 @@ class CoverSourceResult:
     assert(source_quality in CoverSourceQuality)
     self.source_quality = source_quality
     self.rank = rank
+    assert((format is not None) or ((check_metadata & CoverImageMetadata.FORMAT) != 0))
+    assert((size is not None) or ((check_metadata & CoverImageMetadata.SIZE) != 0))
     self.check_metadata = check_metadata
+    self.reliable_metadata = True
     self.is_similar_to_reference = False
     self.is_only_reference = False
     if not hasattr(__class__, "image_cache"):
@@ -268,19 +271,26 @@ class CoverSourceResult:
           finally:
             response.release()
 
-          if self.needMetadataUpdate(CoverImageMetadata.FORMAT):
+        except Exception as e:
+          logging.getLogger("Cover").warning("Failed to get file metadata for URL '%s' "
+                                             "(%s %s)" % (e.__class__.__qualname__,
+                                                          e))
+
+        if self.needMetadataUpdate():  # did we fail to get needed metadata at this point?
+          if ((self.format is None) or
+                  ((self.size is None) and ((width is None) or (height is None)))):
             # if we get here, file is probably not reachable, or not even an image
             logging.getLogger("Cover").debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
                                              "skipping this result" % (url))
             return
 
-        except Exception as e:
-          logging.getLogger("Cover").debug("Unable to get file metadata for URL '%s' (%s %s), "
-                                           "falling back to API data" % (url,
-                                                                         e.__class__.__qualname__,
-                                                                         e))
-          self.check_metadata = CoverImageMetadata.NONE
-          return
+          if ((self.format is not None) and
+                  ((self.size is not None) and (width is None) and (height is None))):
+            logging.getLogger("Cover").debug("Unable to get file metadata from file or HTTP headers for URL '%s', "
+                                             "falling back to API data" % (url))
+            self.check_metadata = CoverImageMetadata.NONE
+            self.reliable_metadata = False
+            return
 
         # save it to cache
         __class__.metadata_cache[url] = pickle.dumps((format, width, height))
@@ -365,11 +375,12 @@ class CoverSourceResult:
       3. Prefer size above target size
       4. Prefer covers of reliable source
       5. Prefer best ranked cover
+      6. Prefer covers with reliable metadata
     If all previous factors do not allow sorting of two results (very unlikely):
-      6. Prefer covers with less images to join
-      7. Prefer covers having the target size
-      8. Prefer PNG covers
-      9. Prefer exactly square covers
+      7. Prefer covers with less images to join
+      8. Prefer covers having the target size
+      9. Prefer PNG covers
+      10. Prefer exactly square covers
 
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
@@ -411,6 +422,10 @@ class CoverSourceResult:
             (first.__class__ is second.__class__) and
             (first.rank != second.rank)):
       return -1 if (first.rank > second.rank) else 1
+
+    # prefer reliable metadata
+    if first.reliable_metadata != second.reliable_metadata:
+      return 1 if first.reliable_metadata else -1
 
     # prefer covers with less images to join
     ic1 = len(first.urls)
