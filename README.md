@@ -12,7 +12,9 @@ Smart Automatic Cover Art Downloader
 
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
-**Since version 1.6.0, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically, optionally embedding the image into audio audio files (since version 1.9.0).**
+**Since version 1.6, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically, optionally embedding the image into audio audio files (since version 1.9).**
+
+**Since version 2.0, SACAD has been rewritten to use the [asyncio](https://docs.python.org/3/library/asyncio.html) framework, which typically results in ~40% fater processing for `sacad` and 600-700% faster (yes, 6-7x faster!) for `sacad_r`.**
 
 
 ## Features
@@ -36,7 +38,7 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 * HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
 * When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
-* Use multiple threads or processes automatically when relevant, to speed up processing
+* Process several queries simultaneously (using [asyncio](https://docs.python.org/3/library/asyncio.html)), to speed up processing
 * Automatically reuse TCP connections (HTTP Keep-Alive), for better performance
 * Automatically retry failed HTTP requests
 * Music library scan supports all common audio formats (MP3, AAC, Vorbis, FLAC..)
@@ -64,7 +66,7 @@ Windows users can also download a [standalone binary which does not require Pyth
 
 #### Optional
 
-Additionnaly, if you want to benefit from image crunching (lossless recompression):
+Additionnaly, if you want to benefit from image crunching (lossless recompression to save additional space):
 
 * Install [optipng](http://optipng.sourceforge.net/)
 * Install [jpegoptim](http://freecode.com/projects/jpegoptim)
