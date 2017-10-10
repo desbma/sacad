@@ -3,7 +3,8 @@ SACAD
 Smart Automatic Cover Art Downloader
 ------------------------------------
 
-[![Latest version](https://img.shields.io/pypi/v/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+[![PyPI version](https://img.shields.io/pypi/v/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+[![AUR version](https://img.shields.io/aur/version/sacad.svg?style=flat)](https://aur.archlinux.org/packages/sacad/)
 [![Tests status](https://img.shields.io/travis/desbma/sacad/master.svg?label=tests&style=flat)](https://travis-ci.org/desbma/sacad)
 [![Coverage](https://img.shields.io/coveralls/desbma/sacad/master.svg?style=flat)](https://coveralls.io/github/desbma/sacad?branch=master)
 [![Lines of code](https://tokei.rs/b1/github/desbma/sacad)](https://github.com/desbma/sacad)
@@ -48,6 +49,10 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 ## Installation
 
 SACAD requires [Python](https://www.python.org/downloads/) >= 3.4.
+
+### Arch Linux
+
+Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/sacad/) AUR package.
 
 ### From PyPI (with PIP)
 
