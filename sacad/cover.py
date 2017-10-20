@@ -273,7 +273,8 @@ class CoverSourceResult:
 
         except Exception as e:
           logging.getLogger("Cover").warning("Failed to get file metadata for URL '%s' "
-                                             "(%s %s)" % (e.__class__.__qualname__,
+                                             "(%s %s)" % (url,
+                                                          e.__class__.__qualname__,
                                                           e))
 
         if self.needMetadataUpdate():  # did we fail to get needed metadata at this point?
