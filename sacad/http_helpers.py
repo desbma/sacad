@@ -66,11 +66,13 @@ class Http:
           response = yield from self.session.post(url,
                                                   data=post_data,
                                                   headers=self._buildHeaders(headers),
-                                                  timeout=HTTP_NORMAL_TIMEOUT_S)
+                                                  timeout=HTTP_NORMAL_TIMEOUT_S,
+                                                  verify_ssl=verify)
         else:
           response = yield from self.session.get(url,
                                                  headers=self._buildHeaders(headers),
-                                                 timeout=HTTP_NORMAL_TIMEOUT_S)
+                                                 timeout=HTTP_NORMAL_TIMEOUT_S,
+                                                 verify_ssl=verify)
         content = yield from response.read()
 
         if cache is not None:
@@ -134,7 +136,8 @@ class Http:
         try:
           response = yield from self.session.head(url,
                                                   headers=self._buildHeaders(headers),
-                                                  timeout=HTTP_SHORT_TIMEOUT_S)
+                                                  timeout=HTTP_SHORT_TIMEOUT_S,
+                                                  verify_ssl=verify)
 
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
           self.logger.warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
@@ -171,7 +174,8 @@ class Http:
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
     response = yield from self.session.get(url,
                                            headers=self._buildHeaders(headers),
-                                           timeout=HTTP_SHORT_TIMEOUT_S)
+                                           timeout=HTTP_SHORT_TIMEOUT_S,
+                                           verify_ssl=verify)
 
     response.raise_for_status()
 
