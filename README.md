@@ -15,7 +15,7 @@ SACAD is a multi platform command line tool to download album covers without man
 
 **Since version 1.6, SACAD also provides a new command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically, optionally embedding the image into audio audio files (since version 1.9).**
 
-**Since version 2.0, SACAD has been rewritten to use the [asyncio](https://docs.python.org/3/library/asyncio.html) framework, which typically results in ~40% fater processing for `sacad` and 600-700% faster (yes, 6-7x faster!) for `sacad_r`.**
+**Since version 2.0, SACAD has been rewritten to use the [asyncio](https://docs.python.org/3/library/asyncio.html) framework, which typically results in ~40% faster processing for `sacad` and 600-700% faster (yes, 6-7x faster!) for `sacad_r`.**
 
 
 ## Features
