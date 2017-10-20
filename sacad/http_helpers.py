@@ -22,7 +22,7 @@ class Http:
 
   def __init__(self, *, allow_session_cookies, min_delay_between_accesses, logger):
     if not allow_session_cookies:
-      cookie_jar = aiohttp.helpers.DummyCookieJar()
+      cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
       cookie_jar = None
     self.session = aiohttp.ClientSession(cookie_jar=cookie_jar,
