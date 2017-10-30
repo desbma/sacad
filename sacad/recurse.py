@@ -222,22 +222,23 @@ def get_covers(work, args):
         except Exception as exception:
           stats["errors"] += 1
           errors.append((path, artist, album, exception))
-        if status:
-          if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
-            try:
-              embed_album_art(cover_filepath, path)
-            except Exception as exception:
-              stats["errors"] += 1
-              errors.append((path, artist, album, exception))
+        else:
+          if status:
+            if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+              try:
+                embed_album_art(cover_filepath, path)
+              except Exception as exception:
+                stats["errors"] += 1
+                errors.append((path, artist, album, exception))
+              else:
+                stats["ok"] += 1
+              finally:
+                os.remove(cover_filepath)
             else:
               stats["ok"] += 1
-            finally:
-              os.remove(cover_filepath)
           else:
-            stats["ok"] += 1
-        else:
-          stats["no result found"] += 1
-          not_found.append((path, artist, album))
+            stats["no result found"] += 1
+            not_found.append((path, artist, album))
         progress.set_postfix(stats)
         progress.update(1)
 
