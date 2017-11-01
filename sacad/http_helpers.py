@@ -13,8 +13,10 @@ from sacad import redo
 
 IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
 HTTP_NORMAL_TIMEOUT_S = 30.1 if IS_TRAVIS else 9.1
-HTTP_SHORT_TIMEOUT_S = 18.1 if IS_TRAVIS else 3.1
-HTTP_MAX_ATTEMPTS = 10 if IS_TRAVIS else 3
+HTTP_SHORT_TIMEOUT_S = 12.1 if IS_TRAVIS else 3.1
+HTTP_MAX_ATTEMPTS = 6 if IS_TRAVIS else 3
+HTTP_MAX_RETRY_SLEEP_S = 0 if IS_TRAVIS else 5
+HTTP_MAX_RETRY_SLEEP_SHORT_S = 0 if IS_TRAVIS else 2
 DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
@@ -56,7 +58,7 @@ class Http:
 
     for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
                                                          sleeptime=1,
-                                                         max_sleeptime=5,
+                                                         max_sleeptime=HTTP_MAX_RETRY_SLEEP_S,
                                                          sleepscale=1.5),
                                             1):
       yield from domain_rate_watcher.waitAccessAsync()
@@ -128,7 +130,7 @@ class Http:
     try:
       for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
                                                            sleeptime=0.5,
-                                                           max_sleeptime=2,
+                                                           max_sleeptime=HTTP_MAX_RETRY_SLEEP_SHORT_S,
                                                            sleepscale=1.5),
                                               1):
         yield from domain_rate_watcher.waitAccessAsync()
