@@ -101,14 +101,14 @@ test_freeze:: ${TEST_LIB_DIR}/test.jpg ${TEST_LIB_DIR}/test.png
 
 ${TEST_LIB_DIR}/test.jpg: ${OUTPUT_DIR}/sacad.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
 	mkdir -p $(dir $@)
-	${WINE} $< "neu" "neu 2" 1000 $@
+	${WINE} $< "neu" "neu 2" 1000 $@ && test -f $@
 
 ${TEST_LIB_DIR}/sample.ogg: ${DOWNLOAD_DIR}/sample.ogg
 	mkdir -p $(dir $@)
 	cp $< $@
 
 ${TEST_LIB_DIR}/test.png: ${TEST_LIB_DIR}/sample.ogg ${OUTPUT_DIR}/sacad_r.exe ${OUTPUT_DIR}/python${PYTHON_VERSION_SHORT}.dll ${OUTPUT_DIR}/sqlite3.dll
-	${WINE} ${OUTPUT_DIR}/sacad_r.exe $(dir $@) 300 $(notdir $@)
+	${WINE} ${OUTPUT_DIR}/sacad_r.exe $(dir $@) 300 $(notdir $@) && test -f $@
 
 
 #

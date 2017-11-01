@@ -292,3 +292,7 @@ def cl_main():
   # do the job
   work = analyze_lib(args.lib_dir, args.filename)
   get_covers(work, args)
+
+
+if __name__ == "__main__":
+  cl_main()
