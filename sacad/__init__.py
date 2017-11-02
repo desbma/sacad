@@ -11,6 +11,7 @@ import asyncio
 import functools
 import logging
 import os
+import sys
 
 from sacad import colored_logging
 from sacad import sources
@@ -170,6 +171,12 @@ def cl_main():
     # python < 3.4.4
     future = asyncio.async(coroutine, loop=async_loop)
   async_loop.run_until_complete(future)
+
+
+if sys.platform == "win32":
+  # default event loop has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
+  loop = asyncio.ProactorEventLoop()
+  asyncio.set_event_loop(loop)
 
 
 if __name__ == "__main__":
