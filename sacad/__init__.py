@@ -175,12 +175,12 @@ def cl_main():
 
 if sys.platform == "win32":
   # default event loop has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
-  try:
+  if sys.hexversion >= 0x3050000:
     loop = asyncio.ProactorEventLoop()
-  except NotImplementedError:
-    pass
-  else:
     asyncio.set_event_loop(loop)
+  else:
+    # TODO workaround
+    pass
 
 
 if __name__ == "__main__":
