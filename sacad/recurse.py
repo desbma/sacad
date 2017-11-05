@@ -8,9 +8,11 @@ import contextlib
 import base64
 import collections
 import inspect
+import itertools
 import logging
 import operator
 import os
+import sys
 import tempfile
 
 import mutagen
@@ -172,6 +174,16 @@ def embed_album_art(cover_filepath, path):
       mf.save()
 
 
+def ichunk(iterable, n):
+  """ Split an iterable into n-sized chunks. """
+  it = iter(iterable)
+  while True:
+    chunk = tuple(itertools.islice(it, n))
+    if not chunk:
+      return
+    yield chunk
+
+
 def get_covers(work, args):
   """ Get missing covers. """
   with contextlib.ExitStack() as cm:
@@ -180,36 +192,11 @@ def get_covers(work, args):
       tmp_prefix = "%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
       tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
 
-    # post work
-    async_loop = asyncio.get_event_loop()
-    futures = {}
-    for i, (path, (artist, album)) in enumerate(work.items()):
-      if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
-        cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
-      else:
-        cover_filepath = os.path.join(path, args.filename)
-      coroutine = sacad.search_and_download(album,
-                                            artist,
-                                            args.format,
-                                            args.size,
-                                            cover_filepath,
-                                            size_tolerance_prct=args.size_tolerance_prct,
-                                            amazon_tlds=args.amazon_tlds,
-                                            no_lq_sources=args.no_lq_sources,
-                                            async_loop=async_loop)
-      try:
-        # python >= 3.4.4
-        future = asyncio.ensure_future(coroutine, loop=async_loop)
-      except AttributeError:
-        # python < 3.4.4
-        future = asyncio.async(coroutine, loop=async_loop)
-      futures[future] = (path, cover_filepath, artist, album)
-
     # setup progress report
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
     errors = []
     not_found = []
-    with tqdm.tqdm(total=len(futures),
+    with tqdm.tqdm(total=len(work),
                    miniters=1,
                    desc="Searching covers",
                    unit=" covers",
@@ -242,12 +229,44 @@ def get_covers(work, args):
         progress.set_postfix(stats)
         progress.update(1)
 
-      for future in futures:
-        future.add_done_callback(update_progress)
+      # post work
+      async_loop = asyncio.get_event_loop()
+      i = 0
+      if sacad.ENABLE_ASYNCIO_LOW_FD_LIMIT_WORKAROUND:
+        # work in smaller chunks to avoid hitting fd limit
+        work_chunk_length = 16
+      else:
+        work_chunk_length = sys.maxsize
+      for work_chunk in ichunk(work.items(), work_chunk_length):
+        futures = {}
+        for i, (path, (artist, album)) in enumerate(work_chunk, i):
+          if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+            cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
+          else:
+            cover_filepath = os.path.join(path, args.filename)
+          coroutine = sacad.search_and_download(album,
+                                                artist,
+                                                args.format,
+                                                args.size,
+                                                cover_filepath,
+                                                size_tolerance_prct=args.size_tolerance_prct,
+                                                amazon_tlds=args.amazon_tlds,
+                                                no_lq_sources=args.no_lq_sources,
+                                                async_loop=async_loop)
+          try:
+            # python >= 3.4.4
+            future = asyncio.ensure_future(coroutine, loop=async_loop)
+          except AttributeError:
+            # python < 3.4.4
+            future = asyncio.async(coroutine, loop=async_loop)
+          futures[future] = (path, cover_filepath, artist, album)
 
-      # wait for end of work
-      root_future = asyncio.gather(*futures.keys(), loop=async_loop)
-      async_loop.run_until_complete(root_future)
+        for future in futures:
+          future.add_done_callback(update_progress)
+
+        # wait for end of work
+        root_future = asyncio.gather(*futures.keys(), loop=async_loop)
+        async_loop.run_until_complete(root_future)
 
   # report accumulated errors
   for path, artist, album in not_found:
