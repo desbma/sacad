@@ -41,9 +41,10 @@ install:
   - "sudo apt-get -V install optipng jpegoptim"
   - "if [ $WINDOWS -eq 1 ]; then sudo apt-get -V install winehq-stable p7zip-full; fi"
 script:
-  - "TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test travis_retry coverage run --source=sacad setup.py test"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win32 make test && popd; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win64 make test && popd; fi"
+  - "export TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test"
+  - "travis_retry coverage run --source=sacad setup.py test"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win32 make test && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win64 make test && popd; fi"
 after_success:
   - "coveralls"
 before_deploy:
