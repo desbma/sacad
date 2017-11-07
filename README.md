@@ -50,6 +50,10 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 SACAD requires [Python](https://www.python.org/downloads/) >= 3.4.
 
+### Standalone Windows executable
+
+Windows users can download a [standalone binary](https://github.com/desbma/sacad/releases/latest) which does not require Python.
+
 ### Arch Linux
 
 Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/sacad/) AUR package.
@@ -64,10 +68,6 @@ Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/saca
 1. If you don't already have it, [install setuptools](https://pypi.python.org/pypi/setuptools#installation-instructions) for Python 3
 2. Clone this repository: `git clone https://github.com/desbma/sacad`
 3. Install SACAD: `python3 setup.py install`
-
-### Standalone Windows executable
-
-Windows users can also download a [standalone binary which does not require Python](https://github.com/desbma/sacad/releases).
 
 #### Optional
 
