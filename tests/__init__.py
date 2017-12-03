@@ -31,9 +31,11 @@ def is_internet_reachable():
   return True
 
 
-def download(url, filepath):
-  with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=True)) as response:
+def download(url, filepath=None):
+  with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=(filepath is not None))) as response:
     response.raise_for_status()
+    if filepath is None:
+      return response.content
     with open(filepath, "wb") as f:
       for chunk in response.iter_content(2 ** 14):
         f.write(chunk)
@@ -123,14 +125,9 @@ class TestSacad(unittest.TestCase):
             "http://www.jesus-is-savior.com/Evils%20in%20America/Rock-n-Roll/highway_to_hell-large.jpg",
             "http://i158.photobucket.com/albums/t113/gatershanks/Glee%20Alternative%20Song%20Covers/1x14%20Hell%20O/1x14Hell-O-HighwayToHell.jpg")
     img_sig = {}
-    with sacad.mkstemp_ctx.mkstemp(suffix="jpg") as temp_filepath1, \
-            sacad.mkstemp_ctx.mkstemp(suffix=".jpg") as temp_filepath2, \
-            sacad.mkstemp_ctx.mkstemp(suffix=".jpg") as temp_filepath3:
-      for i, (url, filepath) in enumerate(zip(urls, (temp_filepath1, temp_filepath2, temp_filepath3))):
-        download(url, filepath)
-        with open(filepath, "rb") as img_file:
-          img_data = img_file.read()
-          img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
+    for i, url in enumerate(urls):
+      img_data = download(url)
+      img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
     self.assertTrue(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[1]))
     self.assertTrue(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[1], img_sig[0]))
     self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[2]))
@@ -141,13 +138,9 @@ class TestSacad(unittest.TestCase):
     urls = ("https://images-na.ssl-images-amazon.com/images/I/91euo%2BzpKEL._SL1500_.jpg",
             "https://lastfm-img2.akamaized.net/i/u/300x300/c971ea7edb14ede6bab2f94666bb9005.png")
     img_sig = {}
-    with sacad.mkstemp_ctx.mkstemp(suffix="jpg") as temp_filepath1, \
-            sacad.mkstemp_ctx.mkstemp(suffix=".png") as temp_filepath2:
-      for i, (url, filepath) in enumerate(zip(urls, (temp_filepath1, temp_filepath2))):
-        download(url, filepath)
-        with open(filepath, "rb") as img_file:
-          img_data = img_file.read()
-          img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
+    for i, url in enumerate(urls):
+      img_data = download(url)
+      img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
     self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[1]))
 
   def test_coverSources(self):
