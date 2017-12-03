@@ -2,7 +2,7 @@
 
 """ Smart Automatic Cover Art Downloader : search and download music album covers. """
 
-__version__ = "2.0.5"
+__version__ = "2.0.6"
 __author__ = "desbma"
 __license__ = "MPL 2.0"
 
