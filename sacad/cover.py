@@ -664,7 +664,7 @@ class CoverSourceResult:
     """
     delta = sum((b1 - b2) ** 2 for b1, b2 in zip(sig1, sig2))
     delta = delta / (__class__.IMG_SIG_SIZE * __class__.IMG_SIG_SIZE * 3)
-    return delta < 3000
+    return delta < 2000
 
 
 # silence third party module loggers
