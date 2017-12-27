@@ -4,8 +4,7 @@ language: python
 cache:
   pip: true
   directories:
-    - $HOME/.cache/sacad-build
-    - $HOME/.cache/sacad-test
+    - $HOME/.cache/ci/sacad
 matrix:
   include:
     - python: "3.4"
@@ -29,11 +28,12 @@ matrix:
     - python: "pypy3"
   fast_finish: true
 before_install:
+  - "export CI_CACHE_DIR=~/.cache/ci/sacad"
   - "if [ $WINDOWS -eq 1 ]; then curl https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add - && sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/; fi"
   - "sudo apt-get -q update"
   - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3' ]; then pip install -U pip; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then mkdir -p ~/.cache/sacad-build && echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf ~/.cache/sacad-build/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then mkdir -p $CI_CACHE_DIR/pypy && echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
 install:
   - "sudo apt-get -V install libxml2-dev libxslt1-dev"  # lxml dependencies
   - "pip install -r requirements.txt"
@@ -41,10 +41,9 @@ install:
   - "sudo apt-get -V install optipng jpegoptim"
   - "if [ $WINDOWS -eq 1 ]; then sudo apt-get -V install winehq-stable p7zip-full; fi"
 script:
-  - "export TEST_DL_CACHE_DIR=$HOME/.cache/sacad-test"
   - "travis_retry coverage run --source=sacad setup.py test"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win32 make test && popd; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && DOWNLOAD_DIR=$HOME/.cache/sacad-build WINEARCH=win64 make test && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 make test && popd; fi"
+  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 make test && popd; fi"
 after_success:
   - "coveralls"
 before_deploy:
