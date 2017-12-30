@@ -20,7 +20,7 @@ matrix:
     - python: "3.7-dev"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "pypy3"
-      env: WINDOWS=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=5.10 PYPY3_SHA256=d03f81f26e5e67d808569c5c69d56ceb007df78f7e36ab1c50da4d9096cebde0
+      env: WINDOWS=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=5.10.0 PYPY3_SHA256=d03f81f26e5e67d808569c5c69d56ceb007df78f7e36ab1c50da4d9096cebde0
   allow_failures:
     - python: "3.5-dev"
     - python: "3.6-dev"
