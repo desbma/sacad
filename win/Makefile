@@ -23,7 +23,7 @@ LXML_WHEEL              := ${LXML_WHEEL-${WINEARCH}}
 # env
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
 WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine-${WINEARCH}
-WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=${WINEARCH} WINEDEBUG=-all wine
+WINE     := mkdir -p $(dir ${WINE_DIR}) && WINEPREFIX=${WINE_DIR} WINEARCH=${WINEARCH} WINEDLLOVERRIDES="mscoree,mshtml=" WINEDEBUG=-all wine
 
 # installed files
 PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
