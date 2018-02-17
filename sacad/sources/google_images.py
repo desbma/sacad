@@ -26,6 +26,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
   """
 
   BASE_URL = "https://www.google.com/images"
+  RESULTS_SELECTOR = lxml.cssselect.CSSSelector("#search #rg_s .rg_di")
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
@@ -52,8 +53,8 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
     # parse HTML and get results
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("latin-1"), parser)
-    results_selector = lxml.cssselect.CSSSelector("#search #rg_s .rg_di")
-    for rank, result in enumerate(results_selector(html), 1):
+
+    for rank, result in enumerate(__class__.RESULTS_SELECTOR(html), 1):
       # extract url
       metadata_div = result.find("div")
       metadata_json = lxml.etree.tostring(metadata_div, encoding="unicode", method="text")

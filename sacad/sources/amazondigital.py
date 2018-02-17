@@ -36,6 +36,11 @@ class AmazonDigitalCoverSource(CoverSource):
 
   BASE_URL = "https://www.amazon.com/gp"
   DYNAPI_KEY = "A17SFUTIVB227Z"
+  RESULTS_SELECTORS = (lxml.cssselect.CSSSelector("div#dm_mp3Player div.mp3Cell"),
+                       lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))
+  IMG_SELECTORS = (lxml.cssselect.CSSSelector("img.productImage"),
+                   lxml.cssselect.CSSSelector("img.s-access-image"))
+  LINK_SELECTOR = lxml.cssselect.CSSSelector("a")
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, allow_cookies=True, **kwargs)
@@ -63,20 +68,15 @@ class AmazonDigitalCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
-    results_selectors = (lxml.cssselect.CSSSelector("div#dm_mp3Player div.mp3Cell"),
-                         lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))
-    img_selectors = (lxml.cssselect.CSSSelector("img.productImage"),
-                     lxml.cssselect.CSSSelector("img.s-access-image"))
-    link_selector = lxml.cssselect.CSSSelector("a")
 
-    for page_struct_version in range(len(results_selectors)):
-      result_divs = results_selectors[page_struct_version](html)
+    for page_struct_version in range(len(__class__.RESULTS_SELECTORS)):
+      result_divs = __class__.RESULTS_SELECTORS[page_struct_version](html)
       if result_divs:
         break
 
     for rank, result_div in enumerate(result_divs, 1):
       # get thumbnail & full image url
-      img_node = img_selectors[page_struct_version](result_div)[0]
+      img_node = __class__.IMG_SELECTORS[page_struct_version](result_div)[0]
       thumbnail_url = img_node.get("src")
       thumbnail_url = thumbnail_url.replace("Stripe-Prime-Only", "")
       url_parts = thumbnail_url.rsplit(".", 2)
@@ -88,7 +88,7 @@ class AmazonDigitalCoverSource(CoverSource):
       # try to get higher res image...
       if self.target_size > size[0]:  # ...but only if needed
         self.logger.debug("Looking for optimal subimages configuration...")
-        product_url = link_selector(result_div)[0].get("href")
+        product_url = __class__.LINK_SELECTOR(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_id = product_url.path.split("/")[3]
 

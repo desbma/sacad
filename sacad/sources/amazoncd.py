@@ -20,6 +20,10 @@ class AmazonCdCoverSource(CoverSource):
   """ Cover source returning Amazon.com audio CD images. """
 
   TLDS = ("com", "ca", "cn", "fr", "de", "co.jp", "co.uk")
+  RESULTS_SELECTOR = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
+  IMG_SELECTOR = lxml.cssselect.CSSSelector("img.s-access-image")
+  PRODUCT_LINK_SELECTOR = lxml.cssselect.CSSSelector("a.s-access-detail-page")
+  PRODUCT_PAGE_IMG_SELECTOR = lxml.cssselect.CSSSelector("img#landingImage")
 
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
@@ -47,14 +51,10 @@ class AmazonCdCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8", "ignore"), parser)
-    results_selector = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
-    img_selector = lxml.cssselect.CSSSelector("img.s-access-image")
-    product_link_selector = lxml.cssselect.CSSSelector("a.s-access-detail-page")
-    product_page_img_selector = lxml.cssselect.CSSSelector("img#landingImage")
-    result_divs = results_selector(html)
+    result_divs = __class__.RESULTS_SELECTOR(html)
     for rank, result_div in enumerate(result_divs, 1):
       try:
-        img_node = img_selector(result_div)[0]
+        img_node = __class__.IMG_SELECTOR(result_div)[0]
       except IndexError:
         # no image for that product
         continue
@@ -69,7 +69,7 @@ class AmazonCdCoverSource(CoverSource):
       if ((self.target_size > size[0]) and  # ...only if needed
               (rank <= 3)):  # and only for first 3 results because this is time
                              # consuming (1 more GET request per result)
-        product_url = product_link_selector(result_div)[0].get("href")
+        product_url = __class__.PRODUCT_LINK_SELECTOR(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_url_query = urllib.parse.parse_qsl(product_url.query)
         product_url_query = collections.OrderedDict(product_url_query)
@@ -79,7 +79,7 @@ class AmazonCdCoverSource(CoverSource):
         product_page_data = yield from self.fetchResults(product_url_no_ts)
         product_page_html = lxml.etree.XML(product_page_data.decode("latin-1"), parser)
         try:
-          img_node = product_page_img_selector(product_page_html)[0]
+          img_node = __class__.PRODUCT_PAGE_IMG_SELECTOR(product_page_html)[0]
         except IndexError:
           # unable to get better image
           pass
