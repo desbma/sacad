@@ -172,7 +172,7 @@ ${7ZIP_INSTALLER}:
 
 ${DOWNLOAD_DIR}/sample.ogg:
 	mkdir -p $(dir $@)
-	${CURL} http://www.vorbis.com/music/Hydrate-Kenny_Beltrey.ogg > $@
+	${CURL} https://www.dropbox.com/s/zg80jd35ie3aury/Hydrate-Kenny_Beltrey.ogg > $@
 
 
 #
