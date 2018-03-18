@@ -36,7 +36,20 @@ class Http:
     self.logger = logger
 
   def __del__(self):
-    self.session.close()  # silences a warning on shutdown
+    # silences a warning on shutdown
+    async_loop = asyncio.get_event_loop()
+    coroutine = self.cleanup()
+    try:
+      # python >= 3.4.4
+      future = asyncio.ensure_future(coroutine, loop=async_loop)
+    except AttributeError:
+      # python < 3.4.4
+      future = asyncio.async(coroutine, loop=async_loop)
+    asyncio.wait_for(future, None)
+
+  @asyncio.coroutine
+  def cleanup(self):
+    yield from self.session.close()
 
   @asyncio.coroutine
   def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):

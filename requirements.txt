@@ -1,4 +1,4 @@
-aiohttp>=2.3.1
+aiohttp>=3.0.0
 appdirs>=1.4.0
 cssselect>=0.9.1
 lxml>=4.0.0
