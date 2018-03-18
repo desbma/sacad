@@ -7,8 +7,6 @@ cache:
     - $HOME/.cache/ci/sacad
 matrix:
   include:
-    - python: "3.4"
-      env: WINDOWS=1 PYPI_DEPLOY=0
     - python: "3.5"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "3.5-dev"

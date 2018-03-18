@@ -7,8 +7,8 @@ import sys
 from setuptools import find_packages, setup
 
 
-if sys.hexversion < 0x3040000:
-  print("Python version %s is unsupported, >= 3.4.0 is needed" % (".".join(map(str, sys.version_info[:3]))))
+if sys.hexversion < 0x3050000:
+  print("Python version %s is unsupported, >= 3.5.0 is needed" % (".".join(map(str, sys.version_info[:3]))))
   exit(1)
 
 with open(os.path.join("sacad", "__init__.py"), "rt") as f:
@@ -51,7 +51,6 @@ setup(name="sacad",
                    "Programming Language :: Python",
                    "Programming Language :: Python :: 3",
                    "Programming Language :: Python :: 3 :: Only",
-                   "Programming Language :: Python :: 3.4",
                    "Programming Language :: Python :: 3.5",
                    "Programming Language :: Python :: 3.6",
                    "Topic :: Internet :: WWW/HTTP",
