@@ -253,12 +253,7 @@ def get_covers(work, args):
                                                 amazon_tlds=args.amazon_tlds,
                                                 no_lq_sources=args.no_lq_sources,
                                                 async_loop=async_loop)
-          try:
-            # python >= 3.4.4
-            future = asyncio.ensure_future(coroutine, loop=async_loop)
-          except AttributeError:
-            # python < 3.4.4
-            future = asyncio.async(coroutine, loop=async_loop)
+          future = asyncio.ensure_future(coroutine, loop=async_loop)
           futures[future] = (path, cover_filepath, artist, album)
 
         for future in futures:

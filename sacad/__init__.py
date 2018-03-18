@@ -36,12 +36,7 @@ def search_and_download(album, artist, format, size, out_filepath, *, size_toler
   search_futures = []
   for cover_source in cover_sources:
     coroutine = cover_source.search(album, artist)
-    try:
-      # python >= 3.4.4
-      future = asyncio.ensure_future(coroutine, loop=async_loop)
-    except AttributeError:
-      # python < 3.4.4
-      future = asyncio.async(coroutine, loop=async_loop)
+    future = asyncio.ensure_future(coroutine, loop=async_loop)
     search_futures.append(future)
 
   # wait for it
@@ -164,12 +159,7 @@ def cl_main():
                                   amazon_tlds=args.amazon_tlds,
                                   no_lq_sources=args.no_lq_sources,
                                   async_loop=async_loop)
-  try:
-    # python >= 3.4.4
-    future = asyncio.ensure_future(coroutine, loop=async_loop)
-  except AttributeError:
-    # python < 3.4.4
-    future = asyncio.async(coroutine, loop=async_loop)
+  future = asyncio.ensure_future(coroutine, loop=async_loop)
   async_loop.run_until_complete(future)
 
 

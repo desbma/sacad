@@ -39,12 +39,7 @@ class Http:
     # silences a warning on shutdown
     async_loop = asyncio.get_event_loop()
     coroutine = self.cleanup()
-    try:
-      # python >= 3.4.4
-      future = asyncio.ensure_future(coroutine, loop=async_loop)
-    except AttributeError:
-      # python < 3.4.4
-      future = asyncio.async(coroutine, loop=async_loop)
+    future = asyncio.ensure_future(coroutine, loop=async_loop)
     asyncio.wait_for(future, None)
 
   @asyncio.coroutine

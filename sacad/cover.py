@@ -594,22 +594,12 @@ class CoverSourceResult:
       futures = []
       for result in results:
         coroutine = result.updateSignature()
-        try:
-          # python >= 3.4.4
-          future = asyncio.ensure_future(coroutine)
-        except AttributeError:
-          # python < 3.4.4
-          future = asyncio.async(coroutine)
+        future = asyncio.ensure_future(coroutine)
         futures.append(future)
       if reference.is_only_reference:
         assert(reference not in results)
         coroutine = reference.updateSignature()
-        try:
-          # python >= 3.4.4
-          future = asyncio.ensure_future(coroutine)
-        except AttributeError:
-          # python < 3.4.4
-          future = asyncio.async(coroutine)
+        future = asyncio.ensure_future(coroutine)
         futures.append(future)
       if futures:
         yield from asyncio.wait(futures)

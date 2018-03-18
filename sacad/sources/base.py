@@ -78,12 +78,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     futures = []
     for result in filter(operator.methodcaller("needMetadataUpdate"), results):
       coroutine = result.updateImageMetadata()
-      try:
-        # python >= 3.4.4
-        future = asyncio.ensure_future(coroutine)
-      except AttributeError:
-        # python < 3.4.4
-        future = asyncio.async(coroutine)
+      future = asyncio.ensure_future(coroutine)
       futures.append(future)
     if futures:
       yield from asyncio.wait(futures)
