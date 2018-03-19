@@ -71,17 +71,18 @@ class Http:
 
       try:
         if post_data is not None:
-          response = await self.session.post(url,
-                                             data=post_data,
-                                             headers=self._buildHeaders(headers),
-                                             timeout=HTTP_NORMAL_TIMEOUT_S,
-                                             ssl=verify)
+          async with self.session.post(url,
+                                       data=post_data,
+                                       headers=self._buildHeaders(headers),
+                                       timeout=HTTP_NORMAL_TIMEOUT_S,
+                                       ssl=verify) as response:
+            content = await response.read()
         else:
-          response = await self.session.get(url,
-                                            headers=self._buildHeaders(headers),
-                                            timeout=HTTP_NORMAL_TIMEOUT_S,
-                                            ssl=verify)
-        content = await response.read()
+          async with self.session.get(url,
+                                      headers=self._buildHeaders(headers),
+                                      timeout=HTTP_NORMAL_TIMEOUT_S,
+                                      ssl=verify) as response:
+            content = await response.read()
 
         if cache is not None:
           if pre_cache_callback is not None:
@@ -141,10 +142,11 @@ class Http:
         await domain_rate_watcher.waitAccessAsync()
 
         try:
-          response = await self.session.head(url,
-                                             headers=self._buildHeaders(headers),
-                                             timeout=HTTP_SHORT_TIMEOUT_S,
-                                             ssl=verify)
+          async with self.session.head(url,
+                                       headers=self._buildHeaders(headers),
+                                       timeout=HTTP_SHORT_TIMEOUT_S,
+                                       ssl=verify):
+            pass
 
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
           self.logger.warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
