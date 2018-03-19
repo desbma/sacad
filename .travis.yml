@@ -12,7 +12,7 @@ matrix:
     - python: "3.5-dev"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "3.6"
-      env: WINDOWS=0 PYPI_DEPLOY=1
+      env: WINDOWS=1 PYPI_DEPLOY=1
     - python: "3.6-dev"
       env: WINDOWS=0 PYPI_DEPLOY=0
     - python: "3.7-dev"
@@ -65,7 +65,7 @@ deploy:
     on:
       tags: true
       branch: master
-      python: "3.4"
+      condition: $WINDOWS = 1
   - provider: pypi
     user: desbma
     password:
@@ -73,7 +73,7 @@ deploy:
     on:
       tags: true
       branch: master
-      python: "3.6"
+      condition: $PYPI_DEPLOY = 1
 notifications:
   email:
     recipients:

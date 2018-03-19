@@ -2,8 +2,13 @@
 
 import os
 import re
+import sys
 
 from cx_Freeze import setup, Executable
+
+
+os.environ["TCL_LIBRARY"] = os.path.join(os.path.dirname(sys.executable), "tcl", "tcl8.6")
+os.environ["TK_LIBRARY"] = os.path.join(os.path.dirname(sys.executable), "tcl", "tk8.6")
 
 
 with open(os.path.join("sacad", "__init__.py"), "rt") as f:

@@ -165,11 +165,11 @@ def cl_main():
 ENABLE_ASYNCIO_LOW_FD_LIMIT_WORKAROUND = False
 if sys.platform == "win32":
   # default event loop has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
-  if sys.hexversion >= 0x3050000:
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
-  else:
-    ENABLE_ASYNCIO_LOW_FD_LIMIT_WORKAROUND = True
+  # if sys.hexversion >= 0x3050000:
+  #   loop = asyncio.ProactorEventLoop()
+  #   asyncio.set_event_loop(loop)
+  # else:
+  ENABLE_ASYNCIO_LOW_FD_LIMIT_WORKAROUND = True
 
 
 if __name__ == "__main__":
