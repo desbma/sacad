@@ -123,13 +123,13 @@ class CoverSourceResult:
       self.source.updateHttpHeaders(headers)
 
       async def pre_cache_callback(img_data):
-        return (yield from __class__.crunch(img_data, self.format))
+        return await __class__.crunch(img_data, self.format)
 
-      image_data = yield from self.source.http.query(url,
-                                                     headers=headers,
-                                                     verify=False,
-                                                     cache=__class__.image_cache,
-                                                     pre_cache_callback=pre_cache_callback)
+      image_data = await self.source.http.query(url,
+                                                headers=headers,
+                                                verify=False,
+                                                cache=__class__.image_cache,
+                                                pre_cache_callback=pre_cache_callback)
 
       # append for multi images
       images_data.append(image_data)
@@ -146,7 +146,7 @@ class CoverSourceResult:
                                     target_size if need_size_change else None)
 
       # crunch image again
-      image_data = yield from __class__.crunch(image_data, target_format)
+      image_data = await __class__.crunch(image_data, target_format)
 
     # write it
     with open(out_filepath, "wb") as file:
@@ -247,9 +247,9 @@ class CoverSourceResult:
         try:
           headers = {}
           self.source.updateHttpHeaders(headers)
-          response = yield from self.source.http.fastStreamedQuery(url,
-                                                                   headers=headers,
-                                                                   verify=False)
+          response = await self.source.http.fastStreamedQuery(url,
+                                                              headers=headers,
+                                                              verify=False)
           try:
             if self.needMetadataUpdate(CoverImageMetadata.FORMAT):
               # try to get format from response
@@ -259,7 +259,7 @@ class CoverSourceResult:
 
             if self.needMetadataUpdate():
               # try to get metadata from HTTP data
-              metadata = yield from __class__.guessImageMetadataFromHttpData(response)
+              metadata = await __class__.guessImageMetadataFromHttpData(response)
               if metadata is not None:
                 format, width, height = metadata
                 if format is not None:
@@ -333,13 +333,13 @@ class CoverSourceResult:
     self.source.updateHttpHeaders(headers)
 
     async def pre_cache_callback(img_data):
-      return (yield from __class__.crunch(img_data, CoverImageFormat.JPEG, silent=True))
+      return await __class__.crunch(img_data, CoverImageFormat.JPEG, silent=True)
 
     try:
-      image_data = yield from self.source.http.query(self.thumbnail_url,
-                                                     cache=__class__.image_cache,
-                                                     headers=headers,
-                                                     pre_cache_callback=pre_cache_callback)
+      image_data = await self.source.http.query(self.thumbnail_url,
+                                                cache=__class__.image_cache,
+                                                headers=headers,
+                                                pre_cache_callback=pre_cache_callback)
     except Exception as e:
       logging.getLogger("Cover").warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                              e.__class__.__qualname__,
@@ -461,11 +461,11 @@ class CoverSourceResult:
       elif format is CoverImageFormat.JPEG:
         cmd = ["jpegoptim", "-q", "--strip-all"]
       cmd.append(tmp_out_filepath)
-      p = yield from asyncio.create_subprocess_exec(*cmd,
-                                                    stdin=asyncio.subprocess.DEVNULL,
-                                                    stdout=asyncio.subprocess.DEVNULL,
-                                                    stderr=asyncio.subprocess.DEVNULL)
-      yield from p.wait()
+      p = await asyncio.create_subprocess_exec(*cmd,
+                                               stdin=asyncio.subprocess.DEVNULL,
+                                               stdout=asyncio.subprocess.DEVNULL,
+                                               stderr=asyncio.subprocess.DEVNULL)
+      await p.wait()
       if p.returncode != 0:
         if not silent:
           logging.getLogger("Cover").warning("Crunching image failed")
@@ -501,7 +501,7 @@ class CoverSourceResult:
     img_data = bytearray()
 
     while len(img_data) < CoverSourceResult.MAX_FILE_METADATA_PEEK_SIZE:
-      new_img_data = yield from response.content.read(__class__.METADATA_PEEK_SIZE_INCREMENT)
+      new_img_data = await response.content.read(__class__.METADATA_PEEK_SIZE_INCREMENT)
       if not new_img_data:
         break
       img_data.extend(new_img_data)
@@ -594,7 +594,7 @@ class CoverSourceResult:
         future = asyncio.ensure_future(coroutine)
         futures.append(future)
       if futures:
-        yield from asyncio.wait(futures)
+        await asyncio.wait(futures)
       for future in futures:
         future.result()  # raise pending exception if any
 

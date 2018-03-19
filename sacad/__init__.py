@@ -39,7 +39,7 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
     search_futures.append(future)
 
   # wait for it
-  yield from asyncio.wait(search_futures, loop=async_loop)
+  await asyncio.wait(search_futures, loop=async_loop)
 
   # get results
   results = []
@@ -48,7 +48,7 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
     results.extend(source_results)
 
   # sort results
-  results = yield from CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
+  results = await CoverSourceResult.preProcessForComparison(results, size, size_tolerance_prct)
   results.sort(reverse=True,
                key=functools.cmp_to_key(functools.partial(CoverSourceResult.compare,
                                                           target_size=size,
@@ -59,7 +59,7 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
   # download
   for result in results:
     try:
-      yield from result.get(format, size, size_tolerance_prct, out_filepath)
+      await result.get(format, size, size_tolerance_prct, out_filepath)
     except Exception as e:
       logging.getLogger("Main").warning("Download of %s failed: %s %s" % (result,
                                                                           e.__class__.__qualname__,

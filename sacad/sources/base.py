@@ -64,8 +64,8 @@ class CoverSource(metaclass=abc.ABCMeta):
       url = url_data
       post_data = None
     try:
-      api_data = yield from self.fetchResults(url, post_data)
-      results = yield from self.parseResults(api_data)
+      api_data = await self.fetchResults(url, post_data)
+      results = await self.parseResults(api_data)
     except Exception as e:
       # raise
       self.logger.warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
@@ -80,7 +80,7 @@ class CoverSource(metaclass=abc.ABCMeta):
       future = asyncio.ensure_future(coroutine)
       futures.append(future)
     if futures:
-      yield from asyncio.wait(futures)
+      await asyncio.wait(futures)
     for future in futures:
       future.result()  # raise pending exception if any
 
@@ -126,10 +126,10 @@ class CoverSource(metaclass=abc.ABCMeta):
       self.logger.debug("Querying URL '%s'..." % (url))
     headers = {}
     self.updateHttpHeaders(headers)
-    return (yield from self.http.query(url,
-                                       post_data=post_data,
-                                       headers=headers,
-                                       cache=__class__.api_cache))
+    return await self.http.query(url,
+                                 post_data=post_data,
+                                 headers=headers,
+                                 cache=__class__.api_cache)
 
   async def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
@@ -137,10 +137,10 @@ class CoverSource(metaclass=abc.ABCMeta):
     headers = {}
     self.updateHttpHeaders(headers)
     resp_headers = {}
-    resp_ok = yield from self.http.isReachable(url,
-                                               headers=headers,
-                                               response_headers=resp_headers,
-                                               cache=__class__.probe_cache)
+    resp_ok = await self.http.isReachable(url,
+                                          headers=headers,
+                                          response_headers=resp_headers,
+                                          cache=__class__.probe_cache)
 
     if response_headers is not None:
       response_headers.update(resp_headers)

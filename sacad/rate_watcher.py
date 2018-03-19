@@ -25,7 +25,7 @@ class AccessRateWatcher:
 
   async def waitAccessAsync(self):
     """ Wait the needed time before sending a request to honor rate limit. """
-    with (yield from self.lock):
+    async with self.lock:
       while True:
         last_access_ts = self.__getLastAccess()
         if last_access_ts is not None:
@@ -36,7 +36,7 @@ class AccessRateWatcher:
             time_to_wait = self.min_delay_between_accesses - time_since_last_access
             self.logger.debug("Sleeping for %.2fms because of rate limit for domain %s" % (time_to_wait * 1000,
                                                                                            self.domain))
-            yield from asyncio.sleep(time_to_wait)
+            await asyncio.sleep(time_to_wait)
 
         access_time = time.time()
         self.__access(access_time)

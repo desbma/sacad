@@ -43,7 +43,7 @@ class Http:
     asyncio.wait_for(future, None)
 
   async def cleanup(self):
-    yield from self.session.close()
+    await self.session.close()
 
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
@@ -67,27 +67,27 @@ class Http:
                                                          max_sleeptime=HTTP_MAX_RETRY_SLEEP_S,
                                                          sleepscale=1.5),
                                             1):
-      yield from domain_rate_watcher.waitAccessAsync()
+      await domain_rate_watcher.waitAccessAsync()
 
       try:
         if post_data is not None:
-          response = yield from self.session.post(url,
-                                                  data=post_data,
-                                                  headers=self._buildHeaders(headers),
-                                                  timeout=HTTP_NORMAL_TIMEOUT_S,
-                                                  ssl=verify)
+          response = await self.session.post(url,
+                                             data=post_data,
+                                             headers=self._buildHeaders(headers),
+                                             timeout=HTTP_NORMAL_TIMEOUT_S,
+                                             ssl=verify)
         else:
-          response = yield from self.session.get(url,
-                                                 headers=self._buildHeaders(headers),
-                                                 timeout=HTTP_NORMAL_TIMEOUT_S,
-                                                 ssl=verify)
-        content = yield from response.read()
+          response = await self.session.get(url,
+                                            headers=self._buildHeaders(headers),
+                                            timeout=HTTP_NORMAL_TIMEOUT_S,
+                                            ssl=verify)
+        content = await response.read()
 
         if cache is not None:
           if pre_cache_callback is not None:
             # process
             try:
-              data = yield from pre_cache_callback(content)
+              data = await pre_cache_callback(content)
             except Exception:
               data = content
           else:
@@ -109,7 +109,7 @@ class Http:
           raise
         else:
           self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
-          yield from asyncio.sleep(time_to_sleep)
+          await asyncio.sleep(time_to_sleep)
 
       else:
         break  # http retry loop
@@ -138,13 +138,13 @@ class Http:
                                                            max_sleeptime=HTTP_MAX_RETRY_SLEEP_SHORT_S,
                                                            sleepscale=1.5),
                                               1):
-        yield from domain_rate_watcher.waitAccessAsync()
+        await domain_rate_watcher.waitAccessAsync()
 
         try:
-          response = yield from self.session.head(url,
-                                                  headers=self._buildHeaders(headers),
-                                                  timeout=HTTP_SHORT_TIMEOUT_S,
-                                                  ssl=verify)
+          response = await self.session.head(url,
+                                             headers=self._buildHeaders(headers),
+                                             timeout=HTTP_SHORT_TIMEOUT_S,
+                                             ssl=verify)
 
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
           self.logger.warning("Probing '%s' failed (attempt %u/%u): %s %s" % (url,
@@ -156,7 +156,7 @@ class Http:
             resp_ok = False
           else:
             self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
-            yield from asyncio.sleep(time_to_sleep)
+            await asyncio.sleep(time_to_sleep)
 
         else:
           response.raise_for_status()
@@ -178,10 +178,10 @@ class Http:
 
   async def fastStreamedQuery(self, url, *, headers=None, verify=True):
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
-    response = yield from self.session.get(url,
-                                           headers=self._buildHeaders(headers),
-                                           timeout=HTTP_SHORT_TIMEOUT_S,
-                                           ssl=verify)
+    response = await self.session.get(url,
+                                      headers=self._buildHeaders(headers),
+                                      timeout=HTTP_SHORT_TIMEOUT_S,
+                                      ssl=verify)
 
     response.raise_for_status()
 

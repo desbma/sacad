@@ -98,7 +98,7 @@ class AmazonDigitalCoverSource(CoverSource):
                                             __class__.DYNAPI_KEY,
                                             amazon_img_format.id,
                                             amazon_img_format.slice_count))
-          url_ok = yield from self.probeUrl(urls[-1])
+          url_ok = await self.probeUrl(urls[-1])
           if not url_ok:
             # images at this size are not available
             continue
