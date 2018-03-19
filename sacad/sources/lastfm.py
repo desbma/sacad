@@ -41,8 +41,7 @@ class LastFmCoverSource(CoverSource):
 
     return __class__.assembleUrl(__class__.BASE_URL, params)
 
-  @asyncio.coroutine
-  def parseResults(self, api_data):
+  async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
 

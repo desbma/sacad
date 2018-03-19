@@ -110,8 +110,7 @@ class CoverSourceResult:
       s += " [x%u]" % (len(self.urls))
     return s
 
-  @asyncio.coroutine
-  def get(self, target_format, target_size, size_tolerance_prct, out_filepath):
+  async def get(self, target_format, target_size, size_tolerance_prct, out_filepath):
     """ Download cover and process it. """
     if self.source_quality.value <= CoverSourceQuality.LOW.value:
       logging.getLogger("Cover").warning("Cover is from a potentially unreliable source and may be unrelated to the search")
@@ -123,8 +122,7 @@ class CoverSourceResult:
       headers = {}
       self.source.updateHttpHeaders(headers)
 
-      @asyncio.coroutine
-      def pre_cache_callback(img_data):
+      async def pre_cache_callback(img_data):
         return (yield from __class__.crunch(img_data, self.format))
 
       image_data = yield from self.source.http.query(url,
@@ -209,8 +207,7 @@ class CoverSourceResult:
              optimize=True)
     return out_bytes.getvalue()
 
-  @asyncio.coroutine
-  def updateImageMetadata(self):
+  async def updateImageMetadata(self):
     """ Partially download image file(s) to get its real metadata, or get it from cache. """
     assert(self.needMetadataUpdate())
 
@@ -322,8 +319,7 @@ class CoverSourceResult:
     self.size = size
     self.check_metadata &= ~CoverImageMetadata.SIZE
 
-  @asyncio.coroutine
-  def updateSignature(self):
+  async def updateSignature(self):
     """ Calculate a cover's "signature" using its thumbnail url. """
     assert(self.thumbnail_sig is None)
 
@@ -336,8 +332,7 @@ class CoverSourceResult:
     headers = {}
     self.source.updateHttpHeaders(headers)
 
-    @asyncio.coroutine
-    def pre_cache_callback(img_data):
+    async def pre_cache_callback(img_data):
       return (yield from __class__.crunch(img_data, CoverImageFormat.JPEG, silent=True))
 
     try:
@@ -450,8 +445,7 @@ class CoverSourceResult:
     return 0
 
   @staticmethod
-  @asyncio.coroutine
-  def crunch(image_data, format, silent=False):
+  async def crunch(image_data, format, silent=False):
     """ Crunch image data, and return the processed data, or orignal data if operation failed. """
     if (((format is CoverImageFormat.PNG) and (not HAS_OPTIPNG)) or
             ((format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM))):
@@ -501,8 +495,7 @@ class CoverSourceResult:
     return format, width, height
 
   @staticmethod
-  @asyncio.coroutine
-  def guessImageMetadataFromHttpData(response):
+  async def guessImageMetadataFromHttpData(response):
     """ Identify an image format and size from the beginning of its HTTP data. """
     metadata = None
     img_data = bytearray()
@@ -549,8 +542,7 @@ class CoverSourceResult:
         pass
 
   @staticmethod
-  @asyncio.coroutine
-  def preProcessForComparison(results, target_size, size_tolerance_prct):
+  async def preProcessForComparison(results, target_size, size_tolerance_prct):
     """ Process results to prepare them for future comparison and sorting. """
     # find reference (=image most likely to match target cover ignoring factors like size and format)
     reference = None

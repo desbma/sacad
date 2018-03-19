@@ -23,8 +23,7 @@ class AccessRateWatcher:
                                                                                     timestamp FLOAT NOT NULL);""")
     self.lock = asyncio.Lock()
 
-  @asyncio.coroutine
-  def waitAccessAsync(self):
+  async def waitAccessAsync(self):
     """ Wait the needed time before sending a request to honor rate limit. """
     with (yield from self.lock):
       while True:

@@ -42,12 +42,10 @@ class Http:
     future = asyncio.ensure_future(coroutine, loop=async_loop)
     asyncio.wait_for(future, None)
 
-  @asyncio.coroutine
-  def cleanup(self):
+  async def cleanup(self):
     yield from self.session.close()
 
-  @asyncio.coroutine
-  def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
+  async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
     if cache is not None:
       # try from cache first
@@ -121,8 +119,7 @@ class Http:
 
     return content
 
-  @asyncio.coroutine
-  def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
+  async def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
     """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
     if (cache is not None) and (url in cache):
       # try from cache first
@@ -179,8 +176,7 @@ class Http:
 
     return resp_ok
 
-  @asyncio.coroutine
-  def fastStreamedQuery(self, url, *, headers=None, verify=True):
+  async def fastStreamedQuery(self, url, *, headers=None, verify=True):
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
     response = yield from self.session.get(url,
                                            headers=self._buildHeaders(headers),

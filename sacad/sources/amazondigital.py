@@ -60,8 +60,7 @@ class AmazonDigitalCoverSource(CoverSource):
     """ See CoverSource.updateHttpHeaders. """
     headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
 
-  @asyncio.coroutine
-  def parseResults(self, api_data):
+  async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
     results = []
 

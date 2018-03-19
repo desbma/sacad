@@ -54,8 +54,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         row_count = len(cache)
         logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
-  @asyncio.coroutine
-  def search(self, album, artist):
+  async def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
     url_data = self.getSearchUrl(album, artist)
@@ -119,8 +118,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                                   " [x%u]" % (len(result.urls)) if len(result.urls) > 1 else ""))
     return results_kept
 
-  @asyncio.coroutine
-  def fetchResults(self, url, post_data=None):
+  async def fetchResults(self, url, post_data=None):
     """ Get search results froam an URL. """
     if post_data is not None:
       self.logger.debug("Querying URL '%s' %s..." % (url, dict(post_data)))
@@ -133,8 +131,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                                        headers=headers,
                                        cache=__class__.api_cache))
 
-  @asyncio.coroutine
-  def probeUrl(self, url, response_headers=None):
+  async def probeUrl(self, url, response_headers=None):
     """ Probe URL reachability from cache or HEAD request. """
     self.logger.debug("Probing URL '%s'..." % (url))
     headers = {}
@@ -178,7 +175,6 @@ class CoverSource(metaclass=abc.ABCMeta):
     pass
 
   @abc.abstractmethod
-  @asyncio.coroutine
-  def parseResults(self, api_data):
+  async def parseResults(self, api_data):
     """ Parse API data and return an iterable of results. """
     pass
