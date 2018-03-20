@@ -19,7 +19,7 @@ from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED
 
 
 async def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources,
-                        async_loop):
+                              async_loop):
   """ Search and download a cover, return True if success, False instead. """
   # register sources
   source_args = (size, size_tolerance_prct)

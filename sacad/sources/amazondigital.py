@@ -1,4 +1,3 @@
-import asyncio
 import collections
 import operator
 import urllib.parse

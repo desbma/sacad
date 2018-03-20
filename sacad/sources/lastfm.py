@@ -1,4 +1,3 @@
-import asyncio
 import collections
 import os.path
 import xml.etree.ElementTree
