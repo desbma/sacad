@@ -8,6 +8,7 @@ import socket
 import unittest
 import unittest.mock
 import urllib.parse
+import warnings
 
 import PIL.Image
 import requests
@@ -32,13 +33,16 @@ def is_internet_reachable():
 
 
 def download(url, filepath=None):
-  with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=(filepath is not None))) as response:
-    response.raise_for_status()
-    if filepath is None:
-      return response.content
-    with open(filepath, "wb") as f:
-      for chunk in response.iter_content(2 ** 14):
-        f.write(chunk)
+  with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
+
+    with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=(filepath is not None))) as response:
+      response.raise_for_status()
+      if filepath is None:
+        return response.content
+      with open(filepath, "wb") as f:
+        for chunk in response.iter_content(2 ** 14):
+          f.write(chunk)
 
 
 def sched_and_run(coroutine, async_loop):
