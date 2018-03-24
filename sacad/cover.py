@@ -88,14 +88,14 @@ class CoverSourceResult:
                                                            appauthor=False),
                                     "sacad-cache.sqlite")
       os.makedirs(os.path.dirname(cache_filepath), exist_ok=True)
-      __class__.image_cache = web_cache.ThreadedWebCache(cache_filepath,
-                                                         "cover_image_data",
-                                                         caching_strategy=web_cache.CachingStrategy.LRU,
-                                                         expiration=60 * 60 * 24 * 365)  # 1 year
-      __class__.metadata_cache = web_cache.ThreadedWebCache(cache_filepath,
-                                                            "cover_metadata",
-                                                            caching_strategy=web_cache.CachingStrategy.LRU,
-                                                            expiration=60 * 60 * 24 * 365)  # 1 year
+      __class__.image_cache = web_cache.WebCache(cache_filepath,
+                                                 "cover_image_data",
+                                                 caching_strategy=web_cache.CachingStrategy.LRU,
+                                                 expiration=60 * 60 * 24 * 365)  # 1 year
+      __class__.metadata_cache = web_cache.WebCache(cache_filepath,
+                                                    "cover_metadata",
+                                                    caching_strategy=web_cache.CachingStrategy.LRU,
+                                                    expiration=60 * 60 * 24 * 365)  # 1 year
       for cache, cache_name in zip((__class__.image_cache, __class__.metadata_cache),
                                    ("cover_image_data", "cover_metadata")):
         purged_count = cache.purge()
