@@ -47,10 +47,11 @@ def download(url, filepath=None):
 
 def sched_and_run(coroutine, async_loop):
   async def delay_coroutine(coroutine, delay):
-    await coroutine
+    r = await coroutine
     # time to cleanup aiohttp objects
     # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
     await asyncio.sleep(delay)
+    return r
   future = asyncio.ensure_future(delay_coroutine(coroutine, 0.5),
                                  loop=async_loop)
   async_loop.run_until_complete(future)
