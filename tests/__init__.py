@@ -46,12 +46,13 @@ def download(url, filepath=None):
 
 
 def sched_and_run(coroutine, async_loop):
-  try:
-    # python >= 3.4.4
-    future = asyncio.ensure_future(coroutine, loop=async_loop)
-  except AttributeError:
-    # python < 3.4.4
-    future = asyncio.async(coroutine, loop=async_loop)
+  async def delay_coroutine(coroutine, delay):
+    await coroutine
+    # time to cleanup aiohttp objects
+    # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
+    await asyncio.sleep(delay)
+  future = asyncio.ensure_future(delay_coroutine(coroutine, 0.5),
+                                 loop=async_loop)
   async_loop.run_until_complete(future)
   return future.result()
 

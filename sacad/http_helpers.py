@@ -27,8 +27,9 @@ class Http:
       cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
       cookie_jar = None
+    self.async_loop = asyncio.get_event_loop()
     self.session = aiohttp.ClientSession(cookie_jar=cookie_jar,
-                                         loop=asyncio.get_event_loop())
+                                         loop=self.async_loop)
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
@@ -36,14 +37,7 @@ class Http:
     self.logger = logger
 
   def __del__(self):
-    # silences a warning on shutdown
-    async_loop = asyncio.get_event_loop()
-    coroutine = self.cleanup()
-    future = asyncio.ensure_future(coroutine, loop=async_loop)
-    asyncio.wait_for(future, None)
-
-  async def cleanup(self):
-    await self.session.close()
+    asyncio.ensure_future(self.session.close(), loop=self.async_loop)
 
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
