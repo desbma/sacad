@@ -40,19 +40,19 @@ install:
   - "if [ $NATIVE_TEST -eq 1 ]; then pip install -r requirements.txt; fi"
   - "if [ $NATIVE_TEST -eq 1 ]; then pip install coveralls; fi"
   - "if [ $NATIVE_TEST -eq 1 ]; then sudo apt-get -V install optipng jpegoptim; fi"
-  - "if [ $WINDOWS_TEST -eq 1 ]; then sudo apt-get -V install winehq-stable xvfb p7zip-full; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then sudo apt-get -V install winehq-stable p7zip-full; fi"
 script:
   - "if [ $NATIVE_TEST -eq 1 ]; then travis_retry coverage run --source=sacad setup.py test; fi"
-  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 xvfb-run make test && popd; fi"
-  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 xvfb-run make test && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 make test && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 make test && popd; fi"
 after_success:
   - "if [ $NATIVE_TEST -eq 1 ]; coveralls; fi"
 before_deploy:
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
-  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win32 xvfb-run make all && popd; fi"
-  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win64 xvfb-run make all && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win32 make all && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win64 make all && popd; fi"
 deploy:
   - provider: releases
     api_key:
