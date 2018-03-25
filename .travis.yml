@@ -8,48 +8,51 @@ cache:
 matrix:
   include:
     - python: "3.5"
-      env: WINDOWS=0 PYPI_DEPLOY=0
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.5-dev"
-      env: WINDOWS=0 PYPI_DEPLOY=0
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.6"
-      env: WINDOWS=1 PYPI_DEPLOY=1
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=1
+    - python: "3.6"
+      env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
     - python: "3.6-dev"
-      env: WINDOWS=0 PYPI_DEPLOY=0
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.7-dev"
-      env: WINDOWS=0 PYPI_DEPLOY=0
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "pypy3"
-      env: WINDOWS=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=5.10.0 PYPY3_SHA256=d03f81f26e5e67d808569c5c69d56ceb007df78f7e36ab1c50da4d9096cebde0
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=5.10.0 PYPY3_SHA256=d03f81f26e5e67d808569c5c69d56ceb007df78f7e36ab1c50da4d9096cebde0
   allow_failures:
     - python: "3.5-dev"
     - python: "3.6-dev"
     - python: "3.7-dev"
     - python: "pypy3"
+    - env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
   fast_finish: true
 before_install:
   - "export CI_CACHE_DIR=~/.cache/ci/sacad"
-  - "if [ $WINDOWS -eq 1 ]; then curl https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add - && sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then curl https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add - && sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/; fi"
   - "sudo apt-get -q update"
   - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3' ]; then pip install -U pip; fi"
   - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then mkdir -p $CI_CACHE_DIR/pypy && echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
   - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
 install:
-  - "sudo apt-get -V install libxml2-dev libxslt1-dev"  # lxml dependencies
-  - "pip install -r requirements.txt"
-  - "pip install coveralls"
-  - "sudo apt-get -V install optipng jpegoptim"
-  - "if [ $WINDOWS -eq 1 ]; then sudo apt-get -V install winehq-stable p7zip-full; fi"
+  - "if [ $NATIVE_TEST -eq 1 ]; then sudo apt-get -V install libxml2-dev libxslt1-dev; fi"  # lxml dependencies
+  - "if [ $NATIVE_TEST -eq 1 ]; then pip install -r requirements.txt; fi"
+  - "if [ $NATIVE_TEST -eq 1 ]; then pip install coveralls; fi"
+  - "if [ $NATIVE_TEST -eq 1 ]; then sudo apt-get -V install optipng jpegoptim; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then sudo apt-get -V install winehq-stable xvfb p7zip-full; fi"
 script:
-  - "travis_retry coverage run --source=sacad setup.py test"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 make test && popd; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 make test && popd; fi"
+  - "if [ $NATIVE_TEST -eq 1 ]; then travis_retry coverage run --source=sacad setup.py test; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 xvfb-run make test && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 xvfb-run make test && popd; fi"
 after_success:
-  - "coveralls"
+  - "if [ $NATIVE_TEST -eq 1 ]; coveralls; fi"
 before_deploy:
   - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
   - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && WINEARCH=win32 make all && popd; fi"
-  - "if [ $WINDOWS -eq 1 ]; then pushd win && WINEARCH=win64 make all && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win32 xvfb-run make all && popd; fi"
+  - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win64 xvfb-run make all && popd; fi"
 deploy:
   - provider: releases
     api_key:
@@ -65,7 +68,7 @@ deploy:
     on:
       tags: true
       branch: master
-      condition: $WINDOWS = 1
+      condition: $WINDOWS_TEST = 1
   - provider: pypi
     user: desbma
     password:
