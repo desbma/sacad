@@ -139,7 +139,7 @@ class Http:
           async with self.session.head(url,
                                        headers=self._buildHeaders(headers),
                                        timeout=HTTP_SHORT_TIMEOUT_S,
-                                       ssl=verify):
+                                       ssl=verify) as response:
             pass
 
         except (asyncio.TimeoutError, aiohttp.ClientError) as e:
