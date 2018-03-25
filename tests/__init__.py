@@ -45,14 +45,15 @@ def download(url, filepath=None):
           f.write(chunk)
 
 
-def sched_and_run(coroutine, async_loop):
+def sched_and_run(coroutine, async_loop, delay=0):
   async def delay_coroutine(coroutine, delay):
     r = await coroutine
-    # time to cleanup aiohttp objects
-    # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
-    await asyncio.sleep(delay)
+    if delay > 0:
+      # time to cleanup aiohttp objects
+      # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
+      await asyncio.sleep(delay)
     return r
-  future = asyncio.ensure_future(delay_coroutine(coroutine, 0.5),
+  future = asyncio.ensure_future(delay_coroutine(coroutine, delay),
                                  loop=async_loop)
   async_loop.run_until_complete(future)
   return future.result()
@@ -88,7 +89,7 @@ class TestSacad(unittest.TestCase):
                                                     amazon_tlds=(),
                                                     no_lq_sources=False,
                                                     async_loop=async_loop)
-              sched_and_run(coroutine, async_loop)
+              sched_and_run(coroutine, async_loop, delay=0.5)
               out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
               self.assertEqual(out_format, format)
               self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
@@ -119,7 +120,7 @@ class TestSacad(unittest.TestCase):
                                       source_quality=sacad.cover.CoverSourceQuality.NORMAL,
                                       check_metadata=sacad.cover.CoverImageMetadata.ALL)
       coroutine = cover.updateImageMetadata()
-      sched_and_run(coroutine, async_loop)
+      sched_and_run(coroutine, async_loop, delay=0.5)
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)
       self.assertGreaterEqual(sacad.CoverSourceResult.guessImageMetadataFromData.call_count, 0)
@@ -162,9 +163,9 @@ class TestSacad(unittest.TestCase):
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
           with self.subTest(size=size, source=source, artist=artist, album=album):
             coroutine = source.search(album, artist)
-            results = sched_and_run(coroutine, async_loop)
+            results = sched_and_run(coroutine, async_loop, delay=0.5)
             coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
-            results = sched_and_run(coroutine, async_loop)
+            results = sched_and_run(coroutine, async_loop, delay=0.5)
             if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
                     ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
                     (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
@@ -180,7 +181,7 @@ class TestSacad(unittest.TestCase):
     size = 290
     source = sacad.sources.AmazonCdCoverSource(size, 0, tld="de")
     coroutine = source.search("Dream Dance 5", "Various")
-    results = sched_and_run(coroutine, async_loop)
+    results = sched_and_run(coroutine, async_loop, delay=0.5)
     self.assertGreaterEqual(len(results), 1)
     for result in results:
       self.assertTrue(result.urls)
