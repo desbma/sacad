@@ -247,9 +247,10 @@ class CoverSourceResult:
         try:
           headers = {}
           self.source.updateHttpHeaders(headers)
-          async with self.source.http.fastStreamedQuery(url,
-                                                        headers=headers,
-                                                        verify=False) as response:
+          response = await self.source.http.fastStreamedQuery(url,
+                                                              headers=headers,
+                                                              verify=False)
+          try:
             if self.needMetadataUpdate(CoverImageMetadata.FORMAT):
               # try to get format from response
               format = __class__.guessImageFormatFromHttpResponse(response)
@@ -263,6 +264,9 @@ class CoverSourceResult:
                 format, width, height = metadata
                 if format is not None:
                   self.setFormatMetadata(format)
+
+          finally:
+            response.release()
 
         except Exception as e:
           logging.getLogger("Cover").warning("Failed to get file metadata for URL '%s' "
