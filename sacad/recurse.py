@@ -12,7 +12,6 @@ import itertools
 import logging
 import operator
 import os
-import sys
 import tempfile
 
 import mutagen
@@ -232,11 +231,12 @@ def get_covers(work, args):
       # post work
       async_loop = asyncio.get_event_loop()
       i = 0
-      if sacad.ENABLE_ASYNCIO_LOW_FD_LIMIT_WORKAROUND:
-        # work in smaller chunks to avoid hitting fd limit
-        work_chunk_length = 16
-      else:
-        work_chunk_length = sys.maxsize
+      # default event loop on Windows has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
+      # also on Linux default max open fd limit is 1024 (ulimit -n)
+      # so work in smaller chunks to avoid hitting fd limit
+      # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
+      # getting to the next one)
+      work_chunk_length = 16
       for work_chunk in ichunk(work.items(), work_chunk_length):
         futures = {}
         for i, (path, (artist, album)) in enumerate(work_chunk, i):
