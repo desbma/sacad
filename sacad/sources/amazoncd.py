@@ -69,9 +69,19 @@ class AmazonCdCoverSource(CoverSource):
                              # consuming (1 more GET request per result)
         product_url = __class__.PRODUCT_LINK_SELECTOR(result_div)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
+        if not product_url.scheme:
+          # relative redirect url
+          product_url_query = urllib.parse.parse_qsl(product_url.query)
+          product_url_query = collections.OrderedDict(product_url_query)
+          product_url = product_url_query["url"]
+          product_url = urllib.parse.urlsplit(product_url)
         product_url_query = urllib.parse.parse_qsl(product_url.query)
         product_url_query = collections.OrderedDict(product_url_query)
-        del product_url_query["qid"]  # remove timestamp from url to improve future cache hit rate
+        try:
+          # remove timestamp from url to improve future cache hit rate
+          del product_url_query["qid"]
+        except KeyError:
+          pass
         product_url_query = urllib.parse.urlencode(product_url_query)
         product_url_no_ts = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
         store_in_cache_callback, product_page_data = await self.fetchResults(product_url_no_ts)
