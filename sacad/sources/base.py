@@ -67,7 +67,7 @@ class CoverSource(metaclass=abc.ABCMeta):
       store_in_cache_callback, api_data = await self.fetchResults(url, post_data)
       results = await self.parseResults(api_data)
     except Exception as e:
-      raise
+      # raise
       self.logger.warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
                                                                      e.__class__.__qualname__,
                                                                      e))
