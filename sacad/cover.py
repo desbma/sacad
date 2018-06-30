@@ -125,11 +125,14 @@ class CoverSourceResult:
       async def pre_cache_callback(img_data):
         return await __class__.crunch(img_data, self.format)
 
-      image_data = await self.source.http.query(url,
-                                                headers=headers,
-                                                verify=False,
-                                                cache=__class__.image_cache,
-                                                pre_cache_callback=pre_cache_callback)
+      store_in_cache_callback, image_data = await self.source.http.query(url,
+                                                                         headers=headers,
+                                                                         verify=False,
+                                                                         cache=__class__.image_cache,
+                                                                         pre_cache_callback=pre_cache_callback)
+
+      # store immediately in cache
+      await store_in_cache_callback()
 
       # append for multi images
       images_data.append(image_data)
@@ -336,10 +339,10 @@ class CoverSourceResult:
       return await __class__.crunch(img_data, CoverImageFormat.JPEG, silent=True)
 
     try:
-      image_data = await self.source.http.query(self.thumbnail_url,
-                                                cache=__class__.image_cache,
-                                                headers=headers,
-                                                pre_cache_callback=pre_cache_callback)
+      store_in_cache_callback, image_data = await self.source.http.query(self.thumbnail_url,
+                                                                         cache=__class__.image_cache,
+                                                                         headers=headers,
+                                                                         pre_cache_callback=pre_cache_callback)
     except Exception as e:
       logging.getLogger("Cover").warning("Download of '%s' failed: %s %s" % (self.thumbnail_url,
                                                                              e.__class__.__qualname__,
@@ -354,6 +357,8 @@ class CoverSourceResult:
       logging.getLogger("Cover").warning("Failed to compute signature of '%s': %s %s" % (self,
                                                                                          e.__class__.__qualname__,
                                                                                          e))
+    else:
+      await store_in_cache_callback()
 
   @staticmethod
   def compare(first, second, *, target_size, size_tolerance_prct):

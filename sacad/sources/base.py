@@ -38,7 +38,7 @@ class CoverSource(metaclass=abc.ABCMeta):
       __class__.api_cache = web_cache.WebCache(db_filepath,
                                                "cover_source_api_data",
                                                caching_strategy=web_cache.CachingStrategy.FIFO,
-                                               expiration=random.randint(day_s * 2, day_s * 3),  # 2-3 days
+                                               expiration=random.randint(day_s * 7, day_s * 14),  # 1-2 weeks
                                                compression=web_cache.Compression.DEFLATE)
       __class__.probe_cache = web_cache.WebCache(db_filepath,
                                                  "cover_source_probe_data",
@@ -64,14 +64,18 @@ class CoverSource(metaclass=abc.ABCMeta):
       url = url_data
       post_data = None
     try:
-      api_data = await self.fetchResults(url, post_data)
+      store_in_cache_callback, api_data = await self.fetchResults(url, post_data)
       results = await self.parseResults(api_data)
     except Exception as e:
-      # raise
+      raise
       self.logger.warning("Search with source '%s' failed: %s %s" % (self.__class__.__name__,
                                                                      e.__class__.__qualname__,
                                                                      e))
       return ()
+    else:
+      if results:
+        # only store in cache if parsing succeeds and we have results
+        await store_in_cache_callback()
 
     # get metadata
     futures = []
@@ -119,7 +123,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     return results_kept
 
   async def fetchResults(self, url, post_data=None):
-    """ Get search results froam an URL. """
+    """ Get a (store in cache callback, search results) tuple from an URL. """
     if post_data is not None:
       self.logger.debug("Querying URL '%s' %s..." % (url, dict(post_data)))
     else:

@@ -40,16 +40,18 @@ class Http:
     asyncio.ensure_future(self.session.close(), loop=self.async_loop)
 
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
-    """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of cache status, response content. """
+    """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache callback, response content. """
+    async def store_in_cache_callback():
+      pass
     if cache is not None:
       # try from cache first
       if post_data is not None:
         if (url, post_data) in cache:
           self.logger.debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
-          return cache[(url, post_data)]
+          return store_in_cache_callback, cache[(url, post_data)]
       elif url in cache:
         self.logger.debug("Got data for URL '%s' from cache" % (url))
-        return cache[url]
+        return store_in_cache_callback, cache[url]
 
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
@@ -79,20 +81,21 @@ class Http:
             content = await response.read()
 
         if cache is not None:
-          if pre_cache_callback is not None:
-            # process
-            try:
-              data = await pre_cache_callback(content)
-            except Exception:
+          async def store_in_cache_callback():
+            if pre_cache_callback is not None:
+              # process
+              try:
+                data = await pre_cache_callback(content)
+              except Exception:
+                data = content
+            else:
               data = content
-          else:
-            data = content
 
-          # add to cache
-          if post_data is not None:
-            cache[(url, post_data)] = data
-          else:
-            cache[url] = data
+            # add to cache
+            if post_data is not None:
+              cache[(url, post_data)] = data
+            else:
+              cache[url] = data
 
       except (asyncio.TimeoutError, aiohttp.ClientError) as e:
         self.logger.warning("Querying '%s' failed (attempt %u/%u): %s %s" % (url,
@@ -109,10 +112,9 @@ class Http:
       else:
         break  # http retry loop
 
-    # TODO don't store in cache if this raises
     response.raise_for_status()
 
-    return content
+    return store_in_cache_callback, content
 
   async def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
     """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """

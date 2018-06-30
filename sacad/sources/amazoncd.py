@@ -74,7 +74,7 @@ class AmazonCdCoverSource(CoverSource):
         del product_url_query["qid"]  # remove timestamp from url to improve future cache hit rate
         product_url_query = urllib.parse.urlencode(product_url_query)
         product_url_no_ts = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
-        product_page_data = await self.fetchResults(product_url_no_ts)
+        store_in_cache_callback, product_page_data = await self.fetchResults(product_url_no_ts)
         product_page_html = lxml.etree.XML(product_page_data.decode("latin-1"), parser)
         try:
           img_node = __class__.PRODUCT_PAGE_IMG_SELECTOR(product_page_html)[0]
@@ -92,6 +92,7 @@ class AmazonCdCoverSource(CoverSource):
             size_url_hint = int(size_url_hint[2:])
             size = (size_url_hint, size_url_hint)
             check_metadata = CoverImageMetadata.NONE
+          await store_in_cache_callback()
 
       # assume format is always jpg
       format = CoverImageFormat.JPEG
