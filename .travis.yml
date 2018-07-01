@@ -15,9 +15,13 @@ matrix:
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=1
     - python: "3.6"
       env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
+    - python: "3.7"
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.6-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.7-dev"
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
+    - python: "3.8-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "pypy3"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=6.0.0 PYPY3_SHA256=07f16282d126abfa759702baea869b0f661aa97f4c553ebec66c624bda28155f
@@ -25,6 +29,7 @@ matrix:
     - python: "3.5-dev"
     - python: "3.6-dev"
     - python: "3.7-dev"
+    - python: "3.8-dev"
     - python: "pypy3"
     - env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
   fast_finish: true
