@@ -33,7 +33,7 @@ AUDIO_EXTENSIONS = frozenset(("aac",
                               "wv"))
 
 
-def analyze_lib(lib_dir, cover_filename):
+def analyze_lib(lib_dir, cover_filename, *, ignore_existing=False):
   """ Recursively analyze library, and return a dict of path -> (artist, album). """
   work = {}
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
@@ -46,7 +46,8 @@ def analyze_lib(lib_dir, cover_filename):
                              rootpath,
                              rel_filepaths,
                              cover_filename,
-                             failed_dirs)
+                             failed_dirs,
+                             ignore_existing=ignore_existing)
       progress.set_postfix(stats)
       progress.update(1)
       if all(metadata[:-1]):
@@ -106,7 +107,7 @@ def get_metadata(audio_filepaths):
   return artist, album, has_embedded_album_art
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, *, ignore_existing=False):
   """ Analyze a directory (non recursively) to get its album metadata if it is one. """
   no_metadata = None, None, None
   metadata = no_metadata
@@ -128,6 +129,8 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs):
     else:
       metadata = get_metadata(audio_filepaths)
       missing = not metadata[2]
+    if ignore_existing:
+      missing = True
     if missing:
       stats["missing covers"] += 1
       if not all(metadata[:-1]):
@@ -289,6 +292,11 @@ def cl_main():
   arg_parser.add_argument("filename",
                           help="Cover image filename ('%s' to embed JPEG into audio files)" % (EMBEDDED_ALBUM_ART_SYMBOL))
   sacad.setup_common_args(arg_parser)
+  arg_parser.add_argument("-i",
+                          "--ignore-existing",
+                          action="store_true",
+                          default=False,
+                          help="Ignore existing covers and force search and download for all files")
   args = arg_parser.parse_args()
   if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
     args.format = "jpg"
@@ -304,7 +312,7 @@ def cl_main():
   logging.basicConfig(format="%(asctime)s %(process)d %(threadName)s: %(message)s", level=logging.ERROR)
 
   # do the job
-  work = analyze_lib(args.lib_dir, args.filename)
+  work = analyze_lib(args.lib_dir, args.filename, ignore_existing=args.ignore_existing)
   get_covers(work, args)
 
 
