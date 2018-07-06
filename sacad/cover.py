@@ -374,14 +374,15 @@ class CoverSourceResult:
       1. Prefer approximately square covers
       2. Prefer covers similar to the reference cover
       3. Prefer size above target size
-      4. Prefer covers of reliable source
-      5. Prefer best ranked cover
-      6. Prefer covers with reliable metadata
+      4. If both below target size, prefer closest
+      5. Prefer covers of most reliable source
+      6. Prefer best ranked cover
+      7. Prefer covers with reliable metadata
     If all previous factors do not allow sorting of two results (very unlikely):
-      7. Prefer covers with less images to join
-      8. Prefer covers having the target size
-      9. Prefer PNG covers
-      10. Prefer exactly square covers
+      8. Prefer covers with less images to join
+      9. Prefer covers having the target size
+      10. Prefer PNG covers
+      11. Prefer exactly square covers
 
     We don't overload the __lt__ operator because we need to pass the target_size parameter.
 
@@ -411,7 +412,11 @@ class CoverSourceResult:
             (delta_size1 >= 0) and (delta_size2 < 0)):
       return -1 if (delta_size1 < delta_size2) else 1
 
-    # prefer covers of reliable source
+    # if both below target size, prefer closest
+    if (delta_size1 < 0) and (delta_size2 < 0) and (delta_size1 != delta_size2):
+      return -1 if (delta_size1 < delta_size2) else 1
+
+    # prefer covers of most reliable source
     qs1 = first.source_quality.value
     qs2 = second.source_quality.value
     if qs1 != qs2:
