@@ -16,6 +16,8 @@ with open(os.path.join("sacad", "__init__.py"), "rt") as f:
 
 with open("requirements.txt", "rt") as f:
   requirements = f.read().splitlines()
+if sys.platform == "win32":
+  requirements.append("idna==2.6")
 
 with open("test-requirements.txt", "rt") as f:
   test_requirements = f.read().splitlines()
