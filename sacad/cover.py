@@ -10,6 +10,7 @@ import operator
 import os
 import pickle
 import shutil
+import statistics
 import urllib.parse
 
 import appdirs
@@ -629,8 +630,7 @@ class CoverSourceResult:
     """
     Calculate an image signature.
 
-    The "signature" is in fact a IMG_SIG_SIZE x IMG_SIG_SIZE matrix of 24 bits RGB pixels.
-    It is obtained through simple downsizing.
+    ahash see: https://github.com/JohannesBuchner/imagehash/blob/4.0/imagehash/__init__.py#L125
 
     """
     parser = PIL.ImageFile.Parser()
@@ -641,22 +641,23 @@ class CoverSourceResult:
     if img.size != target_size:
       logging.getLogger("Cover").debug("Non square thumbnail after resize to %ux%u, unable to compute signature" % target_size)
       return None
-    img = img.convert(mode="RGB")
-    return bytes(itertools.chain.from_iterable(img.getdata()))
+    img = img.convert(mode="L")
+    pixels = img.getdata()
+    mean = statistics.mean(pixels)
+    r = 0
+    for i, p in enumerate(pixels):
+      if p > mean:
+        r |= 1 << i
+    return r
 
   @staticmethod
   def areImageSigsSimilar(sig1, sig2):
-    """
-    Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise.
-
-    This is determined by first calculating the average square distance by pixel between the two image signatures (wich
-    are in fact just a very downsized image), and then comparing the value with an empirically deduced threshold.
-    Stupid simple, but it seems to work pretty well.
-
-    """
-    delta = sum((b1 - b2) ** 2 for b1, b2 in zip(sig1, sig2))
-    delta = delta / (__class__.IMG_SIG_SIZE * __class__.IMG_SIG_SIZE * 3)
-    return delta < 2000
+    """ Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise. """
+    # get the hamming distance between 2 ahashes
+    s1 = bin(sig1)[2:]
+    s2 = bin(sig2)[2:]
+    hamming = sum(int(b1 != b2) for b1, b2 in zip(s1, s2))
+    return hamming < 100
 
 
 # silence third party module loggers
