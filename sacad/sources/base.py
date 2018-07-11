@@ -5,6 +5,7 @@ import logging
 import operator
 import os
 import random
+import string
 import unicodedata
 import urllib.parse
 
@@ -57,6 +58,8 @@ class CoverSource(metaclass=abc.ABCMeta):
   async def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
+    album = __class__.unpunctuate(album)
+    artist = __class__.unpunctuate(artist)
     url_data = self.getSearchUrl(album, artist)
     if isinstance(url_data, tuple):
       url, post_data = url_data
@@ -160,6 +163,11 @@ class CoverSource(metaclass=abc.ABCMeta):
   def unaccentuate(s):
     """ Replace accentuated chars in string by their non accentuated equivalent. """
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
+
+  @staticmethod
+  def unpunctuate(s):
+    """ Remove punctuation from string s. """
+    return "".join(c for c in s if c not in string.punctuation)
 
   @abc.abstractmethod
   def getSearchUrl(self, album, artist):
