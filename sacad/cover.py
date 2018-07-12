@@ -10,7 +10,6 @@ import operator
 import os
 import pickle
 import shutil
-import statistics
 import urllib.parse
 
 import appdirs
@@ -630,7 +629,8 @@ class CoverSourceResult:
     """
     Calculate an image signature.
 
-    ahash see: https://github.com/JohannesBuchner/imagehash/blob/4.0/imagehash/__init__.py#L125
+    This is similar to ahash but uses 3 colors components
+    See: https://github.com/JohannesBuchner/imagehash/blob/4.0/imagehash/__init__.py#L125
 
     """
     parser = PIL.ImageFile.Parser()
@@ -641,13 +641,16 @@ class CoverSourceResult:
     if img.size != target_size:
       logging.getLogger("Cover").debug("Non square thumbnail after resize to %ux%u, unable to compute signature" % target_size)
       return None
-    img = img.convert(mode="L")
+    img = img.convert(mode="RGB")
     pixels = img.getdata()
-    mean = statistics.mean(pixels)
+    pixel_count = target_size[0] * target_size[1]
+    color_count = 3
     r = 0
-    for i, p in enumerate(pixels):
-      if p > mean:
-        r |= 1 << i
+    for ic in range(color_count):
+      mean = sum(p[ic] for p in pixels) // pixel_count
+      for ip, p in enumerate(pixels):
+        if p[ic] > mean:
+          r |= 1 << (pixel_count * ic + ip)
     return r
 
   @staticmethod
