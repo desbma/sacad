@@ -13,6 +13,7 @@ import shutil
 import urllib.parse
 
 import appdirs
+import bitarray
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
@@ -645,22 +646,19 @@ class CoverSourceResult:
     pixels = img.getdata()
     pixel_count = target_size[0] * target_size[1]
     color_count = 3
-    r = 0
+    r = bitarray.bitarray(pixel_count * color_count)
+    r.setall(False)
     for ic in range(color_count):
       mean = sum(p[ic] for p in pixels) // pixel_count
       for ip, p in enumerate(pixels):
         if p[ic] > mean:
-          r |= 1 << (pixel_count * ic + ip)
+          r[pixel_count * ic + ip] = True
     return r
 
   @staticmethod
   def areImageSigsSimilar(sig1, sig2):
     """ Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise. """
-    # get the hamming distance between 2 ahashes
-    s1 = bin(sig1)[2:]
-    s2 = bin(sig2)[2:]
-    hamming = sum(int(b1 != b2) for b1, b2 in zip(s1, s2))
-    return hamming < 100
+    return bitarray.bitdiff(sig1, sig2) < 100
 
 
 # silence third party module loggers

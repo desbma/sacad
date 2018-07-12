@@ -7,6 +7,7 @@ PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subs
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
 CXFREEZE_VERSION     := 5.1.1
 LXML_VERSION         := 4.2.0
+BITARRAY_VERSION     := 0.8.3
 
 # installers
 DOWNLOAD_DIR            ?= dl
@@ -19,6 +20,9 @@ CXFREEZE_WHEEL          := ${CXFREEZE_WHEEL-${WINEARCH}}
 LXML_WHEEL-win32        := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-${WINEARCH}.whl
 LXML_WHEEL-win64        := ${DOWNLOAD_DIR}/lxml-${LXML_VERSION}-cp${PYTHON_VERSION_SHORT}-none-win_amd64.whl
 LXML_WHEEL              := ${LXML_WHEEL-${WINEARCH}}
+BITARRAY_WHEEL-win32    := ${DOWNLOAD_DIR}/bitarray-${BITARRAY_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-${WINEARCH}.whl
+BITARRAY_WHEEL-win64    := ${DOWNLOAD_DIR}/bitarray-${BITARRAY_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}m-win_amd64.whl
+BITARRAY_WHEEL          := ${BITARRAY_WHEEL-${WINEARCH}}
 7ZIP_INSTALLER          := ${DOWNLOAD_DIR}/7z938.msi
 
 # env
@@ -31,6 +35,7 @@ PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.e
 CXFREEZE_INSTALLED := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/cxfreeze
 PIP_INSTALLED      := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Scripts/pip.exe
 LXML_INSTALLED     := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site-packages/lxml/__init__.py
+BITARRAY_INSTALLED := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/Lib/site-packages/bitarray/__init__.py
 7ZIP_INSTALLED     := ${WINE_DIR}/drive_c/7-Zip/7z.sfx
 
 # temp dirs
@@ -67,7 +72,7 @@ sacad_${WINEARCH}.exe: ${7ZIP_INSTALLED} sacad_${WINEARCH}.7z
 # Intermediate targets
 #
 
-${OUTPUT_DIR}/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} .requirements
+${OUTPUT_DIR}/sacad.exe: ${CXFREEZE_INSTALLED} ${LXML_INSTALLED} ${BITARRAY_INSTALLED} .requirements
 	mkdir -p $(dir $@)
 	cd .. && ${WINE} ${PYTHON_INSTALLED} freeze.py build_exe -b win/${OUTPUT_DIR} 2> /dev/null > /dev/null
 	touch $@
@@ -95,7 +100,7 @@ ${OUTPUT_DIR}/readme.txt:
 # Tests
 #
 
-test_ut: ${LXML_INSTALLED} .requirements
+test_ut: ${LXML_INSTALLED} ${BITARRAY_INSTALLED} .requirements
 	cd .. && ${WINE} ${PYTHON_INSTALLED} setup.py test
 
 test_freeze:: ${TEST_LIB_DIR}/test.jpg ${TEST_LIB_DIR}/test.png
@@ -136,6 +141,10 @@ ${LXML_INSTALLED}: ${LXML_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
 	${WINE} ${PYTHON_INSTALLED} -m pip -qqq install $<
 	touch $@
 
+${BITARRAY_INSTALLED}: ${BITARRAY_WHEEL} ${PIP_INSTALLED} ${PYTHON_INSTALLED}
+	${WINE} ${PYTHON_INSTALLED} -m pip -qqq install $<
+	touch $@
+
 ${7ZIP_INSTALLED}: ${7ZIP_INSTALLER}
 	${WINE} msiexec /i $< /qb INSTALLDIR='c:\7-Zip'
 	touch $@
@@ -164,6 +173,14 @@ ${LXML_WHEEL-win32}:
 ${LXML_WHEEL-win64}:
 	mkdir -p $(dir $@)
 	${CURL} https://www.dropbox.com/s/1p0nt3z49enp7x0/$(notdir $@) > $@
+
+${BITARRAY_WHEEL-win32}:
+	mkdir -p $(dir $@)
+	${CURL} https://www.dropbox.com/s/wiwhdyu4p2fjdl7/$(notdir $@) > $@
+
+${BITARRAY_WHEEL-win64}:
+	mkdir -p $(dir $@)
+	${CURL} https://www.dropbox.com/s/64nl2ug32z4yf8v/$(notdir $@) > $@
 
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)
