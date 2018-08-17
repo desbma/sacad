@@ -62,7 +62,7 @@ class TestRecursive(unittest.TestCase):
 
     cls.album3_dir = os.path.join(cls.temp_dir.name, "album3")
     os.mkdir(cls.album3_dir)
-    url = "https://allthingsaudio.wikispaces.com/file/view/Shuffle%20for%20K.M.mp3/139190697/Shuffle%20for%20K.M.mp3"
+    url = r"https://www.dropbox.com/s/mtac0y8azs5hqxo/Shuffle%2520for%2520K.M.mp3?dl=1"
     download(url, os.path.join(cls.album3_dir, "1 track.mp3"))
 
     cls.album4_dir = os.path.join(cls.temp_dir.name, "album4")
