@@ -11,9 +11,17 @@ from sacad import rate_watcher
 from sacad import redo
 
 
+def aiohttp_socket_timeout(socket_timeout_s):
+  """ Return a aiohttp.ClientTimeout object with only socket timeouts set. """
+  return aiohttp.ClientTimeout(total=None,
+                               connect=None,
+                               sock_connect=socket_timeout_s,
+                               sock_read=socket_timeout_s)
+
+
 IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
-HTTP_NORMAL_TIMEOUT_S = 30.1 if IS_TRAVIS else 9.1
-HTTP_SHORT_TIMEOUT_S = 12.1 if IS_TRAVIS else 3.1
+HTTP_NORMAL_TIMEOUT = aiohttp_socket_timeout(30.1 if IS_TRAVIS else 9.1)
+HTTP_SHORT_TIMEOUT = aiohttp_socket_timeout(12.1 if IS_TRAVIS else 3.1)
 HTTP_MAX_ATTEMPTS = 6 if IS_TRAVIS else 3
 HTTP_MAX_RETRY_SLEEP_S = 0 if IS_TRAVIS else 5
 HTTP_MAX_RETRY_SLEEP_SHORT_S = 0 if IS_TRAVIS else 2
@@ -70,13 +78,13 @@ class Http:
           async with self.session.post(url,
                                        data=post_data,
                                        headers=self._buildHeaders(headers),
-                                       timeout=HTTP_NORMAL_TIMEOUT_S,
+                                       timeout=HTTP_NORMAL_TIMEOUT,
                                        ssl=verify) as response:
             content = await response.read()
         else:
           async with self.session.get(url,
                                       headers=self._buildHeaders(headers),
-                                      timeout=HTTP_NORMAL_TIMEOUT_S,
+                                      timeout=HTTP_NORMAL_TIMEOUT,
                                       ssl=verify) as response:
             content = await response.read()
 
@@ -140,7 +148,7 @@ class Http:
         try:
           async with self.session.head(url,
                                        headers=self._buildHeaders(headers),
-                                       timeout=HTTP_SHORT_TIMEOUT_S,
+                                       timeout=HTTP_SHORT_TIMEOUT,
                                        ssl=verify) as response:
             pass
 
@@ -178,7 +186,7 @@ class Http:
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
     response = await self.session.get(url,
                                       headers=self._buildHeaders(headers),
-                                      timeout=HTTP_SHORT_TIMEOUT_S,
+                                      timeout=HTTP_SHORT_TIMEOUT,
                                       ssl=verify)
 
     response.raise_for_status()
