@@ -98,7 +98,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     for result in results:
       if ((result.size[0] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or  # skip too small images
               (result.size[1] + (self.size_tolerance_prct * self.target_size / 100) < self.target_size) or
-              (result.format not in CoverImageFormat) or  # unknown format
+              (result.format is None) or  # unknown format
               result.needMetadataUpdate()):  # if still true, it means we failed to grab metadata, so exclude it
         if result.source_quality is CoverSourceQuality.REFERENCE:
           # we keep this result just for the reference, it will be excluded from the results
