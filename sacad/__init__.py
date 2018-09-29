@@ -138,7 +138,10 @@ def cl_main():
   logging_handler = logging.StreamHandler()
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
-  logging.getLogger("asyncio").setLevel(logging.WARNING)
+  if logging_level[args.verbosity] == logging.DEBUG:
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+  else:
+    logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
 
   # display warning if optipng or jpegoptim are missing
   if not HAS_JPEGOPTIM:
