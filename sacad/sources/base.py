@@ -167,7 +167,10 @@ class CoverSource(metaclass=abc.ABCMeta):
   @staticmethod
   def unpunctuate(s):
     """ Remove punctuation from string s. """
-    return "".join(c for c in s if c not in string.punctuation)
+    # remove punctuation
+    s = "".join(c for c in s if c not in string.punctuation)
+    # remove consecutive spaces
+    return " ".join(filter(None, s.split(" ")))
 
   @abc.abstractmethod
   def getSearchUrl(self, album, artist):
