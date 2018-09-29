@@ -22,13 +22,8 @@ if sys.platform == "win32":
 with open("test-requirements.txt", "rt") as f:
   test_requirements = f.read().splitlines()
 
-
-try:
-  import pypandoc
-  readme = pypandoc.convert("README.md", "rst")
-except ImportError:
-  with open("README.md", "rt") as f:
-    readme = f.read()
+with open("README.md", "rt") as f:
+  readme = f.read()
 
 setup(name="sacad",
       version=version,
@@ -41,6 +36,7 @@ setup(name="sacad",
       tests_require=test_requirements,
       description="Search and download music album covers",
       long_description=readme,
+      long_description_content_type="text/markdown",
       url="https://github.com/desbma/sacad",
       download_url="https://github.com/desbma/sacad/archive/%s.tar.gz" % (version),
       keywords=["download", "album", "cover", "art", "albumart", "music"],
