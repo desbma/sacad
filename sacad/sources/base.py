@@ -58,8 +58,8 @@ class CoverSource(metaclass=abc.ABCMeta):
   async def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
-    album = __class__.unpunctuate(album)
-    artist = __class__.unpunctuate(artist)
+    album = self.processAlbumString(album)
+    artist = self.processArtistString(artist)
     url_data = self.getSearchUrl(album, artist)
     if isinstance(url_data, tuple):
       url, post_data = url_data
@@ -165,12 +165,28 @@ class CoverSource(metaclass=abc.ABCMeta):
     return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
 
   @staticmethod
-  def unpunctuate(s):
+  def unpunctuate(s, *, char_blacklist=string.punctuation):
     """ Remove punctuation from string s. """
     # remove punctuation
-    s = "".join(c for c in s if c not in string.punctuation)
+    s = "".join(c for c in s if c not in char_blacklist)
     # remove consecutive spaces
     return " ".join(filter(None, s.split(" ")))
+
+  #
+  # The following methods can or should be overriden in subclasses
+  #
+
+  def processQueryString(self, s):
+    """ Process artist or album string before building query URL. """
+    return __class__.unpunctuate(s.lower())
+
+  def processArtistString(self, artist):
+    """ Process artist string before building query URL. """
+    return self.processQueryString(artist)
+
+  def processAlbumString(self, album):
+    """ Process album string before building query URL. """
+    return self.processQueryString(album)
 
   @abc.abstractmethod
   def getSearchUrl(self, album, artist):

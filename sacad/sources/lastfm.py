@@ -1,5 +1,6 @@
 import collections
 import os.path
+import string
 import xml.etree.ElementTree
 
 from sacad.cover import CoverImageMetadata, CoverSourceQuality, CoverSourceResult, SUPPORTED_IMG_FORMATS
@@ -35,10 +36,18 @@ class LastFmCoverSource(CoverSource):
     params = collections.OrderedDict()
     params["method"] = "album.getinfo"
     params["api_key"] = __class__.API_KEY
-    params["album"] = album.lower()
-    params["artist"] = artist.lower()
+    params["album"] = album
+    params["artist"] = artist
 
     return __class__.assembleUrl(__class__.BASE_URL, params)
+
+  def processQueryString(self, s):
+    """ See CoverSource.processQueryString. """
+    char_blacklist = set(string.punctuation)
+    char_blacklist.remove("'")
+    char_blacklist.remove("&")
+    char_blacklist = frozenset(char_blacklist)
+    return __class__.unpunctuate(s.lower(), char_blacklist=char_blacklist)
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """

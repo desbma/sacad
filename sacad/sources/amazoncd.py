@@ -29,12 +29,16 @@ class AmazonCdCoverSource(CoverSource):
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
     super().__init__(*args, allow_cookies=True, **kwargs)
 
+  def processQueryString(self, s):
+    """ See CoverSource.processQueryString. """
+    return __class__.unaccentuate(__class__.unpunctuate(s.lower()))
+
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     params = collections.OrderedDict()
     params["search-alias"] = "popular"
-    params["field-artist"] = __class__.unaccentuate(artist.lower())
-    params["field-title"] = __class__.unaccentuate(album.lower())
+    params["field-artist"] = artist
+    params["field-title"] = album
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(self.base_url, params)
 

@@ -188,6 +188,16 @@ class TestSacad(unittest.TestCase):
       self.assertIn(result.format, sacad.cover.CoverImageFormat)
       self.assertGreaterEqual(result.size[0], size)
 
+    # check last.fm handling of queries with punctuation
+    for artist, album in zip(("Megadeth", "Royal City"),
+                             ("So Far, So Good, So What?", "Little Heart's Ease")):
+      size = 300
+      source = sacad.sources.LastFmCoverSource(size, 0)
+      coroutine = source.search(album, artist)
+      results = sched_and_run(coroutine, async_loop, delay=0.5)
+      self.assertGreaterEqual(len(results), 1)
+
+
   def test_unaccentuate(self):
     self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
 

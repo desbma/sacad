@@ -44,14 +44,16 @@ class AmazonDigitalCoverSource(CoverSource):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, allow_cookies=True, **kwargs)
 
+  def processQueryString(self, s):
+    """ See CoverSource.processQueryString. """
+    return __class__.unaccentuate(__class__.unpunctuate(s.lower()))
+
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     url = "%s/search" % (__class__.BASE_URL)
     params = collections.OrderedDict()
     params["search-alias"] = "digital-music"
-    params["field-keywords"] = " ".join(map(__class__.unaccentuate,
-                                            map(str.lower,
-                                                (artist, album))))
+    params["field-keywords"] = " ".join((artist, album))
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(url, params)
 
