@@ -53,9 +53,6 @@ script:
 after_success:
   - "if [ $NATIVE_TEST -eq 1 ]; coveralls; fi"
 before_deploy:
-  - "if [ $PYPI_DEPLOY -eq 1 ]; then sudo apt-get -V install pandoc; fi"
-  - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install pypandoc; fi"
-  - "if [ $PYPI_DEPLOY -eq 1 ]; then pip install restructuredtext_lint && t=$(mktemp --suffix=.rst) && pandoc README.md -o $t && rst-lint $t; fi"
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win32 make all && popd; fi"
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win64 make all && popd; fi"
 deploy:
