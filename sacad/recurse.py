@@ -310,6 +310,7 @@ def cl_main():
 
   # silence the logger
   logging.basicConfig(format="%(asctime)s %(process)d %(threadName)s: %(message)s", level=logging.ERROR)
+  logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
 
   # do the job
   work = analyze_lib(args.lib_dir, args.filename, ignore_existing=args.ignore_existing)
