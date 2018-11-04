@@ -6,4 +6,4 @@ lxml>=4.0.0
 mutagen>=1.31
 pillow>=2.7.0
 tqdm>=4.14.0
-web_cache>=1.0.2
+web_cache>=1.1.0
