@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 language: python
 cache:
@@ -17,9 +17,7 @@ matrix:
       env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
     - python: "3.6-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
-    # https://github.com/travis-ci/travis-ci/issues/9069#issuecomment-425720905
     - python: "3.7"
-      dist: xenial
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.7-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
