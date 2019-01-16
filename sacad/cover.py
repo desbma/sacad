@@ -245,7 +245,8 @@ class CoverSourceResult:
         if format is not None:
           self.setFormatMetadata(format)
 
-      if self.needMetadataUpdate() and ((width is None) or (height is None)):
+      if (self.needMetadataUpdate(CoverImageMetadata.FORMAT) or
+              (self.needMetadataUpdate(CoverImageMetadata.SIZE) and ((width is None) or (height is None)))):
         # download
         logging.getLogger("Cover").debug("Downloading file header for URL '%s'..." % (url))
         try:
@@ -302,7 +303,7 @@ class CoverSourceResult:
         width_sum += width
         height_sum += height
 
-    if (width_sum > 0) and (height_sum > 0):
+    if self.needMetadataUpdate(CoverImageMetadata.SIZE) and (width_sum > 0) and (height_sum > 0):
       self.setSizeMetadata((width_sum, height_sum))
 
   def needMetadataUpdate(self, what=CoverImageMetadata.ALL):
