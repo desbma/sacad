@@ -123,14 +123,12 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, *
   if audio_filepaths:
     stats["albums"] += 1
     if (cover_filename != EMBEDDED_ALBUM_ART_SYMBOL):
-      missing = not os.path.isfile(os.path.join(parent_dir, cover_filename))
+      missing = (not os.path.isfile(os.path.join(parent_dir, cover_filename))) or ignore_existing
       if missing:
         metadata = get_metadata(audio_filepaths)
     else:
       metadata = get_metadata(audio_filepaths)
-      missing = not metadata[2]
-    if ignore_existing:
-      missing = True
+      missing = (not metadata[2]) or ignore_existing
     if missing:
       stats["missing covers"] += 1
       if not all(metadata[:-1]):

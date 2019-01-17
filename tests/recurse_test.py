@@ -217,6 +217,30 @@ class TestRecursive(unittest.TestCase):
       self.assertSequenceEqual(failed_dirs, (__class__.invalid_album_dir,))
       self.assertEqual(r, ("ARTIST1", None, None))
 
+      open(os.path.join(__class__.album1_dir, "1.jpg"), "wb").close()
+      for ignore_existing in (False, True):
+        stats.clear()
+        failed_dirs.clear()
+        r = recurse.analyze_dir(stats,
+                                __class__.album1_dir,
+                                os.listdir(__class__.album1_dir),
+                                "1.jpg",
+                                failed_dirs,
+                                ignore_existing=ignore_existing)
+        self.assertIn("files", stats)
+        self.assertEqual(stats["files"], 2)
+        self.assertIn("albums", stats)
+        self.assertEqual(stats["albums"], 1)
+        if not ignore_existing:
+          self.assertNotIn("missing covers", stats)
+          self.assertEqual(r, (None, None, None))
+        else:
+          self.assertIn("missing covers", stats)
+          self.assertEqual(stats["missing covers"], 1)
+          self.assertEqual(r, ("ARTIST1", "ALBUM1", False))
+        self.assertNotIn("errors", stats)
+        self.assertEqual(len(failed_dirs), 0)
+
 
 if __name__ == "__main__":
   # run tests
