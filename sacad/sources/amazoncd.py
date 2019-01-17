@@ -1,4 +1,5 @@
 import collections
+import random
 import urllib.parse
 
 import lxml.cssselect
@@ -44,7 +45,8 @@ class AmazonCdCoverSource(CoverSource):
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """
-    headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
+    v = random.randint(48, 64)
+    headers["User-Agent"] = "Mozilla/5.0 (X11; Linux x86_64; rv:%02u.0) Gecko/20100101 Firefox/%02u.0" % (v, v)
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """

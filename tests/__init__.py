@@ -198,7 +198,6 @@ class TestSacad(unittest.TestCase):
       results = sched_and_run(coroutine, async_loop, delay=0.5)
       self.assertGreaterEqual(len(results), 1)
 
-
   def test_unaccentuate(self):
     self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
 
