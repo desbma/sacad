@@ -72,13 +72,13 @@ class AmazonDigitalCoverSource(CoverSource):
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
 
     for page_struct_version in range(len(__class__.RESULTS_SELECTORS)):
-      result_divs = __class__.RESULTS_SELECTORS[page_struct_version](html)
-      if result_divs:
+      result_nodes = __class__.RESULTS_SELECTORS[page_struct_version](html)
+      if result_nodes:
         break
 
-    for rank, result_div in enumerate(result_divs, 1):
+    for rank, result_node in enumerate(result_nodes, 1):
       # get thumbnail & full image url
-      img_node = __class__.IMG_SELECTORS[page_struct_version](result_div)[0]
+      img_node = __class__.IMG_SELECTORS[page_struct_version](result_node)[0]
       thumbnail_url = img_node.get("src")
       thumbnail_url = thumbnail_url.replace("Stripe-Prime-Only", "")
       url_parts = thumbnail_url.rsplit(".", 2)
@@ -90,7 +90,7 @@ class AmazonDigitalCoverSource(CoverSource):
       # try to get higher res image...
       if self.target_size > size[0]:  # ...but only if needed
         self.logger.debug("Looking for optimal subimages configuration...")
-        product_url = __class__.LINK_SELECTOR(result_div)[0].get("href")
+        product_url = __class__.LINK_SELECTOR(result_node)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         product_id = product_url.path.split("/")[3]
 

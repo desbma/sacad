@@ -20,8 +20,10 @@ class AmazonCdCoverSource(CoverSource):
   """ Cover source returning Amazon.com audio CD images. """
 
   TLDS = ("com", "ca", "cn", "fr", "de", "co.jp", "co.uk")
-  RESULTS_SELECTOR = lxml.cssselect.CSSSelector("#resultsCol li.s-result-item")
-  IMG_SELECTOR = lxml.cssselect.CSSSelector("img.s-access-image")
+  RESULTS_SELECTORS = (lxml.cssselect.CSSSelector("span.rush-component[data-component-type='s-product-image']"),
+                       lxml.cssselect.CSSSelector("#resultsCol li.s-result-item"))
+  IMG_SELECTORS = (lxml.cssselect.CSSSelector("img.s-image"),
+                   lxml.cssselect.CSSSelector("img.s-access-image"))
   PRODUCT_LINK_SELECTOR = lxml.cssselect.CSSSelector("a.s-access-detail-page")
   PRODUCT_PAGE_IMG_SELECTOR = lxml.cssselect.CSSSelector("img#landingImage")
 
@@ -55,10 +57,15 @@ class AmazonCdCoverSource(CoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8", "ignore"), parser)
-    result_divs = __class__.RESULTS_SELECTOR(html)
-    for rank, result_div in enumerate(result_divs, 1):
+
+    for page_struct_version in range(len(__class__.RESULTS_SELECTORS)):
+      result_nodes = __class__.RESULTS_SELECTORS[page_struct_version](html)
+      if result_nodes:
+        break
+
+    for rank, result_node in enumerate(result_nodes, 1):
       try:
-        img_node = __class__.IMG_SELECTOR(result_div)[0]
+        img_node = __class__.IMG_SELECTORS[page_struct_version](result_node)[0]
       except IndexError:
         # no image for that product
         continue
@@ -73,7 +80,7 @@ class AmazonCdCoverSource(CoverSource):
       if ((self.target_size > size[0]) and  # ...only if needed
               (rank <= 3)):  # and only for first 3 results because this is time
                              # consuming (1 more GET request per result)
-        product_url = __class__.PRODUCT_LINK_SELECTOR(result_div)[0].get("href")
+        product_url = __class__.PRODUCT_LINK_SELECTOR(result_node)[0].get("href")
         product_url = urllib.parse.urlsplit(product_url)
         if not product_url.scheme:
           # relative redirect url
