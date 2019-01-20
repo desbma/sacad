@@ -109,9 +109,7 @@ class TestSacad(unittest.TestCase):
     for url, (ref_fmt, ref_size, block_read) in refs.items():
       sacad.CoverSourceResult.guessImageMetadataFromData = unittest.mock.Mock(wraps=sacad.CoverSourceResult.guessImageMetadataFromData)
       source = unittest.mock.Mock()
-      source.http = sacad.http_helpers.Http(allow_session_cookies=False,
-                                            min_delay_between_accesses=1 / 3,
-                                            logger=logging.getLogger())
+      source.http = sacad.http_helpers.Http()
       cover = sacad.CoverSourceResult(url,
                                       None,
                                       None,

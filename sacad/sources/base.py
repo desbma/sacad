@@ -23,12 +23,14 @@ class CoverSource(metaclass=abc.ABCMeta):
 
   """ Base class for all cover sources. """
 
-  def __init__(self, target_size, size_tolerance_prct, min_delay_between_accesses=2 / 3, allow_cookies=False):
+  def __init__(self, target_size, size_tolerance_prct, *, min_delay_between_accesses=0, jitter_range_ms=None,
+               allow_cookies=False):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
     self.logger = logging.getLogger(self.__class__.__name__)
     self.http = http_helpers.Http(allow_session_cookies=allow_cookies,
                                   min_delay_between_accesses=min_delay_between_accesses,
+                                  jitter_range_ms=jitter_range_ms,
                                   logger=self.logger)
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",

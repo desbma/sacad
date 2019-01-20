@@ -13,8 +13,7 @@ class AccessRateWatcher:
 
   """ Access rate limiter, supporting concurrent access by threads and/or processes. """
 
-  def __init__(self, db_filepath, url, min_delay_between_accesses, *, jitter_range_ms=(0, 300),
-               logger=logging.getLogger()):
+  def __init__(self, db_filepath, url, min_delay_between_accesses, *, jitter_range_ms=None, logger=logging.getLogger()):
     self.domain = urllib.parse.urlsplit(url).netloc
     self.min_delay_between_accesses = min_delay_between_accesses
     self.jitter_range_ms = jitter_range_ms
@@ -36,7 +35,9 @@ class AccessRateWatcher:
           last_access_ts = last_access_ts[0]
           time_since_last_access = now - last_access_ts
           if time_since_last_access < self.min_delay_between_accesses:
-            time_to_wait = self.min_delay_between_accesses - time_since_last_access + random.randint(*self.jitter_range_ms) / 1000
+            time_to_wait = self.min_delay_between_accesses - time_since_last_access
+            if self.jitter_range_ms is not None:
+              time_to_wait += random.randint(*self.jitter_range_ms) / 1000
             self.logger.debug("Sleeping for %.2fms because of rate limit for domain %s" % (time_to_wait * 1000,
                                                                                            self.domain))
             await asyncio.sleep(time_to_wait)

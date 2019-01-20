@@ -27,6 +27,9 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
   BASE_URL = "https://www.google.com/images"
   RESULTS_SELECTOR = lxml.cssselect.CSSSelector("#search #rg_s .rg_di")
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, min_delay_between_accesses=2 / 3, jitter_range_ms=(-300, 300), **kwargs)
+
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     # build request url

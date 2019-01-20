@@ -30,6 +30,9 @@ class LastFmCoverSource(CoverSource):
            "extralarge": (300, 300),
            "mega": (600, 600)}  # this is actually between 600 and 900, sometimes even more (ie 1200)
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, min_delay_between_accesses=0.1, **kwargs)
+
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     # build request url

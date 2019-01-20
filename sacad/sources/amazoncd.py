@@ -33,7 +33,11 @@ class AmazonCdCoverSource(CoverSource):
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
     v = random.randint(48, 64)
     self.ua = "Mozilla/5.0 (X11; Linux x86_64; rv:%02u.0) Gecko/20100101 Firefox/%02u.0" % (v, v)
-    super().__init__(*args, allow_cookies=True, **kwargs)
+    super().__init__(*args,
+                     allow_cookies=True,
+                     min_delay_between_accesses=2 / 3,
+                     jitter_range_ms=(0, 300),
+                     **kwargs)
 
   def processQueryString(self, s):
     """ See CoverSource.processQueryString. """

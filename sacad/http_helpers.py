@@ -1,6 +1,7 @@
 """ Common HTTP code. """
 
 import asyncio
+import logging
 import os
 import pickle
 
@@ -30,7 +31,7 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 class Http:
 
-  def __init__(self, *, allow_session_cookies, min_delay_between_accesses, logger):
+  def __init__(self, *, allow_session_cookies=False, min_delay_between_accesses=0, jitter_range_ms=None, logger=logging.getLogger()):
     if not allow_session_cookies:
       cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
@@ -42,6 +43,7 @@ class Http:
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
     self.min_delay_between_accesses = min_delay_between_accesses
+    self.jitter_range_ms = jitter_range_ms
     self.logger = logger
 
   def __del__(self):
@@ -64,6 +66,7 @@ class Http:
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
                                                          self.min_delay_between_accesses,
+                                                         jitter_range_ms=self.jitter_range_ms,
                                                          logger=self.logger)
 
     for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
@@ -135,6 +138,7 @@ class Http:
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
                                                          self.min_delay_between_accesses,
+                                                         jitter_range_ms=self.jitter_range_ms,
                                                          logger=self.logger)
     resp_ok = True
     try:
