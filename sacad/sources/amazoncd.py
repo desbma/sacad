@@ -1,4 +1,5 @@
 import collections
+import random
 import urllib.parse
 
 import lxml.cssselect
@@ -29,6 +30,8 @@ class AmazonCdCoverSource(CoverSource):
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
+    v = random.randint(48, 64)
+    self.ua = "Mozilla/5.0 (X11; Linux x86_64; rv:%02u.0) Gecko/20100101 Firefox/%02u.0" % (v, v)
     super().__init__(*args, allow_cookies=True, **kwargs)
 
   def processQueryString(self, s):
@@ -46,7 +49,7 @@ class AmazonCdCoverSource(CoverSource):
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """
-    headers["User-Agent"] = "Mozilla/5.0 Firefox/47.0"
+    headers["User-Agent"] = self.ua
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
