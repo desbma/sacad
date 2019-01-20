@@ -24,7 +24,8 @@ class AmazonCdCoverSource(CoverSource):
                        lxml.cssselect.CSSSelector("#resultsCol li.s-result-item"))
   IMG_SELECTORS = (lxml.cssselect.CSSSelector("img.s-image"),
                    lxml.cssselect.CSSSelector("img.s-access-image"))
-  PRODUCT_LINK_SELECTOR = lxml.cssselect.CSSSelector("a.s-access-detail-page")
+  PRODUCT_LINK_SELECTORS = (lxml.cssselect.CSSSelector("a"),
+                            lxml.cssselect.CSSSelector("a.s-access-detail-page"))
   PRODUCT_PAGE_IMG_SELECTOR = lxml.cssselect.CSSSelector("img#landingImage")
 
   def __init__(self, *args, tld="com", **kwargs):
@@ -81,15 +82,20 @@ class AmazonCdCoverSource(CoverSource):
       if ((self.target_size > size[0]) and  # ...only if needed
               (rank <= 3)):  # and only for first 3 results because this is time
                              # consuming (1 more GET request per result)
-        product_url = __class__.PRODUCT_LINK_SELECTOR(result_node)[0].get("href")
-        product_url = urllib.parse.urlsplit(product_url)
-        if not product_url.scheme:
+        product_url = __class__.PRODUCT_LINK_SELECTORS[page_struct_version](result_node)[0].get("href")
+        product_url_split = urllib.parse.urlsplit(product_url)
+        if not product_url_split.scheme:
           # relative redirect url
-          product_url_query = urllib.parse.parse_qsl(product_url.query)
+          product_url_query = urllib.parse.parse_qsl(product_url_split.query)
           product_url_query = collections.OrderedDict(product_url_query)
-          product_url = product_url_query["url"]
-          product_url = urllib.parse.urlsplit(product_url)
-        product_url_query = urllib.parse.parse_qsl(product_url.query)
+          try:
+            # needed if page_struct_version == 1
+            product_url = product_url_query["url"]
+          except KeyError:
+            # page_struct_version == 0, make url absolute
+            product_url = urllib.parse.urljoin(self.base_url, product_url)
+          product_url_split = urllib.parse.urlsplit(product_url)
+        product_url_query = urllib.parse.parse_qsl(product_url_split.query)
         product_url_query = collections.OrderedDict(product_url_query)
         try:
           # remove timestamp from url to improve future cache hit rate
@@ -97,7 +103,7 @@ class AmazonCdCoverSource(CoverSource):
         except KeyError:
           pass
         product_url_query = urllib.parse.urlencode(product_url_query)
-        product_url_no_ts = urllib.parse.urlunsplit(product_url[:3] + (product_url_query,) + product_url[4:])
+        product_url_no_ts = urllib.parse.urlunsplit(product_url_split[:3] + (product_url_query,) + product_url_split[4:])
         store_in_cache_callback, product_page_data = await self.fetchResults(product_url_no_ts)
         product_page_html = lxml.etree.XML(product_page_data.decode("latin-1"), parser)
         try:
