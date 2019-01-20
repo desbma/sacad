@@ -35,9 +35,9 @@ class AmazonDigitalCoverSource(CoverSource):
 
   BASE_URL = "https://www.amazon.com/gp"
   DYNAPI_KEY = "A17SFUTIVB227Z"
-  RESULTS_SELECTORS = (lxml.cssselect.CSSSelector("div#dm_mp3Player div.mp3Cell"),
+  RESULTS_SELECTORS = (lxml.cssselect.CSSSelector("span.rush-component[data-component-type='s-product-image']"),
                        lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))
-  IMG_SELECTORS = (lxml.cssselect.CSSSelector("img.productImage"),
+  IMG_SELECTORS = (lxml.cssselect.CSSSelector("img.s-image"),
                    lxml.cssselect.CSSSelector("img.s-access-image"))
   LINK_SELECTOR = lxml.cssselect.CSSSelector("a")
 
