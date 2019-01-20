@@ -164,9 +164,9 @@ class TestSacad(unittest.TestCase):
             results = sched_and_run(coroutine, async_loop, delay=0.5)
             coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
             results = sched_and_run(coroutine, async_loop, delay=0.5)
-            if not (((size > 500) and isinstance(source, sacad.sources.AmazonCdCoverSource)) or
-                    ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource)) or
-                    ((size > 500) and isinstance(source, sacad.sources.AmazonDigitalCoverSource) and (artist == "Björk")) or
+            if not (((size > 500) and isinstance(source, (sacad.sources.LastFmCoverSource,
+                                                          sacad.sources.AmazonCdCoverSource,
+                                                          sacad.sources.AmazonDigitalCoverSource))) or
                     (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
                      (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] == "cn"))):
               self.assertGreaterEqual(len(results), 1)
