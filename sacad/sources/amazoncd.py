@@ -60,8 +60,8 @@ class AmazonCdCoverSource(CoverSource):
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8", "ignore"), parser)
 
-    for page_struct_version in range(len(__class__.RESULTS_SELECTORS)):
-      result_nodes = __class__.RESULTS_SELECTORS[page_struct_version](html)
+    for page_struct_version, result_selector in enumerate(__class__.RESULTS_SELECTORS):
+      result_nodes = result_selector(html)
       if result_nodes:
         break
 
