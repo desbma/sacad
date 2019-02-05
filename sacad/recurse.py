@@ -77,7 +77,7 @@ def get_metadata(audio_filepaths):
       except ValueError:
         val = None
       if val is not None:
-        artist = val[0]
+        artist = val[-1]
         break
 
     # album
@@ -89,7 +89,7 @@ def get_metadata(audio_filepaths):
       except ValueError:
         val = None
       if val is not None:
-        album = val[0]
+        album = val[-1]
         break
 
     if artist and album:
