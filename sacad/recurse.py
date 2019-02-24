@@ -18,6 +18,8 @@ import mutagen
 import tqdm
 
 import sacad
+from sacad import colored_logging
+from sacad import tqdm_logging
 
 
 EMBEDDED_ALBUM_ART_SYMBOL = "+"
@@ -37,23 +39,20 @@ def analyze_lib(lib_dir, cover_filename, *, ignore_existing=False):
   """ Recursively analyze library, and return a dict of path -> (artist, album). """
   work = {}
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
-  failed_dirs = []
   with tqdm.tqdm(desc="Analyzing library",
-                 unit=" dirs",
-                 postfix=stats) as progress:
+                 unit="dir",
+                 postfix=stats) as progress, \
+          tqdm_logging.redirect_logging(progress):
     for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
       metadata = analyze_dir(stats,
                              rootpath,
                              rel_filepaths,
                              cover_filename,
-                             failed_dirs,
                              ignore_existing=ignore_existing)
-      progress.set_postfix(stats)
+      progress.set_postfix(stats, refresh=False)
       progress.update(1)
       if all(metadata[:-1]):
         work[rootpath] = metadata[:-1]
-  for failed_dir in failed_dirs:
-    print("Unable to read metadata for album directory '%s'" % (failed_dir))
   return work
 
 
@@ -107,7 +106,7 @@ def get_metadata(audio_filepaths):
   return artist, album, has_embedded_album_art
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, *, ignore_existing=False):
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, *, ignore_existing=False):
   """ Analyze a directory (non recursively) to get its album metadata if it is one. """
   no_metadata = None, None, None
   metadata = no_metadata
@@ -134,7 +133,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, failed_dirs, *
       if not all(metadata[:-1]):
         # failed to get metadata for this album
         stats["errors"] += 1
-        failed_dirs.append(parent_dir)
+        logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
     else:
       metadata = no_metadata
   return metadata
@@ -194,87 +193,84 @@ def get_covers(work, args):
 
     # setup progress report
     stats = collections.OrderedDict(((k, 0) for k in("ok", "errors", "no result found")))
-    errors = []
-    not_found = []
-    with tqdm.tqdm(total=len(work),
-                   miniters=1,
-                   desc="Searching covers",
-                   unit=" covers",
-                   postfix=stats) as progress:
+    progress = cm.enter_context(tqdm.tqdm(total=len(work),
+                                          miniters=1,
+                                          desc="Searching covers",
+                                          unit="cover",
+                                          postfix=stats))
+    cm.enter_context(tqdm_logging.redirect_logging(progress))
 
-      def update_progress(future):
-        path, cover_filepath, artist, album = futures[future]
-        try:
-          status = future.result()
-        except Exception as exception:
-          stats["errors"] += 1
-          errors.append((path, artist, album, exception))
-        else:
-          if status:
-            if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
-              try:
-                embed_album_art(cover_filepath, path)
-              except Exception as exception:
-                stats["errors"] += 1
-                errors.append((path, artist, album, exception))
-              else:
-                stats["ok"] += 1
-              finally:
-                os.remove(cover_filepath)
-            else:
-              stats["ok"] += 1
-          else:
-            stats["no result found"] += 1
-            not_found.append((path, artist, album))
-        progress.set_postfix(stats)
-        progress.update(1)
-
-      # post work
-      async_loop = asyncio.get_event_loop()
-      i = 0
-      # default event loop on Windows has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
-      # also on Linux default max open fd limit is 1024 (ulimit -n)
-      # so work in smaller chunks to avoid hitting fd limit
-      # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
-      # getting to the next one)
-      work_chunk_length = 16
-      for work_chunk in ichunk(work.items(), work_chunk_length):
-        futures = {}
-        for i, (path, (artist, album)) in enumerate(work_chunk, i):
+    def update_progress(future):
+      path, cover_filepath, artist, album = futures[future]
+      try:
+        status = future.result()
+      except Exception as exception:
+        stats["errors"] += 1
+        logging.getLogger("sacad_r").error("Error occured while searching cover for "
+                                           "'%s' by '%s' from '%s': %s %s" % (album,
+                                                                              artist,
+                                                                              path,
+                                                                              exception.__class__.__qualname__,
+                                                                              exception))
+      else:
+        if status:
           if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
-            cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
-          else:
-            cover_filepath = os.path.join(path, args.filename)
-          coroutine = sacad.search_and_download(album,
-                                                artist,
-                                                args.format,
-                                                args.size,
-                                                cover_filepath,
-                                                size_tolerance_prct=args.size_tolerance_prct,
-                                                amazon_tlds=args.amazon_tlds,
-                                                no_lq_sources=args.no_lq_sources,
-                                                async_loop=async_loop)
-          future = asyncio.ensure_future(coroutine, loop=async_loop)
-          futures[future] = (path, cover_filepath, artist, album)
-
-        for future in futures:
-          future.add_done_callback(update_progress)
-
-        # wait for end of work
-        root_future = asyncio.gather(*futures.keys(), loop=async_loop)
-        async_loop.run_until_complete(root_future)
-
-  # report accumulated errors
-  for path, artist, album in not_found:
-    print("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
-  for path, artist, album, exception in errors:
-    print("Error occured while handling cover for '%s' by '%s' from '%s': %s %s" % (album,
+            try:
+              embed_album_art(cover_filepath, path)
+            except Exception as exception:
+              stats["errors"] += 1
+              logging.getLogger("sacad_r").error("Error occured while embedding cover for "
+                                                 "'%s' by '%s' from '%s': %s %s" % (album,
                                                                                     artist,
                                                                                     path,
                                                                                     exception.__class__.__qualname__,
                                                                                     exception))
-  if errors:
-    print("Please report this at https://github.com/desbma/sacad/issues")
+            else:
+              stats["ok"] += 1
+            finally:
+              os.remove(cover_filepath)
+          else:
+            stats["ok"] += 1
+        else:
+          stats["no result found"] += 1
+          logging.getLogger("sacad_r").warning("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
+      progress.set_postfix(stats, refresh=False)
+      progress.update(1)
+
+    # post work
+    async_loop = asyncio.get_event_loop()
+    i = 0
+    # default event loop on Windows has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
+    # also on Linux default max open fd limit is 1024 (ulimit -n)
+    # so work in smaller chunks to avoid hitting fd limit
+    # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
+    # getting to the next one)
+    work_chunk_length = 16
+    for work_chunk in ichunk(work.items(), work_chunk_length):
+      futures = {}
+      for i, (path, (artist, album)) in enumerate(work_chunk, i):
+        if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+          cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
+        else:
+          cover_filepath = os.path.join(path, args.filename)
+        coroutine = sacad.search_and_download(album,
+                                              artist,
+                                              args.format,
+                                              args.size,
+                                              cover_filepath,
+                                              size_tolerance_prct=args.size_tolerance_prct,
+                                              amazon_tlds=args.amazon_tlds,
+                                              no_lq_sources=args.no_lq_sources,
+                                              async_loop=async_loop)
+        future = asyncio.ensure_future(coroutine, loop=async_loop)
+        futures[future] = (path, cover_filepath, artist, album)
+
+      for future in futures:
+        future.add_done_callback(update_progress)
+
+      # wait for end of work
+      root_future = asyncio.gather(*futures.keys(), loop=async_loop)
+      async_loop.run_until_complete(root_future)
 
 
 def cl_main():
@@ -289,12 +285,18 @@ def cl_main():
                           help="Target image size")
   arg_parser.add_argument("filename",
                           help="Cover image filename ('%s' to embed JPEG into audio files)" % (EMBEDDED_ALBUM_ART_SYMBOL))
-  sacad.setup_common_args(arg_parser)
   arg_parser.add_argument("-i",
                           "--ignore-existing",
                           action="store_true",
                           default=False,
                           help="Ignore existing covers and force search and download for all files")
+  sacad.setup_common_args(arg_parser)
+  arg_parser.add_argument("-v",
+                          "--verbose",
+                          action="store_true",
+                          default=False,
+                          dest="verbose",
+                          help="Enable verbose output")
   args = arg_parser.parse_args()
   if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
     args.format = "jpg"
@@ -306,9 +308,21 @@ def cl_main():
     print("Unable to guess image format from extension, or unknown format: %s" % (args.format))
     exit(1)
 
-  # silence the logger
-  logging.basicConfig(format="%(asctime)s %(process)d %(threadName)s: %(message)s", level=logging.ERROR)
-  logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
+  # setup logger
+  if not args.verbose:
+    logging.getLogger("sacad_r").setLevel(logging.WARNING)
+    logging.getLogger().setLevel(logging.ERROR)
+    logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
+    fmt = "%(name)s: %(message)s"
+  else:
+    logging.getLogger("sacad_r").setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+  logging_formatter = colored_logging.ColoredFormatter(fmt=fmt)
+  logging_handler = logging.StreamHandler()
+  logging_handler.setFormatter(logging_formatter)
+  logging.getLogger().addHandler(logging_handler)
 
   # do the job
   work = analyze_lib(args.lib_dir, args.filename, ignore_existing=args.ignore_existing)
