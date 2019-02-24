@@ -138,12 +138,10 @@ class TestRecursive(unittest.TestCase):
   def test_analyze_dir(self):
     with open(os.devnull, "wt") as dn, contextlib.redirect_stdout(dn):
       stats = collections.defaultdict(int)
-      failed_dirs = []
       r = recurse.analyze_dir(stats,
                               __class__.album1_dir,
                               os.listdir(__class__.album1_dir),
-                              "1.jpg",
-                              failed_dirs)
+                              "1.jpg")
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 1)
       self.assertIn("albums", stats)
@@ -151,15 +149,13 @@ class TestRecursive(unittest.TestCase):
       self.assertIn("missing covers", stats)
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
-      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r, ("ARTIST1", "ALBUM1", False))
 
       stats.clear()
       r = recurse.analyze_dir(stats,
                               __class__.album2_dir,
                               os.listdir(__class__.album2_dir),
-                              "1.jpg",
-                              failed_dirs)
+                              "1.jpg")
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
       self.assertIn("albums", stats)
@@ -167,45 +163,37 @@ class TestRecursive(unittest.TestCase):
       self.assertIn("missing covers", stats)
       self.assertEqual(stats["missing covers"], 1)
       self.assertNotIn("errors", stats)
-      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r, ("ARTIST2", "ALBUM2", False))
       stats.clear()
       r = recurse.analyze_dir(stats,
                               __class__.album2_dir,
                               os.listdir(__class__.album2_dir),
-                              "1.dat",
-                              failed_dirs)
+                              "1.dat")
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
       self.assertIn("albums", stats)
       self.assertEqual(stats["albums"], 1)
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
-      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r, (None, None, None))
 
       stats.clear()
-      failed_dirs.clear()
       r = recurse.analyze_dir(stats,
                               __class__.not_album_dir,
                               os.listdir(__class__.not_album_dir),
-                              "1.jpg",
-                              failed_dirs)
+                              "1.jpg")
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 1)
       self.assertNotIn("albums", stats)
       self.assertNotIn("missing covers", stats)
       self.assertNotIn("errors", stats)
-      self.assertEqual(len(failed_dirs), 0)
       self.assertEqual(r, (None, None, None))
 
       stats.clear()
-      failed_dirs.clear()
       r = recurse.analyze_dir(stats,
                               __class__.invalid_album_dir,
                               os.listdir(__class__.invalid_album_dir),
-                              "1.jpg",
-                              failed_dirs)
+                              "1.jpg")
       self.assertIn("files", stats)
       self.assertEqual(stats["files"], 2)
       self.assertIn("albums", stats)
@@ -214,18 +202,15 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(stats["missing covers"], 1)
       self.assertIn("errors", stats)
       self.assertEqual(stats["errors"], 1)
-      self.assertSequenceEqual(failed_dirs, (__class__.invalid_album_dir,))
       self.assertEqual(r, ("ARTIST1", None, None))
 
       open(os.path.join(__class__.album1_dir, "1.jpg"), "wb").close()
       for ignore_existing in (False, True):
         stats.clear()
-        failed_dirs.clear()
         r = recurse.analyze_dir(stats,
                                 __class__.album1_dir,
                                 os.listdir(__class__.album1_dir),
                                 "1.jpg",
-                                failed_dirs,
                                 ignore_existing=ignore_existing)
         self.assertIn("files", stats)
         self.assertEqual(stats["files"], 2)
@@ -239,7 +224,6 @@ class TestRecursive(unittest.TestCase):
           self.assertEqual(stats["missing covers"], 1)
           self.assertEqual(r, ("ARTIST1", "ALBUM1", False))
         self.assertNotIn("errors", stats)
-        self.assertEqual(len(failed_dirs), 0)
 
 
 if __name__ == "__main__":
