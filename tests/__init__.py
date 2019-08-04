@@ -176,17 +176,6 @@ class TestSacad(unittest.TestCase):
               self.assertIn(result.format, sacad.cover.CoverImageFormat)
               self.assertGreaterEqual(result.size[0], size)
 
-    # test for specific cover not available on amazon.com, but on amazon.de
-    size = 290
-    source = sacad.sources.AmazonCdCoverSource(size, 0, tld="de")
-    coroutine = source.search("Dream Dance 5", "Various")
-    results = sched_and_run(coroutine, async_loop, delay=0.5)
-    self.assertGreaterEqual(len(results), 1)
-    for result in results:
-      self.assertTrue(result.urls)
-      self.assertIn(result.format, sacad.cover.CoverImageFormat)
-      self.assertGreaterEqual(result.size[0], size)
-
     # check last.fm handling of queries with punctuation
     for artist, album in zip(("Megadeth", "Royal City"),
                              ("So Far, So Good, So What?", "Little Heart's Ease")):
