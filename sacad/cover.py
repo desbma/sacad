@@ -312,15 +312,11 @@ class CoverSourceResult:
 
   def setFormatMetadata(self, format):
     """ Set format image metadata to what has been reliably identified. """
-    assert((self.needMetadataUpdate(CoverImageMetadata.FORMAT)) or
-           (self.format is format))
     self.format = format
     self.check_metadata &= ~CoverImageMetadata.FORMAT
 
   def setSizeMetadata(self, size):
     """ Set size image metadata to what has been reliably identified. """
-    assert((self.needMetadataUpdate(CoverImageMetadata.SIZE)) or
-           (self.size == size))
     self.size = size
     self.check_metadata &= ~CoverImageMetadata.SIZE
 
