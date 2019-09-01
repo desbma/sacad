@@ -12,10 +12,12 @@ import itertools
 import logging
 import operator
 import os
+import string
 import tempfile
 
 import mutagen
 import tqdm
+import unidecode
 
 import sacad
 from sacad import colored_logging
@@ -144,13 +146,25 @@ def get_metadata(audio_filepaths):
   return Metadata(artist, album, has_embedded_cover)
 
 
+VALID_PATH_CHARS = frozenset(r"-_.()!#$%&'@^{}~" + string.ascii_letters + string.digits)
+
+
+def sanitize_for_path(s):
+  """ Sanitize a string to be FAT/NTFS friendly when used in file path. """
+  s = s.translate(str.maketrans("/\\|*", "---x"))
+  s = "".join(c for c in unidecode.unidecode_expect_ascii(s) if c in VALID_PATH_CHARS)
+  s = s.strip()
+  s = s.rstrip(".")  # this if for FAT on Android
+  return s
+
+
 def pattern_to_filepath(pattern, parent_dir, metadata):
   """ Build absolute cover file path from pattern. """
   assert(pattern != EMBEDDED_ALBUM_ART_SYMBOL)
   assert(metadata.artist is not None)
   assert(metadata.album is not None)
-  # TODO escape for filesystems
-  filepath = pattern.format(artist=metadata.artist, album=metadata.album)
+  filepath = pattern.format(artist=sanitize_for_path(metadata.artist),
+                            album=sanitize_for_path(metadata.album))
   if not os.path.isabs(filepath):
     filepath = os.path.join(parent_dir, filepath)
   return filepath

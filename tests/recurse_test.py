@@ -253,6 +253,22 @@ class TestRecursive(unittest.TestCase):
           self.assertEqual(r.metadata, Metadata("ARTIST1", "ALBUM1", False))
         self.assertNotIn("errors", stats)
 
+  def test_pattern_to_filepath(self):
+    tmp_dir = tempfile.gettempdir()
+    metadata = Metadata("art1st|*\\//", "albvm|*\\//", None)
+    self.assertEqual(recurse.pattern_to_filepath("a", tmp_dir, metadata),
+                     os.path.join(tmp_dir, "a"))
+    self.assertEqual(recurse.pattern_to_filepath("{artist}_a", tmp_dir, metadata),
+                     os.path.join(tmp_dir, "art1st-x---_a"))
+    self.assertEqual(recurse.pattern_to_filepath("{album}_a", tmp_dir, metadata),
+                     os.path.join(tmp_dir, "albvm-x---_a"))
+    self.assertEqual(recurse.pattern_to_filepath("{artist}_{album}_a", tmp_dir, metadata),
+                     os.path.join(tmp_dir, "art1st-x---_albvm-x---_a"))
+    self.assertEqual(recurse.pattern_to_filepath(os.path.join("{artist}", "{album}", "a"), tmp_dir, metadata),
+                     os.path.join(tmp_dir, "art1st-x---", "albvm-x---", "a"))
+    self.assertEqual(recurse.pattern_to_filepath(os.path.join(tmp_dir, "d", "{artist}", "{album}", "a"), tmp_dir, metadata),
+                     os.path.join(tmp_dir, "d", "art1st-x---", "albvm-x---", "a"))
+
 
 if __name__ == "__main__":
   # run tests
