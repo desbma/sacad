@@ -91,8 +91,7 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False):
                              ignore_existing=ignore_existing)
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
-      if new_work is not None:
-        work.append(new_work)
+      work.extend(new_work)
   return work
 
 
@@ -170,8 +169,10 @@ def pattern_to_filepath(pattern, parent_dir, metadata):
   return filepath
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *, ignore_existing=False):
-  """ Analyze a directory (non recursively) and return a Work object or None. """
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
+                ignore_existing=False, full_scan=False):
+  """ Analyze a directory (non recursively) and return a list of Work objects. """
+  r = []
   audio_filepaths = []
   for rel_filepath in rel_filepaths:
     stats["files"] += 1
@@ -183,7 +184,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *, ignore_exist
       audio_filepaths.append(os.path.join(parent_dir, rel_filepath))
   if audio_filepaths:
     stats["albums"] += 1
-    if (cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL):
+    if cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL:
       metadata = get_metadata(audio_filepaths)
       if (metadata.artist is None) or (metadata.album is None):
         missing = True
@@ -201,7 +202,8 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *, ignore_exist
         stats["errors"] += 1
         logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
       else:
-        return Work(cover_filepath, audio_filepaths, metadata)
+        r.append(Work(cover_filepath, audio_filepaths, metadata))
+  return r
 
 
 def embed_album_art(cover_filepath, audio_filepaths):
