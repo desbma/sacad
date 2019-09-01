@@ -34,31 +34,69 @@ AUDIO_EXTENSIONS = frozenset(("aac",
                               "opus",
                               "wv"))
 
+Metadata = collections.namedtuple("Metadata",
+                                  ("artist",
+                                   "album",
+                                   "has_embedded_cover"))
 
-def analyze_lib(lib_dir, cover_filename, *, ignore_existing=False):
-  """ Recursively analyze library, and return a dict of path -> (artist, album). """
-  work = {}
+
+# TODO use a dataclasses.dataclass when Python < 3.7 is dropped
+class Work:
+
+  """ Represent a single search & download work item. """
+
+  def __init__(self, cover_filepath, audio_filepaths, metadata):
+    self.cover_filepath = cover_filepath
+    self.tmp_cover_filepath = None
+    self.audio_filepaths = audio_filepaths
+    self.metadata = metadata
+
+  def __repr__(self):
+    return "<%s cover_filepath=%s tmp_cover_filepath=%s " \
+           "audio_filepaths=%s metadata=%s>" % (__class__.__qualname__,
+                                                repr(self.cover_filepath),
+                                                repr(self.tmp_cover_filepath),
+                                                repr(self.audio_filepaths),
+                                                repr(self.metadata))
+
+  def __str__(self):
+    return "cover for '%s' by '%s' from %s" % (self.metadata.album,
+                                               self.metadata.artist,
+                                               ", ".join(map(repr, self.audio_filepaths)))
+
+  def __eq__(self, other):
+    if not isinstance(other, __class__):
+      return False
+    return ((self.cover_filepath == other.cover_filepath) and
+            (self.tmp_cover_filepath == other.tmp_cover_filepath) and
+            (self.audio_filepaths == other.audio_filepaths) and
+            (self.metadata == other.metadata))
+
+
+def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False):
+  """ Recursively analyze library, and return a list of work. """
+  work = []
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
   with tqdm.tqdm(desc="Analyzing library",
                  unit="dir",
                  postfix=stats) as progress, \
           tqdm_logging.redirect_logging(progress):
     for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
-      metadata = analyze_dir(stats,
+      new_work = analyze_dir(stats,
                              rootpath,
                              rel_filepaths,
-                             cover_filename,
+                             cover_pattern,
                              ignore_existing=ignore_existing)
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
-      if all(metadata[:-1]):
-        work[rootpath] = metadata[:-1]
+      if new_work is not None:
+        work.append(new_work)
   return work
 
 
 def get_metadata(audio_filepaths):
-  """ Return a tuple of album, artist, has_embedded_album_art from a list of audio files. """
-  artist, album, has_embedded_album_art = None, None, None
+  """ Return a Metadata object from a list of audio files. """
+  artist, album, has_embedded_cover = None, None, None
   for audio_filepath in audio_filepaths:
     try:
       mf = mutagen.File(audio_filepath)
@@ -94,22 +132,32 @@ def get_metadata(audio_filepaths):
     if artist and album:
       # album art
       if isinstance(mf, mutagen.ogg.OggFileType):
-        has_embedded_album_art = "metadata_block_picture" in mf
+        has_embedded_cover = "metadata_block_picture" in mf
       elif isinstance(mf, mutagen.mp3.MP3):
-        has_embedded_album_art = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
+        has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
       elif isinstance(mf, mutagen.mp4.MP4):
-        has_embedded_album_art = "covr" in mf
+        has_embedded_cover = "covr" in mf
 
       # stop at the first file that succeeds (for performance)
       break
 
-  return artist, album, has_embedded_album_art
+  return Metadata(artist, album, has_embedded_cover)
 
 
-def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, *, ignore_existing=False):
-  """ Analyze a directory (non recursively) to get its album metadata if it is one. """
-  no_metadata = None, None, None
-  metadata = no_metadata
+def pattern_to_filepath(pattern, parent_dir, metadata):
+  """ Build absolute cover file path from pattern. """
+  assert(pattern != EMBEDDED_ALBUM_ART_SYMBOL)
+  assert(metadata.artist is not None)
+  assert(metadata.album is not None)
+  # TODO escape for filesystems
+  filepath = pattern.format(artist=metadata.artist, album=metadata.album)
+  if not os.path.isabs(filepath):
+    filepath = os.path.join(parent_dir, filepath)
+  return filepath
+
+
+def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *, ignore_existing=False):
+  """ Analyze a directory (non recursively) and return a Work object or None. """
   audio_filepaths = []
   for rel_filepath in rel_filepaths:
     stats["files"] += 1
@@ -121,56 +169,52 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_filename, *, ignore_exis
       audio_filepaths.append(os.path.join(parent_dir, rel_filepath))
   if audio_filepaths:
     stats["albums"] += 1
-    if (cover_filename != EMBEDDED_ALBUM_ART_SYMBOL):
-      missing = (not os.path.isfile(os.path.join(parent_dir, cover_filename))) or ignore_existing
-      if missing:
-        metadata = get_metadata(audio_filepaths)
-    else:
+    if (cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL):
       metadata = get_metadata(audio_filepaths)
-      missing = (not metadata[2]) or ignore_existing
+      if (metadata.artist is None) or (metadata.album is None):
+        missing = True
+      else:
+        cover_filepath = pattern_to_filepath(cover_pattern, parent_dir, metadata)
+        missing = (not os.path.isfile(cover_filepath)) or ignore_existing
+    else:
+      cover_filepath = EMBEDDED_ALBUM_ART_SYMBOL
+      metadata = get_metadata(audio_filepaths)
+      missing = (not metadata.has_embedded_cover) or ignore_existing
     if missing:
       stats["missing covers"] += 1
-      if not all(metadata[:-1]):
+      if (metadata.artist is None) or (metadata.album is None):
         # failed to get metadata for this album
         stats["errors"] += 1
         logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
-    else:
-      metadata = no_metadata
-  return metadata
+      else:
+        return Work(cover_filepath, audio_filepaths, metadata)
 
 
-def embed_album_art(cover_filepath, path):
+def embed_album_art(cover_filepath, audio_filepaths):
   """ Embed album art into audio files. """
   with open(cover_filepath, "rb") as f:
     cover_data = f.read()
 
-  for filename in os.listdir(path):
-    try:
-      ext = os.path.splitext(filename)[1][1:].lower()
-    except IndexError:
-      continue
-
-    if ext in AUDIO_EXTENSIONS:
-      filepath = os.path.join(path, filename)
-      mf = mutagen.File(filepath)
-      if (isinstance(mf.tags, mutagen._vorbis.VComment) or
-              isinstance(mf, mutagen.ogg.OggFileType)):
-        picture = mutagen.flac.Picture()
-        picture.data = cover_data
-        picture.type = mutagen.id3.PictureType.COVER_FRONT
-        picture.mime = "image/jpeg"
-        encoded_data = base64.b64encode(picture.write())
-        mf["metadata_block_picture"] = encoded_data.decode("ascii")
-      elif (isinstance(mf.tags, mutagen.id3.ID3) or
-            isinstance(mf, mutagen.id3.ID3FileType)):
-        mf.tags.add(mutagen.id3.APIC(mime="image/jpeg",
-                                     type=mutagen.id3.PictureType.COVER_FRONT,
-                                     data=cover_data))
-      elif (isinstance(mf.tags, mutagen.mp4.MP4Tags) or
-            isinstance(mf, mutagen.mp4.MP4)):
-        mf["covr"] = [mutagen.mp4.MP4Cover(cover_data,
-                                           imageformat=mutagen.mp4.AtomDataType.JPEG)]
-      mf.save()
+  for filepath in audio_filepaths:
+    mf = mutagen.File(filepath)
+    if (isinstance(mf.tags, mutagen._vorbis.VComment) or
+            isinstance(mf, mutagen.ogg.OggFileType)):
+      picture = mutagen.flac.Picture()
+      picture.data = cover_data
+      picture.type = mutagen.id3.PictureType.COVER_FRONT
+      picture.mime = "image/jpeg"
+      encoded_data = base64.b64encode(picture.write())
+      mf["metadata_block_picture"] = encoded_data.decode("ascii")
+    elif (isinstance(mf.tags, mutagen.id3.ID3) or
+          isinstance(mf, mutagen.id3.ID3FileType)):
+      mf.tags.add(mutagen.id3.APIC(mime="image/jpeg",
+                                   type=mutagen.id3.PictureType.COVER_FRONT,
+                                   data=cover_data))
+    elif (isinstance(mf.tags, mutagen.mp4.MP4Tags) or
+          isinstance(mf, mutagen.mp4.MP4)):
+      mf["covr"] = [mutagen.mp4.MP4Cover(cover_data,
+                                         imageformat=mutagen.mp4.AtomDataType.JPEG)]
+    mf.save()
 
 
 def ichunk(iterable, n):
@@ -187,7 +231,7 @@ def get_covers(work, args):
   """ Get missing covers. """
   with contextlib.ExitStack() as cm:
 
-    if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+    if args.cover_pattern == EMBEDDED_ALBUM_ART_SYMBOL:
       tmp_prefix = "%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
       tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
 
@@ -200,40 +244,37 @@ def get_covers(work, args):
                                           postfix=stats))
     cm.enter_context(tqdm_logging.redirect_logging(progress))
 
-    def update_progress(future):
-      path, cover_filepath, artist, album = futures[future]
+    def post_download(future):
+      work = futures[future]
       try:
         status = future.result()
       except Exception as exception:
         stats["errors"] += 1
-        logging.getLogger("sacad_r").error("Error occured while searching cover for "
-                                           "'%s' by '%s' from '%s': %s %s" % (album,
-                                                                              artist,
-                                                                              path,
-                                                                              exception.__class__.__qualname__,
-                                                                              exception))
+        logging.getLogger("sacad_r").error("Error occured while searching %s: "
+                                           "%s %s" % (work,
+                                                      exception.__class__.__qualname__,
+                                                      exception))
       else:
         if status:
-          if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+          if work.cover_filepath == EMBEDDED_ALBUM_ART_SYMBOL:
             try:
-              embed_album_art(cover_filepath, path)
+              embed_album_art(work.tmp_cover_filepath, work.audio_filepaths)
             except Exception as exception:
               stats["errors"] += 1
-              logging.getLogger("sacad_r").error("Error occured while embedding cover for "
-                                                 "'%s' by '%s' from '%s': %s %s" % (album,
-                                                                                    artist,
-                                                                                    path,
-                                                                                    exception.__class__.__qualname__,
-                                                                                    exception))
+              logging.getLogger("sacad_r").error("Error occured while embedding %s: "
+                                                 "%s %s" % (work,
+                                                            exception.__class__.__qualname__,
+                                                            exception))
             else:
               stats["ok"] += 1
             finally:
-              os.remove(cover_filepath)
+              os.remove(work.tmp_cover_filepath)
           else:
             stats["ok"] += 1
         else:
           stats["no result found"] += 1
-          logging.getLogger("sacad_r").warning("Unable to find cover for '%s' by '%s' from '%s'" % (album, artist, path))
+          logging.getLogger("sacad_r").warning("Unable to find %s" % (work))
+
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
 
@@ -246,15 +287,16 @@ def get_covers(work, args):
     # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
     # getting to the next one)
     work_chunk_length = 16
-    for work_chunk in ichunk(work.items(), work_chunk_length):
+    for work_chunk in ichunk(work, work_chunk_length):
       futures = {}
-      for i, (path, (artist, album)) in enumerate(work_chunk, i):
-        if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+      for i, cur_work in enumerate(work_chunk, i):
+        if cur_work.cover_filepath == EMBEDDED_ALBUM_ART_SYMBOL:
           cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
+          cur_work.tmp_cover_filepath = cover_filepath
         else:
-          cover_filepath = os.path.join(path, args.filename)
-        coroutine = sacad.search_and_download(album,
-                                              artist,
+          cover_filepath = cur_work.cover_filepath
+        coroutine = sacad.search_and_download(cur_work.metadata.album,
+                                              cur_work.metadata.artist,
                                               args.format,
                                               args.size,
                                               cover_filepath,
@@ -263,10 +305,10 @@ def get_covers(work, args):
                                               no_lq_sources=args.no_lq_sources,
                                               async_loop=async_loop)
         future = asyncio.ensure_future(coroutine, loop=async_loop)
-        futures[future] = (path, cover_filepath, artist, album)
+        futures[future] = cur_work
 
       for future in futures:
-        future.add_done_callback(update_progress)
+        future.add_done_callback(post_download)
 
       # wait for end of work
       root_future = asyncio.gather(*futures.keys(), loop=async_loop)
@@ -283,8 +325,11 @@ def cl_main():
   arg_parser.add_argument("size",
                           type=int,
                           help="Target image size")
-  arg_parser.add_argument("filename",
-                          help="Cover image filename ('%s' to embed JPEG into audio files)" % (EMBEDDED_ALBUM_ART_SYMBOL))
+  arg_parser.add_argument("cover_pattern",
+                          help="""Cover image path pattern.
+                                  {artist} and {album} are replaced by their tag value.
+                                  You can set an absolute path, otherwise destination directory is relative to the audio files.
+                                  Use single character '%s' to embed JPEG into audio files.""" % (EMBEDDED_ALBUM_ART_SYMBOL))
   arg_parser.add_argument("-i",
                           "--ignore-existing",
                           action="store_true",
@@ -298,10 +343,10 @@ def cl_main():
                           dest="verbose",
                           help="Enable verbose output")
   args = arg_parser.parse_args()
-  if args.filename == EMBEDDED_ALBUM_ART_SYMBOL:
+  if args.cover_pattern == EMBEDDED_ALBUM_ART_SYMBOL:
     args.format = "jpg"
   else:
-    args.format = os.path.splitext(args.filename)[1][1:].lower()
+    args.format = os.path.splitext(args.cover_pattern)[1][1:].lower()
   try:
     args.format = sacad.SUPPORTED_IMG_FORMATS[args.format]
   except KeyError:
@@ -325,7 +370,7 @@ def cl_main():
   logging.getLogger().addHandler(logging_handler)
 
   # do the job
-  work = analyze_lib(args.lib_dir, args.filename, ignore_existing=args.ignore_existing)
+  work = analyze_lib(args.lib_dir, args.cover_pattern, ignore_existing=args.ignore_existing)
   get_covers(work, args)
 
 
