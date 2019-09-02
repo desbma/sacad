@@ -228,7 +228,7 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
       missing = (not metadata.has_embedded_cover) or ignore_existing
     if missing:
       stats["missing covers"] += 1
-      r.append(Work(cover_filepath, audio_filepaths, metadata))
+      r.append(Work(cover_filepath, album_audio_filepaths, metadata))
 
   return r
 
