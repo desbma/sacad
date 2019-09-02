@@ -75,7 +75,7 @@ class Work:
             (self.metadata == other.metadata))
 
 
-def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False):
+def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False):
   """ Recursively analyze library, and return a list of work. """
   work = []
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
@@ -88,61 +88,83 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False):
                              rootpath,
                              rel_filepaths,
                              cover_pattern,
-                             ignore_existing=ignore_existing)
+                             ignore_existing=ignore_existing,
+                             full_scan=full_scan)
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
       work.extend(new_work)
   return work
 
 
-def get_metadata(audio_filepaths):
-  """ Return a Metadata object from a list of audio files. """
-  artist, album, has_embedded_cover = None, None, None
-  for audio_filepath in audio_filepaths:
+def get_file_metadata(audio_filepath):
+  """ Get a Metadata object for this file of None. """
+  try:
+    mf = mutagen.File(audio_filepath)
+  except Exception:
+    return
+  if mf is None:
+    return
+
+  # artist
+  for key in ("albumartist", "artist",  # ogg
+              "TPE1", "TPE2",  # mp3
+              "aART", "\xa9ART"):  # mp4
     try:
-      mf = mutagen.File(audio_filepath)
-    except Exception:
-      continue
-    if mf is None:
-      continue
-
-    # artist
-    for key in ("albumartist", "artist",  # ogg
-                "TPE1", "TPE2",  # mp3
-                "aART", "\xa9ART"):  # mp4
-      try:
-        val = mf.get(key, None)
-      except ValueError:
-        val = None
-      if val is not None:
-        artist = val[-1]
-        break
-
-    # album
-    for key in ("_album", "album",  # ogg
-                "TALB",  # mp3
-                "\xa9alb"):  # mp4
-      try:
-        val = mf.get(key, None)
-      except ValueError:
-        val = None
-      if val is not None:
-        album = val[-1]
-        break
-
-    if artist and album:
-      # album art
-      if isinstance(mf, mutagen.ogg.OggFileType):
-        has_embedded_cover = "metadata_block_picture" in mf
-      elif isinstance(mf, mutagen.mp3.MP3):
-        has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
-      elif isinstance(mf, mutagen.mp4.MP4):
-        has_embedded_cover = "covr" in mf
-
-      # stop at the first file that succeeds (for performance)
+      val = mf.get(key, None)
+    except ValueError:
+      val = None
+    if val is not None:
+      artist = val[-1]
       break
+  else:
+    return
+
+  # album
+  for key in ("_album", "album",  # ogg
+              "TALB",  # mp3
+              "\xa9alb"):  # mp4
+    try:
+      val = mf.get(key, None)
+    except ValueError:
+      val = None
+    if val is not None:
+      album = val[-1]
+      break
+  else:
+    return
+
+  # album art
+  if isinstance(mf, mutagen.ogg.OggFileType):
+    has_embedded_cover = "metadata_block_picture" in mf
+  elif isinstance(mf, mutagen.mp3.MP3):
+    has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
+  elif isinstance(mf, mutagen.mp4.MP4):
+    has_embedded_cover = "covr" in mf
+  else:
+    return
 
   return Metadata(artist, album, has_embedded_cover)
+
+
+def get_dir_metadata(audio_filepaths, *, full_scan=False):
+  """ Build a dict of Metadata to audio filepath list by analyzing audio files. """
+  r = collections.defaultdict(list)
+
+  audio_filepaths = tuple(audio_filepaths)
+  for audio_filepath in audio_filepaths:
+    file_metadata = get_file_metadata(audio_filepath)
+    if file_metadata is None:
+      continue
+
+    if not full_scan:
+      # stop at the first file that succeeds (for performance)
+      # assume all directory files have the same artist/album couple
+      r[file_metadata] = audio_filepaths
+      break
+
+    r[file_metadata].append(audio_filepath)
+
+  return r
 
 
 VALID_PATH_CHARS = frozenset(r"-_.()!#$%&'@^{}~" + string.ascii_letters + string.digits)
@@ -173,6 +195,8 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
                 ignore_existing=False, full_scan=False):
   """ Analyze a directory (non recursively) and return a list of Work objects. """
   r = []
+
+  # filter out non audio files
   audio_filepaths = []
   for rel_filepath in rel_filepaths:
     stats["files"] += 1
@@ -182,27 +206,30 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
       continue
     if ext in AUDIO_EXTENSIONS:
       audio_filepaths.append(os.path.join(parent_dir, rel_filepath))
-  if audio_filepaths:
+
+  # get metadata
+  dir_metadata = get_dir_metadata(audio_filepaths, full_scan=full_scan)
+
+  if audio_filepaths and (not dir_metadata):
+    # failed to get any metadata for this directory
+    stats["errors"] += 1
+    logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
+
+  for metadata, album_audio_filepaths in dir_metadata.items():
+    # update stats
     stats["albums"] += 1
+
+    # add work item if needed
     if cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL:
-      metadata = get_metadata(audio_filepaths)
-      if (metadata.artist is None) or (metadata.album is None):
-        missing = True
-      else:
-        cover_filepath = pattern_to_filepath(cover_pattern, parent_dir, metadata)
-        missing = (not os.path.isfile(cover_filepath)) or ignore_existing
+      cover_filepath = pattern_to_filepath(cover_pattern, parent_dir, metadata)
+      missing = (not os.path.isfile(cover_filepath)) or ignore_existing
     else:
       cover_filepath = EMBEDDED_ALBUM_ART_SYMBOL
-      metadata = get_metadata(audio_filepaths)
       missing = (not metadata.has_embedded_cover) or ignore_existing
     if missing:
       stats["missing covers"] += 1
-      if (metadata.artist is None) or (metadata.album is None):
-        # failed to get metadata for this album
-        stats["errors"] += 1
-        logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
-      else:
-        r.append(Work(cover_filepath, audio_filepaths, metadata))
+      r.append(Work(cover_filepath, audio_filepaths, metadata))
+
   return r
 
 
@@ -351,6 +378,16 @@ def cl_main():
                           action="store_true",
                           default=False,
                           help="Ignore existing covers and force search and download for all files")
+  arg_parser.add_argument("-f",
+                          "--full-scan",
+                          action="store_true",
+                          default=False,
+                          help="""Enable scanning of all audio files in each directory.
+                                  By default the scanner will assume all audio files in a single directory are part of
+                                  the same album, and only read metadata for the first file.
+                                  Enable this if your files are organized in a way than allows files for different
+                                  albums to be in the same directory level.
+                                  WARNING: This will make the initial scan much slower.""")
   sacad.setup_common_args(arg_parser)
   arg_parser.add_argument("-v",
                           "--verbose",
@@ -386,7 +423,10 @@ def cl_main():
   logging.getLogger().addHandler(logging_handler)
 
   # do the job
-  work = analyze_lib(args.lib_dir, args.cover_pattern, ignore_existing=args.ignore_existing)
+  work = analyze_lib(args.lib_dir,
+                     args.cover_pattern,
+                     ignore_existing=args.ignore_existing,
+                     full_scan=args.full_scan)
   get_covers(work, args)
 
 
