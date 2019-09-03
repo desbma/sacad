@@ -338,6 +338,7 @@ def get_covers(work, args):
           cur_work.tmp_cover_filepath = cover_filepath
         else:
           cover_filepath = cur_work.cover_filepath
+          os.makedirs(os.path.dirname(cover_filepath), exist_ok=True)
         coroutine = sacad.search_and_download(cur_work.metadata.album,
                                               cur_work.metadata.artist,
                                               args.format,
