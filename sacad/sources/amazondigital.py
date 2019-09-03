@@ -48,7 +48,7 @@ class AmazonDigitalCoverSource(CoverSource):
     super().__init__(*args,
                      allow_cookies=True,
                      min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 300),
+                     jitter_range_ms=(0, 600),
                      **kwargs)
 
   def processQueryString(self, s):
