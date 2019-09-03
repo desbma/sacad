@@ -144,7 +144,7 @@ class TestRecursive(unittest.TestCase):
 
           work = recurse.analyze_lib(__class__.temp_dir.name, "1.dat",
                                      full_scan=full_scan)
-          work.sort(key=lambda x: x.cover_filepath)
+          work.sort(key=lambda x: (x.cover_filepath, x.metadata))
           self.assertEqual(len(work), 4 + int(full_scan))
           self.assertEqual(work[0].cover_filepath,
                            os.path.join(__class__.album1_dir, "1.dat"))
@@ -158,15 +158,20 @@ class TestRecursive(unittest.TestCase):
                            os.path.join(__class__.album4_dir, "1.dat"))
           self.assertEqual(work[2].metadata,
                            Metadata("Auphonic", "Auphonic Demonstration", True))
-          self.assertEqual(work[3].cover_filepath,
-                           os.path.join(__class__.album5_dir, "1.dat"))
-          self.assertEqual(work[3].metadata,
-                           Metadata("ARTIST2", "ALBUM2", False))
           if full_scan:
+            self.assertEqual(work[3].cover_filepath,
+                             os.path.join(__class__.album5_dir, "1.dat"))
+            self.assertEqual(work[3].metadata,
+                             Metadata("ARTIST1", "ALBUM1", False))
             self.assertEqual(work[4].cover_filepath,
                              os.path.join(__class__.album5_dir, "1.dat"))
             self.assertEqual(work[4].metadata,
-                             Metadata("ARTIST1", "ALBUM1", False))
+                             Metadata("ARTIST2", "ALBUM2", False))
+          else:
+            self.assertEqual(work[3].cover_filepath,
+                             os.path.join(__class__.album5_dir, "1.dat"))
+            self.assertEqual(work[3].metadata,
+                             Metadata("ARTIST2", "ALBUM2", False))
 
   def test_get_file_metadata(self):
     self.assertEqual(recurse.get_file_metadata(__class__.album1_filepath),
