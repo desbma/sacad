@@ -51,7 +51,7 @@ script:
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win32 make test && popd; fi"
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && TEST_DL_CACHE_DIR=$CI_CACHE_DIR/test DOWNLOAD_DIR=$CI_CACHE_DIR/build WINEARCH=win64 make test && popd; fi"
 after_success:
-  - "if [ $NATIVE_TEST -eq 1 ]; coveralls; fi"
+  - "if [ $NATIVE_TEST -eq 1 ]; then coveralls; fi"
 before_deploy:
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win32 make all && popd; fi"
   - "if [ $WINDOWS_TEST -eq 1 ]; then pushd win && WINEARCH=win64 make all && popd; fi"
