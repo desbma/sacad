@@ -22,6 +22,7 @@ SACAD is a multi platform command line tool to download album covers without man
 
 * Can target specific image size, and find results for high resolution covers
 * Support JPEG and PNG formats
+* Customizable output: save image along with the audio files / in a different directory named by artist/album / embed cover in audio files...
 * Currently support the following cover sources:
     * Last.fm
     * Google Images
