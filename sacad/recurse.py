@@ -150,7 +150,7 @@ def get_dir_metadata(audio_filepaths, *, full_scan=False):
   """ Build a dict of Metadata to audio filepath list by analyzing audio files. """
   r = collections.defaultdict(list)
 
-  audio_filepaths = tuple(audio_filepaths)
+  audio_filepaths = tuple(sorted(audio_filepaths))
   for audio_filepath in audio_filepaths:
     file_metadata = get_file_metadata(audio_filepath)
     if file_metadata is None:
