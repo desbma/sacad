@@ -97,7 +97,7 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=Fals
 
 
 def get_file_metadata(audio_filepath):
-  """ Get a Metadata object for this file of None. """
+  """ Get a Metadata object for this file or None. """
   try:
     mf = mutagen.File(audio_filepath)
   except Exception:
