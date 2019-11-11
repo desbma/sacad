@@ -274,6 +274,7 @@ class CoverSourceResult:
             await response.release()
 
         except Exception as e:
+          raise
           logging.getLogger("Cover").warning("Failed to get file metadata for URL '%s' "
                                              "(%s %s)" % (url,
                                                           e.__class__.__qualname__,

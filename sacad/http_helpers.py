@@ -60,7 +60,7 @@ class Http:
         return store_in_cache_callback, cache[url]
 
     if self.session is None:
-      await self._initSession()
+      self._initSession()
 
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
@@ -135,7 +135,7 @@ class Http:
       return resp_ok
 
     if self.session is None:
-      await self._initSession()
+      self._initSession()
 
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
@@ -191,7 +191,7 @@ class Http:
   async def fastStreamedQuery(self, url, *, headers=None, verify=True):
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
     if self.session is None:
-      await self._initSession()
+      self._initSession()
 
     response = await self.session.get(url,
                                       headers=self._buildHeaders(headers),
@@ -210,7 +210,7 @@ class Http:
       headers["User-Agent"] = DEFAULT_USER_AGENT
     return headers
 
-  async def _initSession(self):
+  def _initSession(self):
     """
     Initialize HTTP session
 
@@ -222,4 +222,4 @@ class Http:
       cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
       cookie_jar = None
-    self.session = await aiohttp.ClientSession(cookie_jar=cookie_jar)
+    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar)
