@@ -33,10 +33,10 @@ class Http:
 
   def __init__(self, *, allow_session_cookies=False, min_delay_between_accesses=0, jitter_range_ms=None, logger=logging.getLogger()):
     if not allow_session_cookies:
-      cookie_jar = aiohttp.cookiejar.DummyCookieJar()
+      self.cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
-      cookie_jar = None
-    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar)
+      self.cookie_jar = None
+    self.session = None
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
                                             "rate_watcher.sqlite")
@@ -45,7 +45,8 @@ class Http:
     self.logger = logger
 
   def __del__(self):
-    asyncio.ensure_future(self.session.close())
+    if self.session is not None:
+      asyncio.ensure_future(self.session.close())
 
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache callback, response content. """
@@ -60,6 +61,9 @@ class Http:
       elif url in cache:
         self.logger.debug("Got data for URL '%s' from cache" % (url))
         return store_in_cache_callback, cache[url]
+
+    if self.session is None:
+      await self._initSession()
 
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
@@ -133,6 +137,9 @@ class Http:
       resp_ok, response_headers = pickle.loads(cache[url])
       return resp_ok
 
+    if self.session is None:
+      await self._initSession()
+
     domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
                                                          url,
                                                          self.min_delay_between_accesses,
@@ -186,6 +193,9 @@ class Http:
 
   async def fastStreamedQuery(self, url, *, headers=None, verify=True):
     """ Send a GET request with short timeout, do not retry, and return streamed response. """
+    if self.session is None:
+      await self._initSession()
+
     response = await self.session.get(url,
                                       headers=self._buildHeaders(headers),
                                       timeout=HTTP_SHORT_TIMEOUT,
@@ -202,3 +212,13 @@ class Http:
     if "User-Agent" not in headers:
       headers["User-Agent"] = DEFAULT_USER_AGENT
     return headers
+
+  async def _initSession(self):
+    """
+    Initialize HTTP session
+
+    It must be done in a coroutine, see
+    https://docs.aiohttp.org/en/stable/faq.html#why-is-creating-a-clientsession-outside-of-an-event-loop-dangerous
+    """
+    assert(self.session is None)
+    self.session = await aiohttp.ClientSession(cookie_jar=self.cookie_jar)

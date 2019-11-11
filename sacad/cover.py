@@ -271,7 +271,7 @@ class CoverSourceResult:
                   self.setFormatMetadata(format)
 
           finally:
-            response.release()
+            await response.release()
 
         except Exception as e:
           logging.getLogger("Cover").warning("Failed to get file metadata for URL '%s' "
