@@ -157,7 +157,12 @@ def cl_main():
                                   size_tolerance_prct=args.size_tolerance_prct,
                                   amazon_tlds=args.amazon_tlds,
                                   no_lq_sources=args.no_lq_sources)
-  asyncio.run(coroutine)
+  if hasattr(asyncio, "run"):
+    # Python >=3.7.0
+    asyncio.run(coroutine)
+  else:
+    future = asyncio.ensure_future(coroutine)
+    asyncio.get_event_loop().run_until_complete(future)
 
 
 if __name__ == "__main__":

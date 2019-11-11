@@ -53,7 +53,13 @@ def sched_and_run(coroutine, delay=0):
       # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
       await asyncio.sleep(delay)
     return r
-  return asyncio.run(delay_coroutine(coroutine, delay))
+  if hasattr(asyncio, "run"):
+    # Python >=3.7.0
+    return asyncio.run(delay_coroutine(coroutine, delay))
+  else:
+    future = asyncio.ensure_future(delay_coroutine(coroutine, delay))
+    asyncio.get_event_loop().run_until_complete(future)
+    return future.result()
 
 
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
