@@ -32,10 +32,7 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 class Http:
 
   def __init__(self, *, allow_session_cookies=False, min_delay_between_accesses=0, jitter_range_ms=None, logger=logging.getLogger()):
-    if not allow_session_cookies:
-      self.cookie_jar = aiohttp.cookiejar.DummyCookieJar()
-    else:
-      self.cookie_jar = None
+    self.allow_session_cookies = allow_session_cookies
     self.session = None
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                                    appauthor=False),
@@ -221,4 +218,8 @@ class Http:
     https://docs.aiohttp.org/en/stable/faq.html#why-is-creating-a-clientsession-outside-of-an-event-loop-dangerous
     """
     assert(self.session is None)
-    self.session = await aiohttp.ClientSession(cookie_jar=self.cookie_jar)
+    if self.allow_session_cookies:
+      cookie_jar = aiohttp.cookiejar.DummyCookieJar()
+    else:
+      cookie_jar = None
+    self.session = await aiohttp.ClientSession(cookie_jar=cookie_jar)
