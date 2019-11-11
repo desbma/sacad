@@ -43,12 +43,12 @@ class AmazonDigitalCoverSource(CoverSource):
   LINK_SELECTOR = lxml.cssselect.CSSSelector("a")
 
   def __init__(self, *args, **kwargs):
-    v = random.randint(60, 69)
+    v = random.randint(60, 70)
     self.ua = "Mozilla/5.0 (X11; Linux x86_64; rv:%02u.0) Gecko/20100101 Firefox/%02u.0" % (v, v)
     super().__init__(*args,
                      allow_cookies=True,
-                     min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 600),
+                     min_delay_between_accesses=1,
+                     jitter_range_ms=(0, 1000),
                      **kwargs)
 
   def processQueryString(self, s):

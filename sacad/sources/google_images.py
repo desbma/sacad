@@ -28,7 +28,10 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
   RESULTS_SELECTOR = lxml.cssselect.CSSSelector("#search #rg_s .rg_di")
 
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, min_delay_between_accesses=2 / 3, jitter_range_ms=(-300, 300), **kwargs)
+    super().__init__(*args,
+                     min_delay_between_accesses=2 / 3,
+                     jitter_range_ms=(0, 600),
+                     **kwargs)
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """

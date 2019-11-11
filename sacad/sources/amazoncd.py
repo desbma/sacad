@@ -31,12 +31,12 @@ class AmazonCdCoverSource(CoverSource):
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
-    v = random.randint(60, 69)
+    v = random.randint(60, 70)
     self.ua = "Mozilla/5.0 (X11; Linux x86_64; rv:%02u.0) Gecko/20100101 Firefox/%02u.0" % (v, v)
     super().__init__(*args,
                      allow_cookies=True,
-                     min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 600),
+                     min_delay_between_accesses=1,
+                     jitter_range_ms=(0, 1000),
                      **kwargs)
 
   def processQueryString(self, s):
