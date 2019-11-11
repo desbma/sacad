@@ -17,8 +17,7 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-async def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources,
-                              async_loop):
+async def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources):
   """ Search and download a cover, return True if success, False instead. """
   # register sources
   source_args = (size, size_tolerance_prct)
@@ -34,11 +33,11 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
   search_futures = []
   for cover_source in cover_sources:
     coroutine = cover_source.search(album, artist)
-    future = asyncio.ensure_future(coroutine, loop=async_loop)
+    future = asyncio.ensure_future(coroutine)
     search_futures.append(future)
 
   # wait for it
-  await asyncio.wait(search_futures, loop=async_loop)
+  await asyncio.wait(search_futures)
 
   # get results
   results = []
@@ -150,7 +149,6 @@ def cl_main():
     logging.getLogger("Main").warning("optipng could not be found, PNG crunching will be disabled")
 
   # search and download
-  async_loop = asyncio.get_event_loop()
   coroutine = search_and_download(args.album,
                                   args.artist,
                                   args.format,
@@ -158,10 +156,8 @@ def cl_main():
                                   args.out_filepath,
                                   size_tolerance_prct=args.size_tolerance_prct,
                                   amazon_tlds=args.amazon_tlds,
-                                  no_lq_sources=args.no_lq_sources,
-                                  async_loop=async_loop)
-  future = asyncio.ensure_future(coroutine, loop=async_loop)
-  async_loop.run_until_complete(future)
+                                  no_lq_sources=args.no_lq_sources)
+  asyncio.run(coroutine)
 
 
 if __name__ == "__main__":

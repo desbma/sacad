@@ -45,7 +45,7 @@ def download(url, filepath=None):
           f.write(chunk)
 
 
-def sched_and_run(coroutine, async_loop, delay=0):
+def sched_and_run(coroutine, delay=0):
   async def delay_coroutine(coroutine, delay):
     r = await coroutine
     if delay > 0:
@@ -53,10 +53,7 @@ def sched_and_run(coroutine, async_loop, delay=0):
       # see https://aiohttp.readthedocs.io/en/stable/client_advanced.html#graceful-shutdown
       await asyncio.sleep(delay)
     return r
-  future = asyncio.ensure_future(delay_coroutine(coroutine, delay),
-                                 loop=async_loop)
-  async_loop.run_until_complete(future)
-  return future.result()
+  return asyncio.run(delay_coroutine(coroutine, delay))
 
 
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
@@ -73,7 +70,6 @@ class TestSacad(unittest.TestCase):
 
   def test_getMasterOfPuppetsCover(self):
     """ Search and download cover for 'Master of Puppets' with different parameters. """
-    async_loop = asyncio.get_event_loop()
     for format in sacad.cover.CoverImageFormat:
       for size in (300, 600, 1200):
         for size_tolerance in (0, 25, 50):
@@ -87,9 +83,8 @@ class TestSacad(unittest.TestCase):
                                                     tmp_filepath,
                                                     size_tolerance_prct=size_tolerance,
                                                     amazon_tlds=(),
-                                                    no_lq_sources=False,
-                                                    async_loop=async_loop)
-              sched_and_run(coroutine, async_loop, delay=0.5)
+                                                    no_lq_sources=False)
+              sched_and_run(coroutine, delay=0.5)
               out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
               self.assertEqual(out_format, format)
               self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
@@ -99,7 +94,6 @@ class TestSacad(unittest.TestCase):
 
   def test_getImageUrlMetadata(self):
     """ Download the beginning of image files to guess their format and resolution. """
-    async_loop = asyncio.get_event_loop()
     refs = {"https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (sacad.cover.CoverImageFormat.JPEG,
                                                                                          (700, 700),
                                                                                          math.ceil(18000 / sacad.CoverSourceResult.METADATA_PEEK_SIZE_INCREMENT)),
@@ -118,7 +112,7 @@ class TestSacad(unittest.TestCase):
                                       source_quality=sacad.cover.CoverSourceQuality.NORMAL,
                                       check_metadata=sacad.cover.CoverImageMetadata.ALL)
       coroutine = cover.updateImageMetadata()
-      sched_and_run(coroutine, async_loop, delay=0.5)
+      sched_and_run(coroutine, delay=0.5)
       self.assertEqual(cover.size, ref_size)
       self.assertEqual(cover.format, ref_fmt)
       self.assertGreaterEqual(sacad.CoverSourceResult.guessImageMetadataFromData.call_count, 0)
@@ -150,7 +144,6 @@ class TestSacad(unittest.TestCase):
 
   def test_coverSources(self):
     """ Check all sources return valid results with different parameters. """
-    async_loop = asyncio.get_event_loop()
     for size in range(300, 1200 + 1, 300):
       source_args = (size, 0)
       sources = [sacad.sources.LastFmCoverSource(*source_args),
@@ -161,9 +154,9 @@ class TestSacad(unittest.TestCase):
         for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
           with self.subTest(size=size, source=source, artist=artist, album=album):
             coroutine = source.search(album, artist)
-            results = sched_and_run(coroutine, async_loop, delay=0.5)
+            results = sched_and_run(coroutine, delay=0.5)
             coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
-            results = sched_and_run(coroutine, async_loop, delay=0.5)
+            results = sched_and_run(coroutine, delay=0.5)
             if not (((size > 500) and isinstance(source, (sacad.sources.LastFmCoverSource,
                                                           sacad.sources.AmazonCdCoverSource,
                                                           sacad.sources.AmazonDigitalCoverSource))) or
@@ -182,7 +175,7 @@ class TestSacad(unittest.TestCase):
       size = 300
       source = sacad.sources.LastFmCoverSource(size, 0)
       coroutine = source.search(album, artist)
-      results = sched_and_run(coroutine, async_loop, delay=0.5)
+      results = sched_and_run(coroutine, delay=0.5)
       self.assertGreaterEqual(len(results), 1)
 
   def test_unaccentuate(self):

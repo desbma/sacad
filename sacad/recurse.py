@@ -322,7 +322,6 @@ def get_covers(work, args):
       progress.update(1)
 
     # post work
-    async_loop = asyncio.get_event_loop()
     i = 0
     # default event loop on Windows has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
     # also on Linux default max open fd limit is 1024 (ulimit -n)
@@ -346,17 +345,16 @@ def get_covers(work, args):
                                               cover_filepath,
                                               size_tolerance_prct=args.size_tolerance_prct,
                                               amazon_tlds=args.amazon_tlds,
-                                              no_lq_sources=args.no_lq_sources,
-                                              async_loop=async_loop)
-        future = asyncio.ensure_future(coroutine, loop=async_loop)
+                                              no_lq_sources=args.no_lq_sources)
+        future = asyncio.ensure_future(coroutine)
         futures[future] = cur_work
 
       for future in futures:
         future.add_done_callback(post_download)
 
       # wait for end of work
-      root_future = asyncio.gather(*futures.keys(), loop=async_loop)
-      async_loop.run_until_complete(root_future)
+      root_future = asyncio.gather(*futures.keys())
+      asyncio.get_event_loop().run_until_complete(root_future)
 
 
 def cl_main():
