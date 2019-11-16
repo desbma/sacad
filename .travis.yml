@@ -21,6 +21,8 @@ matrix:
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.7-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
+    - python: "3.8"
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.8-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "pypy3.5"
