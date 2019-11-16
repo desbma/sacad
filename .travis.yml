@@ -1,5 +1,3 @@
-dist: xenial
-sudo: required
 language: python
 cache:
   pip: true
@@ -25,23 +23,23 @@ matrix:
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
     - python: "3.8-dev"
       env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0
-    - python: "pypy3.5"
-      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_VERSION=6.0.0 PYPY3_SHA256=07f16282d126abfa759702baea869b0f661aa97f4c553ebec66c624bda28155f
+    - python: "pypy3"
+      env: NATIVE_TEST=1 WINDOWS_TEST=0 PYPI_DEPLOY=0 PYPY3_PYTHON_VERSION=3.5 PYPY3_PYTHON_VERSION=3.6 PYPY3_VERSION=7.2.0 PYPY3_SHA256=59099546b4dee56edcde2c9ff706687e35bb2aa94354cd56daa78aca036bd3d8
   allow_failures:
     - python: "3.5-dev"
     - python: "3.6-dev"
     - python: "3.7-dev"
     - python: "3.8-dev"
-    - python: "pypy3.5"
+    - python: "pypy3"
     - env: NATIVE_TEST=0 WINDOWS_TEST=1 PYPI_DEPLOY=0
   fast_finish: true
 before_install:
   - "export CI_CACHE_DIR=~/.cache/ci/sacad"
   - "if [ $WINDOWS_TEST -eq 1 ]; then curl https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add - && sudo apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/; fi"
   - "sudo apt-get -q update"
-  - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3.5' ]; then pip install -U pip; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3.5' ]; then mkdir -p $CI_CACHE_DIR/pypy && echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://bitbucket.org/squeaky/portable-pypy/downloads/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 > $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
-  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3.5' ]; then echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION != 'pypy3' ]; then pip install -U pip; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then mkdir -p $CI_CACHE_DIR/pypy && echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c || curl -f -L https://github.com/squeaky-pl/portable-pypy/releases/download/pypy${PYPY3_PYTHON_VERSION}-${PYPY3_VERSION}/pypy${PYPY3_PYTHON_VERSION}-${PYPY3_VERSION}-linux_x86_64-portable.tar.bz2 > $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2; fi"
+  - "if [ $TRAVIS_PYTHON_VERSION = 'pypy3' ]; then echo $PYPY3_SHA256  $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 | sha256sum --status -c && tar -xjf $CI_CACHE_DIR/pypy/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable.tar.bz2 -C ~ && deactivate && ~/pypy$PYPY3_PYTHON_VERSION-$PYPY3_VERSION-linux_x86_64-portable/bin/virtualenv-pypy ~/pypy3-venv && . ~/pypy3-venv/bin/activate; fi"
 install:
   - "if [ $NATIVE_TEST -eq 1 ]; then sudo apt-get -V install libxml2-dev libxslt1-dev; fi"  # lxml dependencies
   - "if [ $NATIVE_TEST -eq 1 ]; then pip install -r requirements.txt; fi"
