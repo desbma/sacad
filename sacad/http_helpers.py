@@ -41,10 +41,6 @@ class Http:
     self.jitter_range_ms = jitter_range_ms
     self.logger = logger
 
-  def __del__(self):
-    if self.session is not None:
-      asyncio.ensure_future(self.session.close())
-
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache callback, response content. """
     async def store_in_cache_callback():
