@@ -44,6 +44,11 @@ class Http:
     self.rate_limited_domains = rate_limited_domains
     self.logger = logger
 
+  async def close(self):
+    """ Closes HTTP session to make aiohttp happy. """
+    if self.session is not None:
+      await self.session.close()
+
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
     """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache callback, response content. """
     async def store_in_cache_callback():

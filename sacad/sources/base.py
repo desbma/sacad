@@ -58,6 +58,10 @@ class CoverSource(metaclass=abc.ABCMeta):
         row_count = len(cache)
         logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
+  async def closeSession(self):
+    """ Closes HTTP session to make aiohttp happy. """
+    await self.http.close()
+
   async def search(self, album, artist):
     """ Search for a given album/artist and return an iterable of CoverSourceResult. """
     self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
