@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import pickle
+import urllib.parse
 
 import aiohttp
 import appdirs
@@ -31,7 +32,8 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 class Http:
 
-  def __init__(self, *, allow_session_cookies=False, min_delay_between_accesses=0, jitter_range_ms=None, logger=logging.getLogger()):
+  def __init__(self, *, allow_session_cookies=False, min_delay_between_accesses=0, jitter_range_ms=None,
+               rate_limited_domains=None, logger=logging.getLogger()):
     self.allow_session_cookies = allow_session_cookies
     self.session = None
     self.watcher_db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
@@ -39,6 +41,7 @@ class Http:
                                             "rate_watcher.sqlite")
     self.min_delay_between_accesses = min_delay_between_accesses
     self.jitter_range_ms = jitter_range_ms
+    self.rate_limited_domains = rate_limited_domains
     self.logger = logger
 
   async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
@@ -58,18 +61,26 @@ class Http:
     if self.session is None:
       self._initSession()
 
-    domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                         url,
-                                                         self.min_delay_between_accesses,
-                                                         jitter_range_ms=self.jitter_range_ms,
-                                                         logger=self.logger)
+    # do we need to rate limit?
+    if self.rate_limited_domains is not None:
+      domain = urllib.parse.urlsplit(url).path
+      rate_limit = domain in self.rate_limited_domains
+    else:
+      rate_limit = True
+    if rate_limit:
+      domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                           url,
+                                                           self.min_delay_between_accesses,
+                                                           jitter_range_ms=self.jitter_range_ms,
+                                                           logger=self.logger)
 
     for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
                                                          sleeptime=1,
                                                          max_sleeptime=HTTP_MAX_RETRY_SLEEP_S,
                                                          sleepscale=1.5),
                                             1):
-      await domain_rate_watcher.waitAccessAsync()
+      if rate_limit:
+        await domain_rate_watcher.waitAccessAsync()
 
       try:
         if post_data is not None:
@@ -133,11 +144,19 @@ class Http:
     if self.session is None:
       self._initSession()
 
-    domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
-                                                         url,
-                                                         self.min_delay_between_accesses,
-                                                         jitter_range_ms=self.jitter_range_ms,
-                                                         logger=self.logger)
+    # do we need to rate limit?
+    if self.rate_limited_domains is not None:
+      domain = urllib.parse.urlsplit(url).path
+      rate_limit = domain in self.rate_limited_domains
+    else:
+      rate_limit = True
+    if rate_limit:
+      domain_rate_watcher = rate_watcher.AccessRateWatcher(self.watcher_db_filepath,
+                                                           url,
+                                                           self.min_delay_between_accesses,
+                                                           jitter_range_ms=self.jitter_range_ms,
+                                                           logger=self.logger)
+
     resp_ok = True
     try:
       for attempt, time_to_sleep in enumerate(redo.retrier(max_attempts=HTTP_MAX_ATTEMPTS,
@@ -145,7 +164,8 @@ class Http:
                                                            max_sleeptime=HTTP_MAX_RETRY_SLEEP_SHORT_S,
                                                            sleepscale=1.5),
                                               1):
-        await domain_rate_watcher.waitAccessAsync()
+        if rate_limit:
+          await domain_rate_watcher.waitAccessAsync()
 
         try:
           async with self.session.head(url,

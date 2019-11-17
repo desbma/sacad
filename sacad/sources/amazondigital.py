@@ -49,6 +49,7 @@ class AmazonDigitalCoverSource(CoverSource):
                      allow_cookies=True,
                      min_delay_between_accesses=1,
                      jitter_range_ms=(0, 1000),
+                     rate_limited_domains=(urllib.parse.urlsplit(__class__.BASE_URL).netloc,),
                      **kwargs)
 
   def processQueryString(self, s):

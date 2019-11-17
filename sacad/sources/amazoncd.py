@@ -37,6 +37,7 @@ class AmazonCdCoverSource(CoverSource):
                      allow_cookies=True,
                      min_delay_between_accesses=1,
                      jitter_range_ms=(0, 1000),
+                     rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
                      **kwargs)
 
   def processQueryString(self, s):
