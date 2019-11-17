@@ -493,7 +493,7 @@ class CoverSourceResult:
     img_stream = io.BytesIO(img_data)
     try:
       img = PIL.Image.open(img_stream)
-    except IOError:
+    except (IOError, RuntimeError):
       format = imghdr.what(None, h=img_data)
       format = SUPPORTED_IMG_FORMATS.get(format, None)
     else:
