@@ -159,7 +159,10 @@ class TestSacad(unittest.TestCase):
             results = sched_and_run(coroutine, delay=0.5)
             coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
             results = sched_and_run(coroutine, delay=0.5)
-            if not (((size > 500) and isinstance(source, (sacad.sources.LastFmCoverSource,
+            if not (((size == 300) and
+                     (artist == "Michael Jackson") and
+                     isinstance(source, sacad.sources.AmazonCdCoverSource)) or
+                    ((size > 500) and isinstance(source, (sacad.sources.LastFmCoverSource,
                                                           sacad.sources.AmazonCdCoverSource,
                                                           sacad.sources.AmazonDigitalCoverSource))) or
                     (isinstance(source, sacad.sources.AmazonCdCoverSource) and (artist == "Björk") and
