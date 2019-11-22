@@ -134,11 +134,11 @@ def get_file_metadata(audio_filepath):
     return
 
   # album art
-  if isinstance(mf, mutagen.ogg.OggFileType):
+  if isinstance(mf.tags, mutagen._vorbis.VComment):
     has_embedded_cover = "metadata_block_picture" in mf
-  elif isinstance(mf, mutagen.mp3.MP3):
+  elif isinstance(mf.tags, mutagen.id3.ID3):
     has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
-  elif isinstance(mf, mutagen.mp4.MP4):
+  elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
     has_embedded_cover = "covr" in mf
   else:
     return
