@@ -48,11 +48,11 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
-    url = "%s/search" % (__class__.BASE_URL)
+    url = "%s/s" % (__class__.BASE_URL)
     params = collections.OrderedDict()
-    params["search-alias"] = "digital-music"
-    params["field-keywords"] = " ".join((artist, album))
-    params["sort"] = "relevancerank"
+    params["k"] = " ".join((artist, album))
+    params["i"] = "digital-music"
+    params["s"] = "relevancerank"
     return __class__.assembleUrl(url, params)
 
   async def parseResults(self, api_data):

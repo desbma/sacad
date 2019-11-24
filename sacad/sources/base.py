@@ -29,11 +29,13 @@ class CoverSource(metaclass=abc.ABCMeta):
     self.target_size = target_size
     self.size_tolerance_prct = size_tolerance_prct
     self.logger = logging.getLogger(self.__class__.__name__)
+
     self.http = http_helpers.Http(allow_session_cookies=allow_cookies,
                                   min_delay_between_accesses=min_delay_between_accesses,
                                   jitter_range_ms=jitter_range_ms,
                                   rate_limited_domains=rate_limited_domains,
                                   logger=self.logger)
+
     ua_cache_dir = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                        appauthor=False),
                                 "fake_useragent")

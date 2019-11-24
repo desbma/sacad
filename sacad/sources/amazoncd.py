@@ -29,7 +29,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
 
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
-    self.base_url = "https://www.amazon.%s/gp/search" % (tld)
+    self.base_url = "https://www.amazon.%s/gp/s" % (tld)
     super().__init__(*args,
                      rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
                      **kwargs)
@@ -37,10 +37,9 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
     params = collections.OrderedDict()
-    params["search-alias"] = "popular"
-    params["field-artist"] = artist
-    params["field-title"] = album
-    params["sort"] = "relevancerank"
+    params["i"] = "popular"
+    params["rh"] = "p_32:%s,p_28:%s" % (artist, album)
+    params["s"] = "relevancerank"
     return __class__.assembleUrl(self.base_url, params)
 
   async def parseResults(self, api_data):
