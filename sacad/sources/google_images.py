@@ -48,7 +48,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
 
   def updateHttpHeaders(self, headers):
     """ See CoverSource.updateHttpHeaders. """
-    headers["User-Agent"] = "Mozilla/5.0 Firefox/25.0"
+    headers["User-Agent"] = self.ua.firefox
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """

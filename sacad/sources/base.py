@@ -10,6 +10,7 @@ import unicodedata
 import urllib.parse
 
 import appdirs
+import fake_useragent
 import web_cache
 
 from sacad import http_helpers
@@ -33,6 +34,12 @@ class CoverSource(metaclass=abc.ABCMeta):
                                   jitter_range_ms=jitter_range_ms,
                                   rate_limited_domains=rate_limited_domains,
                                   logger=self.logger)
+    ua_cache_dir = os.path.join(appdirs.user_cache_dir(appname="sacad",
+                                                       appauthor=False),
+                                "fake_useragent")
+    os.makedirs(ua_cache_dir, exist_ok=True)
+    self.ua = fake_useragent.UserAgent(path=os.path.join(ua_cache_dir, "ua.json"))
+
     if not hasattr(__class__, "api_cache"):
       db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad",
                                                         appauthor=False),
