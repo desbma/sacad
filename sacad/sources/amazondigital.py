@@ -6,7 +6,7 @@ import lxml.cssselect
 import lxml.etree
 
 from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
-from sacad.sources.base import CoverSource
+from sacad.sources.amazonbase import AmazonBaseCoverSource
 
 
 AmazonDigitalImageFormat = collections.namedtuple("AmazonDigital",
@@ -29,7 +29,7 @@ class AmazonDigitalCoverSourceResult(CoverSourceResult):
     super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
 
-class AmazonDigitalCoverSource(CoverSource):
+class AmazonDigitalCoverSource(AmazonBaseCoverSource):
 
   """ Cover source returning Amazon.com digital music images. """
 
@@ -43,15 +43,8 @@ class AmazonDigitalCoverSource(CoverSource):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args,
-                     allow_cookies=True,
-                     min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 500),
                      rate_limited_domains=(urllib.parse.urlsplit(__class__.BASE_URL).netloc,),
                      **kwargs)
-
-  def processQueryString(self, s):
-    """ See CoverSource.processQueryString. """
-    return __class__.unaccentuate(__class__.unpunctuate(s.lower()))
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
@@ -61,10 +54,6 @@ class AmazonDigitalCoverSource(CoverSource):
     params["field-keywords"] = " ".join((artist, album))
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(url, params)
-
-  def updateHttpHeaders(self, headers):
-    """ See CoverSource.updateHttpHeaders. """
-    headers["User-Agent"] = self.ua.random
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """

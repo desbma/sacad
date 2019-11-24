@@ -1,12 +1,11 @@
 import collections
 import urllib.parse
 
-import fake_useragent
 import lxml.cssselect
 import lxml.etree
 
 from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
-from sacad.sources.base import CoverSource
+from sacad.sources.amazonbase import AmazonBaseCoverSource
 
 
 class AmazonCdCoverSourceResult(CoverSourceResult):
@@ -15,7 +14,7 @@ class AmazonCdCoverSourceResult(CoverSourceResult):
     super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
 
-class AmazonCdCoverSource(CoverSource):
+class AmazonCdCoverSource(AmazonBaseCoverSource):
 
   """ Cover source returning Amazon.com audio CD images. """
 
@@ -32,15 +31,8 @@ class AmazonCdCoverSource(CoverSource):
     assert(tld in __class__.TLDS)
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
     super().__init__(*args,
-                     allow_cookies=True,
-                     min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 500),
                      rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
                      **kwargs)
-
-  def processQueryString(self, s):
-    """ See CoverSource.processQueryString. """
-    return __class__.unaccentuate(__class__.unpunctuate(s.lower()))
 
   def getSearchUrl(self, album, artist):
     """ See CoverSource.getSearchUrl. """
@@ -50,10 +42,6 @@ class AmazonCdCoverSource(CoverSource):
     params["field-title"] = album
     params["sort"] = "relevancerank"
     return __class__.assembleUrl(self.base_url, params)
-
-  def updateHttpHeaders(self, headers):
-    """ See CoverSource.updateHttpHeaders. """
-    headers["User-Agent"] = self.ua.random
 
   async def parseResults(self, api_data):
     """ See CoverSource.parseResults. """
