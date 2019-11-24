@@ -33,8 +33,8 @@ class AmazonCdCoverSource(CoverSource):
     self.base_url = "https://www.amazon.%s/gp/search" % (tld)
     super().__init__(*args,
                      allow_cookies=True,
-                     min_delay_between_accesses=1,
-                     jitter_range_ms=(0, 1000),
+                     min_delay_between_accesses=2 / 3,
+                     jitter_range_ms=(0, 500),
                      rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
                      **kwargs)
 

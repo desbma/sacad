@@ -44,8 +44,8 @@ class AmazonDigitalCoverSource(CoverSource):
   def __init__(self, *args, **kwargs):
     super().__init__(*args,
                      allow_cookies=True,
-                     min_delay_between_accesses=1,
-                     jitter_range_ms=(0, 1000),
+                     min_delay_between_accesses=2 / 3,
+                     jitter_range_ms=(0, 500),
                      rate_limited_domains=(urllib.parse.urlsplit(__class__.BASE_URL).netloc,),
                      **kwargs)
 
