@@ -243,4 +243,6 @@ class Http:
       cookie_jar = aiohttp.cookiejar.DummyCookieJar()
     else:
       cookie_jar = None
-    self.session = aiohttp.ClientSession(cookie_jar=cookie_jar)
+    connector = aiohttp.TCPConnector()
+    self.session = aiohttp.ClientSession(connector=connector,
+                                         cookie_jar=cookie_jar)

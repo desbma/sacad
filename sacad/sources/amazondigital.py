@@ -43,7 +43,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args,
-                     rate_limited_domains=(urllib.parse.urlsplit(__class__.BASE_URL).netloc,),
+                     base_domain=urllib.parse.urlsplit(__class__.BASE_URL).netloc,
                      **kwargs)
 
   def getSearchUrl(self, album, artist):
@@ -62,6 +62,9 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8"), parser)
+    if self.isBlocked(html):
+      self.logger.warning("Source is sending a captcha")
+      return results
 
     for page_struct_version, result_selector in enumerate(__class__.RESULTS_SELECTORS):
       result_nodes = result_selector(html)

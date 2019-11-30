@@ -31,7 +31,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
     assert(tld in __class__.TLDS)
     self.base_url = "https://www.amazon.%s/s" % (tld)
     super().__init__(*args,
-                     rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
+                     base_domain=urllib.parse.urlsplit(self.base_url).netloc,
                      **kwargs)
 
   def getSearchUrl(self, album, artist):
@@ -49,6 +49,9 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
     # parse page
     parser = lxml.etree.HTMLParser()
     html = lxml.etree.XML(api_data.decode("utf-8", "ignore"), parser)
+    if self.isBlocked(html):
+      self.logger.warning("Source is sending a captcha")
+      return results
 
     for page_struct_version, result_selector in enumerate(__class__.RESULTS_SELECTORS):
       result_nodes = result_selector(html)
