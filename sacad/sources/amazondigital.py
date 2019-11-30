@@ -33,7 +33,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
 
   """ Cover source returning Amazon.com digital music images. """
 
-  BASE_URL = "https://www.amazon.com/gp"
+  BASE_URL = "https://www.amazon.com"
   DYNAPI_KEY = "A17SFUTIVB227Z"
   RESULTS_SELECTORS = (lxml.cssselect.CSSSelector("span.rush-component[data-component-type='s-product-image']"),
                        lxml.cssselect.CSSSelector("div#dm_mp3Player li.s-mp3-federated-bar-item"))

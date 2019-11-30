@@ -29,7 +29,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
 
   def __init__(self, *args, tld="com", **kwargs):
     assert(tld in __class__.TLDS)
-    self.base_url = "https://www.amazon.%s/gp/s" % (tld)
+    self.base_url = "https://www.amazon.%s/s" % (tld)
     super().__init__(*args,
                      rate_limited_domains=(urllib.parse.urlsplit(self.base_url).netloc,),
                      **kwargs)
@@ -107,7 +107,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
           # previous 500px image and are often covered by autorip badges (can be removed by cleaning url though)
           if better_img_url:
             img_url = better_img_url
-            size_url_hint = img_url.rsplit(".", 2)[1].strip("_")
+            size_url_hint = img_url.rsplit(".", 2)[1].strip("_").rsplit("_", 1)[-1]
             assert(size_url_hint.startswith("SL"))
             size_url_hint = int(size_url_hint[2:])
             size = (size_url_hint, size_url_hint)
