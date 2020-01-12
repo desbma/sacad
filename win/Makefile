@@ -1,11 +1,11 @@
 WINEARCH ?= win32
 
 # versions
-PYTHON_VERSION       := 3.6.4
-PYTHON_VERSION_DL    := 3.6.4
+PYTHON_VERSION       := 3.6.8
+PYTHON_VERSION_DL    := 3.6.8
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
-CXFREEZE_VERSION     := 5.1.1
+CXFREEZE_VERSION     := 6.1
 LXML_VERSION         := 4.2.0
 BITARRAY_VERSION     := 0.8.3
 
@@ -160,11 +160,11 @@ ${PYTHON_INSTALLER}:
 
 ${CXFREEZE_WHEEL-win32}:
 	mkdir -p $(dir $@)
-	${CURL} https://pypi.python.org/packages/3b/04/d68567b8f3265d3936e37c1ee8b3378dc189ec66b4d43650affbefcc69c5/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/ea/2b/076f152fdaff10a08ca4012713532b6d2606c1995ee85812d271135f90e2/$(notdir $@) > $@
 
 ${CXFREEZE_WHEEL-win64}:
 	mkdir -p $(dir $@)
-	${CURL} https://pypi.python.org/packages/49/2b/07fc4cfff671ea348b310400e4f13a596e02079afc6bd1c33150b2cf30de/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/50/dc/ad7111fc626a24504e468382c431698e4dcd60c944b9e9adf2187d073865/$(notdir $@) > $@
 
 ${LXML_WHEEL-win32}:
 	mkdir -p $(dir $@)
