@@ -12,6 +12,7 @@ import itertools
 import logging
 import operator
 import os
+import resource
 import string
 import tempfile
 
@@ -328,7 +329,7 @@ def get_covers(work, args):
     # so work in smaller chunks to avoid hitting fd limit
     # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
     # getting to the next one)
-    work_chunk_length = 16
+    work_chunk_length = 12
     for work_chunk in ichunk(work, work_chunk_length):
       futures = {}
       for i, cur_work in enumerate(work_chunk, i):
@@ -420,6 +421,17 @@ def cl_main():
   logging_handler = logging.StreamHandler()
   logging_handler.setFormatter(logging_formatter)
   logging.getLogger().addHandler(logging_handler)
+
+  # bump nofile ulimit
+  try:
+    soft_lim, hard_lim = resource.getrlimit(resource.RLIMIT_NOFILE)
+    if ((soft_lim != resource.RLIM_INFINITY) and
+            ((soft_lim < hard_lim) or (hard_lim == resource.RLIM_INFINITY))):
+      resource.setrlimit(resource.RLIMIT_NOFILE, (hard_lim, hard_lim))
+      logging.getLogger().debug("Max open files count set from %u to %u" % (soft_lim, hard_lim))
+  except (AttributeError, OSError):
+    # not supported on system
+    pass
 
   # do the job
   work = analyze_lib(args.lib_dir,
