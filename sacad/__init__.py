@@ -22,6 +22,7 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
   # register sources
   source_args = (size, size_tolerance_prct)
   cover_sources = [sources.LastFmCoverSource(*source_args),
+                   sources.DeezerCoverSource(*source_args),
                    sources.AmazonCdCoverSource(*source_args),
                    sources.AmazonDigitalCoverSource(*source_args)]
   for tld in amazon_tlds:
