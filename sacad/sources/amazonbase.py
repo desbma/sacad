@@ -9,8 +9,8 @@ class AmazonBaseCoverSource(CoverSource):
   def __init__(self, *args, base_domain, **kwargs):
     super().__init__(*args,
                      allow_cookies=True,
-                     min_delay_between_accesses=2 / 3,
-                     jitter_range_ms=(0, 600),
+                     min_delay_between_accesses=2,
+                     jitter_range_ms=(0, 3000),
                      rate_limited_domains=(base_domain,),
                      **kwargs)
     self.current_ua = self.ua.firefox
