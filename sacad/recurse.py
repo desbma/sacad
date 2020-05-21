@@ -12,6 +12,7 @@ import itertools
 import logging
 import operator
 import os
+import re
 import resource
 import string
 import tempfile
@@ -76,8 +77,9 @@ class Work:
             (self.metadata == other.metadata))
 
 
-def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False):
+def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False, regex_matching=False):
   """ Recursively analyze library, and return a list of work. """
+  image_file_regex = get_image_file_regex() if regex_matching else None
   work = []
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
   with tqdm.tqdm(desc="Analyzing library",
@@ -90,7 +92,8 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=Fals
                              rel_filepaths,
                              cover_pattern,
                              ignore_existing=ignore_existing,
-                             full_scan=full_scan)
+                             full_scan=full_scan,
+                             image_file_regex=image_file_regex)
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
       work.extend(new_work)
@@ -191,9 +194,18 @@ def pattern_to_filepath(pattern, parent_dir, metadata):
     filepath = os.path.join(parent_dir, filepath)
   return filepath
 
+def get_image_file_regex():
+  """
+  Build and return a regex based on supported image formats which matches strings
+  that end with '.<extension>', for example '.jpg'.
+  """
+  image_extension_joiner = "|"
+  image_extensions = ["\\.{}".format(extension) for extension in sacad.SUPPORTED_IMG_FORMATS]
+  image_extensions_joined = image_extension_joiner.join(image_extensions)
+  return re.compile("({})$".format(image_extensions_joined))
 
 def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
-                ignore_existing=False, full_scan=False):
+                ignore_existing=False, full_scan=False, image_file_regex=None):
   """ Analyze a directory (non recursively) and return a list of Work objects. """
   r = []
 
@@ -223,7 +235,10 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
     # add work item if needed
     if cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL:
       cover_filepath = pattern_to_filepath(cover_pattern, parent_dir, metadata)
-      missing = (not os.path.isfile(cover_filepath)) or ignore_existing
+      if image_file_regex:
+        missing = ignore_existing or not any(filter(None, [image_file_regex.search(item) for item in os.listdir(parent_dir)]))
+      else:
+        missing = (not os.path.isfile(cover_filepath)) or ignore_existing
     else:
       cover_filepath = EMBEDDED_ALBUM_ART_SYMBOL
       missing = (not metadata.has_embedded_cover) or ignore_existing
@@ -389,6 +404,13 @@ def cl_main():
                                   albums to be in the same directory level.
                                   WARNING: This will make the initial scan much slower.""")
   sacad.setup_common_args(arg_parser)
+  arg_parser.add_argument("-r",
+                          "--regex-matching",
+                          action="store_true",
+                          default=False,
+                          help="""Search cover image files from a folder using a regex
+                                  built from the list of supported image file extensions
+                                  (.jpg, .jpeg, .png)""")
   arg_parser.add_argument("-v",
                           "--verbose",
                           action="store_true",
@@ -437,7 +459,8 @@ def cl_main():
   work = analyze_lib(args.lib_dir,
                      args.cover_pattern,
                      ignore_existing=args.ignore_existing,
-                     full_scan=args.full_scan)
+                     full_scan=args.full_scan,
+                     regex_matching=args.regex_matching)
   get_covers(work, args)
 
 

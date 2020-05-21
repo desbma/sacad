@@ -52,11 +52,17 @@ class TestRecursive(unittest.TestCase):
     mf["artist"] = "ARTIST1"
     mf["album"] = "ALBUM1"
     mf.save()
+    with open(os.path.join(cls.album1_dir, "01 - Not .jpg.dat"), "wb") as f:
+      f.write(b"\x00" * 8)
+    with open(os.path.join(cls.album1_dir, "02 - Not jpg"), "wb") as f:
+      f.write(b"\x00" * 8)
 
     cls.album2_dir = os.path.join(cls.temp_dir.name, "album2")
     os.mkdir(cls.album2_dir)
     cls.album2_filepath1 = os.path.join(cls.album2_dir, "1.dat")
     with open(cls.album2_filepath1, "wb") as f:
+      f.write(b"\x00" * 8)
+    with open(os.path.join(cls.album2_dir, "cover.jpg"), "wb") as f:
       f.write(b"\x00" * 8)
 
     cls.album2_filepath2 = shutil.copyfile(cls.album1_filepath, os.path.join(cls.album2_dir, "2 track.ogg"))
@@ -70,18 +76,24 @@ class TestRecursive(unittest.TestCase):
     url = r"https://www.dropbox.com/s/mtac0y8azs5hqxo/Shuffle%2520for%2520K.M.mp3?dl=1"
     cls.album3_filepath = os.path.join(cls.album3_dir, "1 track.mp3")
     download(url, cls.album3_filepath)
+    with open(os.path.join(cls.album3_dir, "image.gif"), "wb") as f:
+      f.write(b"\x00" * 8)
 
     cls.album4_dir = os.path.join(cls.temp_dir.name, "album4")
     os.mkdir(cls.album4_dir)
     url = "https://auphonic.com/media/audio-examples/01.auphonic-demo-unprocessed.m4a"
     cls.album4_filepath = os.path.join(cls.album4_dir, "1 track.m4a")
     download(url, cls.album4_filepath)
+    with open(os.path.join(cls.album4_dir, "Folder.png"), "wb") as f:
+      f.write(b"\x00" * 8)
 
     cls.album5_dir = os.path.join(cls.temp_dir.name, "album5")
     os.mkdir(cls.album5_dir)
     cls.album5_filepath1 = shutil.copy(cls.album1_filepath, cls.album5_dir)
     cls.album5_filepath2 = shutil.copy(cls.album2_filepath2, os.path.join(cls.album5_dir,
                                                                           "bzz.ogg"))
+    with open(os.path.join(cls.album5_dir, "front.jpeg"), "wb") as f:
+      f.write(b"\x00" * 8)
 
     cls.not_album_dir = os.path.join(cls.temp_dir.name, "not an album")
     os.mkdir(cls.not_album_dir)
@@ -163,6 +175,27 @@ class TestRecursive(unittest.TestCase):
             self.assertEqual(work[4].metadata,
                              Metadata("ARTIST2", "ALBUM2", False))
 
+      for ignore_existing in (False, True):
+        with self.subTest(ignore_existing=ignore_existing):
+          work = recurse.analyze_lib(__class__.temp_dir.name, "a.jpg",
+                                     ignore_existing=ignore_existing,
+                                     regex_matching=True)
+
+          if not ignore_existing:
+            work.sort(key=lambda x: (x.cover_filepath, x.metadata))
+            self.assertEqual(len(work), 2)
+            self.assertEqual(work[0].cover_filepath,
+                            os.path.join(__class__.album1_dir, "a.jpg"))
+            self.assertEqual(work[0].metadata,
+                            Metadata("ARTIST1", "ALBUM1", False))
+            self.assertEqual(work[1].cover_filepath,
+                            os.path.join(__class__.album3_dir, "a.jpg"))
+            self.assertEqual(work[1].metadata,
+                            Metadata("jpfmband", "Paris S.F", True))
+
+          else:
+            self.assertEqual(len(work), 5)
+
   def test_get_file_metadata(self):
     self.assertEqual(recurse.get_file_metadata(__class__.album1_filepath),
                      Metadata("ARTIST1", "ALBUM1", False))
@@ -216,7 +249,7 @@ class TestRecursive(unittest.TestCase):
                               os.listdir(__class__.album1_dir),
                               "1.jpg")
       self.assertIn("files", stats)
-      self.assertEqual(stats["files"], 1)
+      self.assertEqual(stats["files"], 3)
       self.assertIn("albums", stats)
       self.assertEqual(stats["albums"], 1)
       self.assertIn("missing covers", stats)
@@ -227,30 +260,43 @@ class TestRecursive(unittest.TestCase):
       self.assertEqual(r[0].audio_filepaths, (__class__.album1_filepath,))
       self.assertEqual(r[0].metadata, Metadata("ARTIST1", "ALBUM1", False))
 
-      stats.clear()
-      r = recurse.analyze_dir(stats,
-                              __class__.album2_dir,
-                              os.listdir(__class__.album2_dir),
-                              "1.jpg")
-      self.assertIn("files", stats)
-      self.assertEqual(stats["files"], 2)
-      self.assertIn("albums", stats)
-      self.assertEqual(stats["albums"], 1)
-      self.assertIn("missing covers", stats)
-      self.assertEqual(stats["missing covers"], 1)
-      self.assertNotIn("errors", stats)
-      self.assertEqual(len(r), 1)
-      self.assertEqual(r[0].cover_filepath, os.path.join(__class__.album2_dir, "1.jpg"))
-      self.assertEqual(r[0].audio_filepaths, (__class__.album2_filepath2,))
-      self.assertEqual(r[0].metadata, Metadata("ARTIST2", "ALBUM2", False))
-      stats.clear()
+      for regex_matching in (False, True):
+        for ignore_existing in (False, True):
+          with self.subTest(regex_matching=regex_matching,
+                            ignore_existing=ignore_existing):
+            stats.clear()
+            image_file_regex = recurse.get_image_file_regex() if regex_matching else None
+            r = recurse.analyze_dir(stats,
+                                    __class__.album2_dir,
+                                    os.listdir(__class__.album2_dir),
+                                    "1.jpg",
+                                    image_file_regex=image_file_regex,
+                                    ignore_existing=ignore_existing)
+            self.assertIn("files", stats)
+            self.assertEqual(stats["files"], 3)
+            self.assertIn("albums", stats)
+            self.assertEqual(stats["albums"], 1)
+            self.assertNotIn("errors", stats)
 
+            if regex_matching and not ignore_existing:
+              self.assertNotIn("missing covers", stats)
+              self.assertEqual(len(r), 0)
+            elif ignore_existing or not regex_matching:
+              self.assertIn("missing covers", stats)
+              self.assertEqual(stats["missing covers"], 1)
+              self.assertEqual(len(r), 1)
+              self.assertEqual(r[0].cover_filepath, os.path.join(__class__.album2_dir, "1.jpg"))
+              self.assertEqual(r[0].audio_filepaths, (__class__.album2_filepath2,))
+              self.assertEqual(r[0].metadata, Metadata("ARTIST2", "ALBUM2", False))
+
+
+      stats.clear()
       r = recurse.analyze_dir(stats,
                               __class__.album2_dir,
                               os.listdir(__class__.album2_dir),
                               "1.dat")
       self.assertIn("files", stats)
-      self.assertEqual(stats["files"], 2)
+      self.assertEqual(stats["files"], 3)
       self.assertIn("albums", stats)
       self.assertEqual(stats["albums"], 1)
       self.assertNotIn("missing covers", stats)
@@ -290,7 +336,7 @@ class TestRecursive(unittest.TestCase):
                                   "1.jpg",
                                   ignore_existing=ignore_existing)
           self.assertIn("files", stats)
-          self.assertEqual(stats["files"], 2)
+          self.assertEqual(stats["files"], 4)
           self.assertIn("albums", stats)
           self.assertEqual(stats["albums"], 1)
           if not ignore_existing:
@@ -304,6 +350,7 @@ class TestRecursive(unittest.TestCase):
             self.assertEqual(r[0].audio_filepaths, (__class__.album1_filepath,))
             self.assertEqual(r[0].metadata, Metadata("ARTIST1", "ALBUM1", False))
           self.assertNotIn("errors", stats)
+    os.remove(os.path.join(__class__.album1_dir, "1.jpg"))
 
   def test_pattern_to_filepath(self):
     tmp_dir = tempfile.gettempdir()
