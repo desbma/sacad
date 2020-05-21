@@ -150,7 +150,7 @@ class TestSacad(unittest.TestCase):
       source_args = (size, 0)
       sources = [sacad.sources.LastFmCoverSource(*source_args),
                  sacad.sources.DeezerCoverSource(*source_args),
-                 sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
+                 #sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
                  sacad.sources.AmazonDigitalCoverSource(*source_args)]
       sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
       for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
