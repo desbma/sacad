@@ -148,7 +148,9 @@ class TestSacad(unittest.TestCase):
     """ Check all sources return valid results with different parameters. """
     for size in range(300, 1200 + 1, 300):
       source_args = (size, 0)
-      sources = []
+      sources = [sacad.sources.LastFmCoverSource(*source_args),
+                 sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
+                 sacad.sources.AmazonDigitalCoverSource(*source_args)]
       sources.extend(sacad.sources.AmazonCdCoverSource(*source_args, tld=tld) for tld in sacad.sources.AmazonCdCoverSource.TLDS)
       for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
         for source in sources:
