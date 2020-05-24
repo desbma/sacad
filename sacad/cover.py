@@ -37,6 +37,8 @@ HAS_OPTIPNG = shutil.which("optipng") is not None
 SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG,
                          "jpeg": CoverImageFormat.JPEG,
                          "png": CoverImageFormat.PNG}
+FORMAT_EXTENSIONS = {CoverImageFormat.JPEG: "jpg",
+                     CoverImageFormat.PNG: "png"}
 
 
 def is_square(x):
@@ -111,7 +113,7 @@ class CoverSourceResult:
       s += " [x%u]" % (len(self.urls))
     return s
 
-  async def get(self, target_format, target_size, size_tolerance_prct, out_filepath):
+  async def get(self, target_format, target_size, size_tolerance_prct, out_filepath, *, preserve_format=False):
     """ Download cover and process it. """
     if self.source_quality.value <= CoverSourceQuality.LOW.value:
       logging.getLogger("Cover").warning("Cover is from a potentially unreliable source and may be unrelated to the search")
@@ -143,7 +145,7 @@ class CoverSourceResult:
                         (abs(max(self.size) - target_size) >
                          target_size * size_tolerance_prct / 100))
     need_join = len(images_data) > 1
-    if need_join or need_format_change or need_size_change:
+    if (need_format_change and (not preserve_format)) or need_join or need_size_change:
       # post process
       image_data = self.postProcess(images_data,
                                     target_format if need_format_change else None,
@@ -152,7 +154,14 @@ class CoverSourceResult:
       # crunch image again
       image_data = await __class__.crunch(image_data, target_format)
 
+      format_changed = need_format_change
+    else:
+      format_changed = False
+
     # write it
+    if need_format_change and (not format_changed):
+      assert(preserve_format)
+      out_filepath = "%s.%s" % (os.path.splitext(out_filepath)[0], FORMAT_EXTENSIONS[self.format])
     with open(out_filepath, "wb") as file:
       file.write(image_data)
 

@@ -17,7 +17,8 @@ from sacad import sources
 from sacad.cover import CoverSourceResult, HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS
 
 
-async def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources):
+async def search_and_download(album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds,
+                              no_lq_sources, preserve_format=False):
   """ Search and download a cover, return True if success, False instead. """
   # register sources
   source_args = (size, size_tolerance_prct)
@@ -59,7 +60,7 @@ async def search_and_download(album, artist, format, size, out_filepath, *, size
   done = False
   for result in results:
     try:
-      await result.get(format, size, size_tolerance_prct, out_filepath)
+      await result.get(format, size, size_tolerance_prct, out_filepath, preserve_format=preserve_format)
     except Exception as e:
       logging.getLogger("Main").warning("Download of %s failed: %s %s" % (result,
                                                                           e.__class__.__qualname__,
@@ -102,6 +103,11 @@ def setup_common_args(arg_parser):
                           help="""Disable cover sources that may return unreliable results (ie. Google Images).
                                   It will speed up search and improve reliability, but may fail to find results for
                                   some difficult searches.""")
+  arg_parser.add_argument("-p",
+                          "--preserve-format",
+                          action="store_true",
+                          default=False,
+                          help="Preserve source image format if possible. Target format will still be prefered when sorting results.")
 
 
 def cl_main():
@@ -165,7 +171,8 @@ def cl_main():
                                   args.out_filepath,
                                   size_tolerance_prct=args.size_tolerance_prct,
                                   amazon_tlds=args.amazon_tlds,
-                                  no_lq_sources=args.no_lq_sources)
+                                  no_lq_sources=args.no_lq_sources,
+                                  preserve_format=args.preserve_format)
   if hasattr(asyncio, "run"):
     # Python >=3.7.0
     asyncio.run(coroutine)

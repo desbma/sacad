@@ -76,7 +76,7 @@ class Work:
             (self.metadata == other.metadata))
 
 
-def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False):
+def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False, all_formats=False):
   """ Recursively analyze library, and return a list of work. """
   work = []
   stats = collections.OrderedDict(((k, 0) for k in("files", "albums", "missing covers", "errors")))
@@ -90,7 +90,8 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=Fals
                              rel_filepaths,
                              cover_pattern,
                              ignore_existing=ignore_existing,
-                             full_scan=full_scan)
+                             full_scan=full_scan,
+                             all_formats=all_formats)
       progress.set_postfix(stats, refresh=False)
       progress.update(1)
       work.extend(new_work)
@@ -193,7 +194,7 @@ def pattern_to_filepath(pattern, parent_dir, metadata):
 
 
 def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
-                ignore_existing=False, full_scan=False):
+                ignore_existing=False, full_scan=False, all_formats=False):
   """ Analyze a directory (non recursively) and return a list of Work objects. """
   r = []
 
@@ -223,7 +224,10 @@ def analyze_dir(stats, parent_dir, rel_filepaths, cover_pattern, *,
     # add work item if needed
     if cover_pattern != EMBEDDED_ALBUM_ART_SYMBOL:
       cover_filepath = pattern_to_filepath(cover_pattern, parent_dir, metadata)
-      missing = (not os.path.isfile(cover_filepath)) or ignore_existing
+      if all_formats:
+        missing = ignore_existing or (not any(os.path.isfile("%s.%s" % (os.path.splitext(cover_filepath)[0], ext)) for ext in sacad.SUPPORTED_IMG_FORMATS))
+      else:
+        missing = ignore_existing or (not os.path.isfile(cover_filepath))
     else:
       cover_filepath = EMBEDDED_ALBUM_ART_SYMBOL
       missing = (not metadata.has_embedded_cover) or ignore_existing
@@ -346,7 +350,8 @@ def get_covers(work, args):
                                               cover_filepath,
                                               size_tolerance_prct=args.size_tolerance_prct,
                                               amazon_tlds=args.amazon_tlds,
-                                              no_lq_sources=args.no_lq_sources)
+                                              no_lq_sources=args.no_lq_sources,
+                                              preserve_format=args.preserve_format)
         future = asyncio.ensure_future(coroutine)
         futures[future] = cur_work
 
@@ -437,7 +442,8 @@ def cl_main():
   work = analyze_lib(args.lib_dir,
                      args.cover_pattern,
                      ignore_existing=args.ignore_existing,
-                     full_scan=args.full_scan)
+                     full_scan=args.full_scan,
+                     all_formats=args.preserve_format)
   get_covers(work, args)
 
 
