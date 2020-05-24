@@ -9,7 +9,7 @@ from sacad.sources.base import CoverSource
 class DeezerCoverSourceResult(CoverSourceResult):
 
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, source_quality=CoverSourceQuality.REFERENCE, **kwargs)
+    super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
 
 class DeezerCoverSource(CoverSource):
