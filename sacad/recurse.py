@@ -434,7 +434,7 @@ def cl_main():
             ((soft_lim < hard_lim) or (hard_lim == resource.RLIM_INFINITY))):
       resource.setrlimit(resource.RLIMIT_NOFILE, (hard_lim, hard_lim))
       logging.getLogger().debug("Max open files count set from %u to %u" % (soft_lim, hard_lim))
-  except (AttributeError, OSError):
+  except (AttributeError, OSError, ValueError):
     # not supported on system
     pass
 
