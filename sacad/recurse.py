@@ -12,7 +12,6 @@ import itertools
 import logging
 import operator
 import os
-import resource
 import string
 import tempfile
 
@@ -429,12 +428,13 @@ def cl_main():
 
   # bump nofile ulimit
   try:
+    import resource
     soft_lim, hard_lim = resource.getrlimit(resource.RLIMIT_NOFILE)
     if ((soft_lim != resource.RLIM_INFINITY) and
             ((soft_lim < hard_lim) or (hard_lim == resource.RLIM_INFINITY))):
       resource.setrlimit(resource.RLIMIT_NOFILE, (hard_lim, hard_lim))
       logging.getLogger().debug("Max open files count set from %u to %u" % (soft_lim, hard_lim))
-  except (AttributeError, OSError, ValueError):
+  except (AttributeError, ImportError, OSError, ValueError):
     # not supported on system
     pass
 
