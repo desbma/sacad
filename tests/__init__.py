@@ -137,7 +137,7 @@ class TestSacad(unittest.TestCase):
     self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[2], img_sig[1]))
 
     urls = ("https://images-na.ssl-images-amazon.com/images/I/91euo%2BzpKEL._SL1500_.jpg",
-            "https://lastfm-img2.akamaized.net/i/u/300x300/c971ea7edb14ede6bab2f94666bb9005.png")
+            "https://lastfm.freetls.fastly.net/i/u/300x300/ae3c6b3e81cfd5f5fec71285955d63eb.png")
     img_sig = {}
     for i, url in enumerate(urls):
       img_data = download(url)
