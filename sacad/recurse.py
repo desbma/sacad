@@ -13,6 +13,7 @@ import logging
 import operator
 import os
 import string
+import sys
 import tempfile
 
 import mutagen
@@ -332,7 +333,7 @@ def get_covers(work, args):
     # so work in smaller chunks to avoid hitting fd limit
     # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
     # getting to the next one)
-    work_chunk_length = 12
+    work_chunk_length = 4 if sys.platform.startswith("win") else 12
     for work_chunk in ichunk(work, work_chunk_length):
       futures = {}
       for i, cur_work in enumerate(work_chunk, i):
