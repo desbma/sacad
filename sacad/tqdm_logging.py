@@ -3,6 +3,11 @@
 import contextlib
 import logging
 
+import threading
+
+
+logging_handlers_lock = threading.Lock()
+
 
 class TqdmLoggingHandler(logging.Handler):
 
@@ -19,21 +24,25 @@ class TqdmLoggingHandler(logging.Handler):
 
 @contextlib.contextmanager
 def redirect_logging(tqdm_obj, logger=logging.getLogger()):
-  """ Context manager to redirect logging to a TqdmLoggingHandler object and then restore the original. """
-  # remove current handler
-  assert(len(logger.handlers) == 1)
-  prev_handler = logger.handlers[0]
-  logger.removeHandler(prev_handler)
+  """ Context manager to redirect logging to a TqdmLoggingHandler object and then restore the original logging behavior. """
+  with logging_handlers_lock:
+    # remove current handlers
+    prev_handlers = []
+    for handler in logger.handlers.copy():
+      prev_handlers.append(handler)
+      logger.removeHandler(handler)
 
-  # add tqdm handler
-  tqdm_handler = TqdmLoggingHandler(tqdm_obj)
-  if prev_handler.formatter is not None:
-    tqdm_handler.setFormatter(prev_handler.formatter)
-  logger.addHandler(tqdm_handler)
+    # add tqdm handler
+    tqdm_handler = TqdmLoggingHandler(tqdm_obj)
+    if prev_handlers[-1].formatter is not None:
+      tqdm_handler.setFormatter(prev_handlers[-1].formatter)
+    logger.addHandler(tqdm_handler)
 
   try:
     yield
   finally:
-    # restore handler
-    logger.removeHandler(tqdm_handler)
-    logger.addHandler(prev_handler)
+    # restore handlers
+    with logging_handlers_lock:
+      logger.removeHandler(tqdm_handler)
+      for handler in prev_handlers:
+        logger.addHandler(handler)
