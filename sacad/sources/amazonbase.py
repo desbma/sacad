@@ -1,7 +1,6 @@
 from sacad.sources.base import CoverSource
 
 
-
 class AmazonBaseCoverSource(CoverSource):
 
   """ Base class for Amazon cover sources. """
