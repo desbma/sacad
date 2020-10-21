@@ -15,7 +15,7 @@ import urllib.parse
 import appdirs
 try:
   from bitarray import bitdiff
-except AttributeError:
+except ImportError:
   from bitarray.util import count_xor as bitdiff
 import PIL.Image
 import PIL.ImageFile
