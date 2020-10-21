@@ -664,7 +664,11 @@ class CoverSourceResult:
   @staticmethod
   def areImageSigsSimilar(sig1, sig2):
     """ Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise. """
-    return bitarray.bitdiff(sig1, sig2) < 100
+    try:
+      bitdiff = bitarray.bitdiff
+    except AttributeError:
+      bitdiff = bitarray.util.count_xor
+    return bitdiff(sig1, sig2) < 100
 
 
 # silence third party module loggers
