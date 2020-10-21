@@ -13,7 +13,10 @@ import shutil
 import urllib.parse
 
 import appdirs
-import bitarray
+try:
+  from bitarray import bitdiff
+except AttributeError:
+  from bitarray.util import count_xor as bitdiff
 import PIL.Image
 import PIL.ImageFile
 import PIL.ImageFilter
@@ -664,10 +667,6 @@ class CoverSourceResult:
   @staticmethod
   def areImageSigsSimilar(sig1, sig2):
     """ Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise. """
-    try:
-      bitdiff = bitarray.bitdiff
-    except AttributeError:
-      bitdiff = bitarray.util.count_xor
     return bitdiff(sig1, sig2) < 100
 
 
