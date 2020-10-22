@@ -13,6 +13,7 @@ import shutil
 import urllib.parse
 
 import appdirs
+import bitarray
 try:
   from bitarray import bitdiff
 except ImportError:
