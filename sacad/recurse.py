@@ -245,6 +245,10 @@ def embed_album_art(cover_filepath, audio_filepaths):
 
   for filepath in audio_filepaths:
     mf = mutagen.File(filepath)
+
+    if mf.tags is None:
+      mf.add_tags()
+
     if (isinstance(mf.tags, mutagen._vorbis.VComment) or
             isinstance(mf, mutagen.ogg.OggFileType)):
       picture = mutagen.flac.Picture()
