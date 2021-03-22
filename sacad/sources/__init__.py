@@ -1,5 +1,5 @@
 from sacad.sources.amazoncd import AmazonCdCoverSource, AmazonCdCoverSourceResult
 from sacad.sources.amazondigital import AmazonDigitalCoverSource, AmazonDigitalCoverSourceResult
 from sacad.sources.deezer import DeezerCoverSource, DeezerCoverSourceResult
-from sacad.sources.google_images import GoogleImagesWebScrapeCoverSource, GoogleImagesCoverSourceResult
+from sacad.sources.google_images import GoogleImagesCoverSourceResult, GoogleImagesWebScrapeCoverSource
 from sacad.sources.lastfm import LastFmCoverSource, LastFmCoverSourceResult
