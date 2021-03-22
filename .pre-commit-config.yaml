@@ -1,0 +1,81 @@
+# https://pre-commit.com
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: check-xml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args:
+          - --fix=no
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+        args:
+          - --markdown-linebreak-ext=md
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.812
+    hooks:
+      - id: mypy
+        args:
+          - --ignore-missing-imports
+
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.4
+    hooks:
+      - id: flake8
+        args:
+          # https://www.flake8rules.com/
+          # E203 and W503 and are not compatible with black,
+          # see https://black.readthedocs.io/en/stable/compatible_configs.html#flake8
+          - --extend-ignore=E203,W503
+          - --max-complexity=20
+          - --max-line-length=120
+
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 5.1.1
+    hooks:
+      - id: pydocstyle
+        args:
+          # http://www.pydocstyle.org/en/5.1.1/error_codes.html
+          - --ignore=D105,D107,D202,D210,D211,D212
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.7.1.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.7.0
+    hooks:
+      - id: isort
+        args:
+          - -l=120
+          # black compatibility, see https://black.readthedocs.io/en/stable/compatible_configs.html#isort
+          - --profile=black
+
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+        language_version: python3
+        args:
+          - --line-length=120
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.2.1
+    hooks:
+      - id: prettier
+        args:
+          - --print-width=120
+          - --write

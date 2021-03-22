@@ -13,4 +13,4 @@ git add sacad/__init__.py
 
 git commit -m "Version ${VERSION}"
 
-git tag -m "Version ${VERSION}" ${VERSION}
+git tag -m "Version ${VERSION}" "${VERSION}"

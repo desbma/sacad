@@ -1,7 +1,6 @@
-SACAD
-=====
-Smart Automatic Cover Art Downloader
-------------------------------------
+# SACAD
+
+## Smart Automatic Cover Art Downloader
 
 [![PyPI version](https://img.shields.io/pypi/v/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![AUR version](https://img.shields.io/aur/version/sacad.svg?style=flat)](https://aur.archlinux.org/packages/sacad/)
@@ -17,36 +16,34 @@ SACAD is a multi platform command line tool to download album covers without man
 
 **Since version 2.0, SACAD has been rewritten to use the [asyncio](https://docs.python.org/3/library/asyncio.html) framework, which typically results in ~40% faster processing for `sacad` and 600-700% faster (yes, 6-7x faster!) for `sacad_r`.**
 
-
 ## Features
 
-* Can target specific image size, and find results for high resolution covers
-* Support JPEG and PNG formats
-* Customizable output: save image along with the audio files / in a different directory named by artist/album / embed cover in audio files...
-* Currently support the following cover sources:
-    * Amazon CD (.com, .ca, .cn, .fr, .de, .co.jp and .co.uk variants)
-    * Amazon digital music
-    * ~~CoverLib~~ (site is down)
-    * Deezer
-    * Google Images
-    * Last.fm
-* Smart sorting algorithm to select THE best cover for a given query, using several factors: source reliability, image format, image size, image similarity with reference cover, etc.
-* Automatically crunch images with optipng or jpegoptim (can save 30% of filesize without any loss of quality, great for portable players)
-* Cache search results locally for faster future search
-* Do everything to avoid getting blocked by the sources: hide user-agent and automatically take care of rate limiting
-* Automatically convert/resize image if needed
-* Multiplatform (Windows/Mac/Linux)
+- Can target specific image size, and find results for high resolution covers
+- Support JPEG and PNG formats
+- Customizable output: save image along with the audio files / in a different directory named by artist/album / embed cover in audio files...
+- Currently support the following cover sources:
+  - Amazon CD (.com, .ca, .cn, .fr, .de, .co.jp and .co.uk variants)
+  - Amazon digital music
+  - ~~CoverLib~~ (site is down)
+  - Deezer
+  - Google Images
+  - Last.fm
+- Smart sorting algorithm to select THE best cover for a given query, using several factors: source reliability, image format, image size, image similarity with reference cover, etc.
+- Automatically crunch images with optipng or jpegoptim (can save 30% of filesize without any loss of quality, great for portable players)
+- Cache search results locally for faster future search
+- Do everything to avoid getting blocked by the sources: hide user-agent and automatically take care of rate limiting
+- Automatically convert/resize image if needed
+- Multiplatform (Windows/Mac/Linux)
 
 SACAD is designed to be robust and be executed in batch of thousands of queries:
 
-* HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
-* When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
-* Process several queries simultaneously (using [asyncio](https://docs.python.org/3/library/asyncio.html)), to speed up processing
-* Automatically reuse TCP connections (HTTP Keep-Alive), for better performance
-* Automatically retry failed HTTP requests
-* Music library scan supports all common audio formats (MP3, AAC, Vorbis, FLAC..)
-* Cover sources page or API changes are quickly detected, thanks to high test coverage, and SACAD is quickly updated accordingly
-
+- HTML parsing is done without regex but with the LXML library, which is faster, and more robust to page changes
+- When the size of an image reported by a source is not reliable (ie. Google Images), automatically download the first KB of the file to get its real size from the file header
+- Process several queries simultaneously (using [asyncio](https://docs.python.org/3/library/asyncio.html)), to speed up processing
+- Automatically reuse TCP connections (HTTP Keep-Alive), for better performance
+- Automatically retry failed HTTP requests
+- Music library scan supports all common audio formats (MP3, AAC, Vorbis, FLAC..)
+- Cover sources page or API changes are quickly detected, thanks to high test coverage, and SACAD is quickly updated accordingly
 
 ## Installation
 
@@ -75,13 +72,12 @@ Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/saca
 
 Additionnaly, if you want to benefit from image crunching (lossless recompression to save additional space):
 
-* Install [optipng](http://optipng.sourceforge.net/)
-* Install [jpegoptim](http://freecode.com/projects/jpegoptim)
+- Install [optipng](http://optipng.sourceforge.net/)
+- Install [jpegoptim](http://freecode.com/projects/jpegoptim)
 
 On Ubuntu and other Debian derivatives, you can install both with `sudo apt-get install optipng jpegoptim`.
 
 Note that depending of the speed of your CPU, crunching may significantly slow down processing as it is very CPU intensive (especially for PNG files).
-
 
 ## Command line usage
 
@@ -95,22 +91,19 @@ To download the cover of _Master of Puppets_ from _Metallica_, to the file `Albu
 
 To download covers for your library with the same parameters as previous example: `sacad_r library_directory 600 AlbumArt.jpg`.
 
-
 ## Limitations
 
-* Only supports front covers
-
+- Only supports front covers
 
 ## Adding cover sources
 
 Adding a new cover source is very easy if you are a Python developer, you need to inherit the `CoverSource` class and implement the following methods:
 
-* `getSearchUrl(self, album, artist)`
-* `parseResults(self, api_data)`
-* `updateHttpHeaders(self, headers)` (optional)
+- `getSearchUrl(self, album, artist)`
+- `parseResults(self, api_data)`
+- `updateHttpHeaders(self, headers)` (optional)
 
 See comments in the code for more information.
-
 
 ## License
 
