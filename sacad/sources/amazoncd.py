@@ -1,3 +1,5 @@
+""" Amazon CD cover source. """
+
 import collections
 import urllib.parse
 
@@ -9,6 +11,9 @@ from sacad.sources.amazonbase import AmazonBaseCoverSource
 
 
 class AmazonCdCoverSourceResult(CoverSourceResult):
+
+    """ Amazon CD cover search result. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 
@@ -106,8 +111,9 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
                     pass
                 else:
                     better_img_url = img_node.get("data-old-hires")
-                    # img_node.get("data-a-dynamic-image") contains json with image urls too, but they are not larger than
-                    # previous 500px image and are often covered by autorip badges (can be removed by cleaning url though)
+                    # img_node.get("data-a-dynamic-image") contains json with image urls too, but they are not larger
+                    # than previous 500px image and are often covered by autorip badges (can be removed by cleaning url
+                    # though)
                     if better_img_url:
                         img_url = better_img_url
                         size_url_hint = img_url.rsplit(".", 2)[1].strip("_").rsplit("_", 1)[-1]

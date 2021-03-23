@@ -82,6 +82,7 @@ async def search_and_download(
 
 
 def setup_common_args(arg_parser):
+    """ Set up command line arguments shared between sacad and sacad_r. """
     arg_parser.add_argument(
         "-t",
         "--size-tolerance",
@@ -121,6 +122,7 @@ def setup_common_args(arg_parser):
 
 
 def cl_main():
+    """ Command line entry point for sacad_r. """
     # parse args
     arg_parser = argparse.ArgumentParser(
         description="SACAD v%s. Search and download an album cover." % (__version__),

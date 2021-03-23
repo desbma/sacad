@@ -316,7 +316,8 @@ def get_covers(work, args):
 
         # post work
         i = 0
-        # default event loop on Windows has a 512 fd limit, see https://docs.python.org/3/library/asyncio-eventloops.html#windows
+        # default event loop on Windows has a 512 fd limit,
+        # see https://docs.python.org/3/library/asyncio-eventloops.html#windows
         # also on Linux default max open fd limit is 1024 (ulimit -n)
         # so work in smaller chunks to avoid hitting fd limit
         # this also updates the progress faster (instead of working on all searches, work on finishing the chunk before
@@ -354,6 +355,7 @@ def get_covers(work, args):
 
 
 def cl_main():
+    """ Command line entry point. """
     # parse args
     arg_parser = argparse.ArgumentParser(
         description="SACAD (recursive tool) v%s.%s" % (sacad.__version__, __doc__),
@@ -364,9 +366,9 @@ def cl_main():
     arg_parser.add_argument(
         "cover_pattern",
         help="""Cover image path pattern.
-                                  {artist} and {album} are replaced by their tag value.
-                                  You can set an absolute path, otherwise destination directory is relative to the audio files.
-                                  Use single character '%s' to embed JPEG into audio files."""
+                {artist} and {album} are replaced by their tag value.
+                You can set an absolute path, otherwise destination directory is relative to the audio files.
+                Use single character '%s' to embed JPEG into audio files."""
         % (EMBEDDED_ALBUM_ART_SYMBOL),
     )
     arg_parser.add_argument(
@@ -382,11 +384,11 @@ def cl_main():
         action="store_true",
         default=False,
         help="""Enable scanning of all audio files in each directory.
-                                  By default the scanner will assume all audio files in a single directory are part of
-                                  the same album, and only read metadata for the first file.
-                                  Enable this if your files are organized in a way than allows files for different
-                                  albums to be in the same directory level.
-                                  WARNING: This will make the initial scan much slower.""",
+                By default the scanner will assume all audio files in a single directory are part of
+                the same album, and only read metadata for the first file.
+                Enable this if your files are organized in a way than allows files for different
+                albums to be in the same directory level.
+                WARNING: This will make the initial scan much slower.""",
     )
     sacad.setup_common_args(arg_parser)
     arg_parser.add_argument(

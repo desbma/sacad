@@ -1,3 +1,5 @@
+""" Deezer cover source. """
+
 import collections
 import json
 import operator
@@ -7,6 +9,9 @@ from sacad.sources.base import CoverSource
 
 
 class DeezerCoverSourceResult(CoverSourceResult):
+
+    """ Deezer search cover result. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 

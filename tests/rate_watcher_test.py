@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import asyncio
+""" Unit tests for rate watcher. """
+
 import os
 import tempfile
 import time
@@ -14,7 +15,11 @@ ALMOST_NO_TIME = 0.05
 
 
 class TestRateWatcher(unittest.TestCase):
+
+    """ Test suite for rate watcher. """
+
     def test_minDelayBetweenAccesses(self):
+        """ Test rate limit. """
         with tempfile.TemporaryDirectory() as tmp_dir:
             db_filepath = os.path.join(tmp_dir, "db.sqlite")
             sched_and_run(

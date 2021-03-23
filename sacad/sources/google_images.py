@@ -1,3 +1,5 @@
+""" Google Images cover source. """
+
 import collections
 import json
 import urllib.parse
@@ -10,6 +12,9 @@ from sacad.sources.base import CoverSource
 
 
 class GoogleImagesCoverSourceResult(CoverSourceResult):
+
+    """ Google Images cover search result. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.LOW, **kwargs)
 

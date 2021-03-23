@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+""" Unit tests for main module. """
+
 import asyncio
 import contextlib
 import logging
@@ -20,6 +22,7 @@ web_cache.DISABLE_PERSISTENT_CACHING = True
 
 
 def is_internet_reachable():
+    """ Return True if we can reach remote servers. """
     try:
         # open TCP socket to Google DNS server
         with socket.create_connection(("8.8.8.8", 53)):
@@ -32,6 +35,7 @@ def is_internet_reachable():
 
 
 def download(url, filepath=None):
+    """ Download URL. """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
@@ -45,6 +49,8 @@ def download(url, filepath=None):
 
 
 def sched_and_run(coroutine, delay=0):
+    """ Schedule, run and wait for the result of a coroutine. """
+
     async def delay_coroutine(coroutine, delay):
         r = await coroutine
         if delay > 0:
@@ -60,8 +66,12 @@ def sched_and_run(coroutine, delay=0):
 
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
 class TestSacad(unittest.TestCase):
+
+    """ Test suite for main module. """
+
     @staticmethod
     def getImgInfo(img_filepath):
+        """ Get image file metadata. """
         with open(img_filepath, "rb") as img_file:
             img = PIL.Image.open(img_file)
             format = img.format.lower()
@@ -135,7 +145,7 @@ class TestSacad(unittest.TestCase):
     def test_compareImageSignatures(self):
         """ Compare images using their signatures. """
         urls = (
-            "https://is4-ssl.mzstatic.com/image/thumb/Features6/v4/ee/bd/69/eebd6962-9b25-c177-c175-b3b3e641a29d/dj.edqjfvzd.jpg/828x0w.jpg",
+            "https://is4-ssl.mzstatic.com/image/thumb/Features6/v4/ee/bd/69/eebd6962-9b25-c177-c175-b3b3e641a29d/dj.edqjfvzd.jpg/828x0w.jpg",  # noqa: E501
             "http://www.jesus-is-savior.com/Evils%20in%20America/Rock-n-Roll/highway_to_hell-large.jpg",
             "https://images.recordsale.de/600/600/acdc_highway-to-hell(red-labels)_11.jpg",
         )
@@ -205,9 +215,11 @@ class TestSacad(unittest.TestCase):
             self.assertGreaterEqual(len(results), 1)
 
     def test_unaccentuate(self):
+        """ Check unaccentuate remove accents. """
         self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
 
     def test_is_square(self):
+        """ Check is_square identify squares. """
         for x in range(1, 100):
             if x in (1, 4, 9, 16, 25, 36, 49, 64, 81):
                 self.assertTrue(sacad.cover.is_square(x), x)

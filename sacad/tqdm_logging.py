@@ -16,13 +16,14 @@ class TqdmLoggingHandler(logging.Handler):
         super().__init__(*args, **kwargs)
 
     def emit(self, record):
+        """ See logging.Handler.emit. """
         msg = self.format(record)
         self.tqdm.write(msg)
 
 
 @contextlib.contextmanager
 def redirect_logging(tqdm_obj, logger=logging.getLogger()):
-    """ Context manager to redirect logging to a TqdmLoggingHandler object and then restore the original logging behavior. """
+    """ Redirect logging to a TqdmLoggingHandler object and then restore the original logging behavior. """
     with logging_handlers_lock:
         # remove current handlers
         prev_handlers = []

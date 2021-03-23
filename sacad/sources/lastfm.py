@@ -1,3 +1,5 @@
+""" LastFM cover source. """
+
 import collections
 import os.path
 import string
@@ -8,6 +10,9 @@ from sacad.sources.base import MAX_THUMBNAIL_SIZE, CoverSource
 
 
 class LastFmCoverSourceResult(CoverSourceResult):
+
+    """ LastFM cover search result. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.REFERENCE, **kwargs)
 

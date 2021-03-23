@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+""" Unit tests for recurse module. """
+
 import collections
 import contextlib
 import functools
@@ -17,6 +19,7 @@ from sacad.recurse import Metadata
 
 
 def download(url, filepath):
+    """ Download URL to a local file. """
     cache_dir = os.getenv("TEST_DL_CACHE_DIR")
     if cache_dir is not None:
         os.makedirs(cache_dir, exist_ok=True)
@@ -34,12 +37,16 @@ def download(url, filepath):
 
 
 class TestRecursive(unittest.TestCase):
+
+    """ Test suite for recurse module. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.maxDiff = None
 
     @classmethod
     def setUpClass(cls):
+        """ Set up test suite stuff. """
         #
         # Album 1: 1 valid ogg track
         #
@@ -128,9 +135,11 @@ class TestRecursive(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        """ Cleanup test suite stuff. """
         cls.temp_dir.cleanup()
 
     def test_analyze_lib(self):
+        """ Test recursive directory analysis. """
         for full_scan in (False, True):
             for all_formats in (False, True):
                 with self.subTest(full_scan=full_scan, all_formats=all_formats):
@@ -177,6 +186,7 @@ class TestRecursive(unittest.TestCase):
                         self.assertEqual(work[idx].metadata, Metadata("ARTIST2", "ALBUM2", False))
 
     def test_get_file_metadata(self):
+        """ Test file metadata extraction. """
         self.assertEqual(recurse.get_file_metadata(__class__.album1_filepath), Metadata("ARTIST1", "ALBUM1", False))
         self.assertIsNone(recurse.get_file_metadata(__class__.album2_filepath1))
         self.assertEqual(recurse.get_file_metadata(__class__.album2_filepath2), Metadata("ARTIST2", "ALBUM2", False))
@@ -184,6 +194,7 @@ class TestRecursive(unittest.TestCase):
         self.assertIsNone(recurse.get_file_metadata(__class__.invalid_album_filepath2))
 
     def test_get_dir_metadata(self):
+        """ Test directory metadata extraction. """
         self.assertEqual(
             dict(recurse.get_dir_metadata((__class__.album1_filepath,))),
             {Metadata("ARTIST1", "ALBUM1", False): (__class__.album1_filepath,)},
@@ -228,6 +239,7 @@ class TestRecursive(unittest.TestCase):
         self.assertEqual(len(r), 0)
 
     def test_analyze_dir(self):
+        """ Test directory analysis and reporting. """
         stats = collections.defaultdict(int)
         r = recurse.analyze_dir(stats, __class__.album1_dir, os.listdir(__class__.album1_dir), "1.jpg")
         self.assertIn("files", stats)
@@ -326,6 +338,7 @@ class TestRecursive(unittest.TestCase):
                     self.assertNotIn("errors", stats)
 
     def test_pattern_to_filepath(self):
+        """ Test filepath generation from pattern. """
         tmp_dir = tempfile.gettempdir()
         metadata = Metadata("art1st|*\\//", "albvm|*\\//", None)
         self.assertEqual(recurse.pattern_to_filepath("a", tmp_dir, metadata), os.path.join(tmp_dir, "a"))

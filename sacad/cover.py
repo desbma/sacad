@@ -1,3 +1,5 @@
+""" Sacad album cover. """
+
 import asyncio
 import enum
 import imghdr
@@ -64,6 +66,7 @@ class CoverSourceResult:
         rank=None,
         check_metadata=CoverImageMetadata.NONE,
     ):
+        # noqa: D205,D213,D400,D415
         """
         Args:
           urls: Cover image file URL. Can be a tuple of URLs of images to be joined
@@ -73,7 +76,8 @@ class CoverSourceResult:
           source: Cover source object that produced this result
           source_quality: Quality of the cover's source as a CoverSourceQuality enum value
           rank: Integer ranking of the cover in the other results from the same source, or None if not available
-          check_metadata: If != 0, hint that the format and/or size parameters are not reliable and must be double checked
+          check_metadata: If != 0, hint that the format and/or size parameters are not reliable and must be double
+          checked
         """
         if not isinstance(urls, str):
             self.urls = urls
@@ -180,7 +184,12 @@ class CoverSourceResult:
             file.write(image_data)
 
     def postProcess(self, images_data, new_format, new_size):
-        """ Convert image binary data to a target format and/or size (None if no conversion needed), and return the processed data. """
+        """
+        Convert image binary data.
+
+        Convert image binary data to a target format and/or size (None if no conversion needed), and return the
+        processed data.
+        """
         if len(images_data) == 1:
             in_bytes = io.BytesIO(images_data[0])
             img = PIL.Image.open(in_bytes)
@@ -234,7 +243,7 @@ class CoverSourceResult:
         return out_bytes.getvalue()
 
     async def updateImageMetadata(self):
-        """ Partially download image file(s) to get its real metadata, or get it from cache. """
+        """ Download image file(s) partially to get its real metadata, or get it from cache. """
         assert self.needMetadataUpdate()
 
         width_sum, height_sum = 0, 0
@@ -386,7 +395,8 @@ class CoverSourceResult:
 
         Return -1 if first is a worst match than second, 1 otherwise, or 0 if cover can't be discriminated.
 
-        This code is responsible for comparing two cover results to identify the best one, and is used to sort all results.
+        This code is responsible for comparing two cover results to identify the best one, and is used to sort all
+        results.
         It is probably the most important piece of code of this tool.
         Covers with sizes under the target size (+- configured tolerance) are excluded before comparison.
         The following factors are used in order:

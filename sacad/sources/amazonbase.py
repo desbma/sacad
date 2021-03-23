@@ -1,3 +1,5 @@
+""" Base class for Amazon cover sources. """
+
 from sacad.sources.base import CoverSource
 
 

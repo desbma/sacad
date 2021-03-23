@@ -1,3 +1,5 @@
+""" Amazon digital cover source. """
+
 import collections
 import operator
 import urllib.parse
@@ -8,7 +10,7 @@ import lxml.etree
 from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
 from sacad.sources.amazonbase import AmazonBaseCoverSource
 
-AmazonDigitalImageFormat = collections.namedtuple("AmazonDigital", ("id", "slice_count", "total_res"))
+AmazonDigitalImageFormat = collections.namedtuple("AmazonDigitalImageFormat", ("id", "slice_count", "total_res"))
 AMAZON_DIGITAL_IMAGE_FORMATS = [
     AmazonDigitalImageFormat(
         0, 1, 600
@@ -34,6 +36,9 @@ AMAZON_DIGITAL_IMAGE_FORMATS.sort(key=operator.attrgetter("total_res"), reverse=
 
 
 class AmazonDigitalCoverSourceResult(CoverSourceResult):
+
+    """ Amazon digital cover search result. """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
 

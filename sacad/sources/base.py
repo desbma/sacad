@@ -1,3 +1,5 @@
+""" Common code for all cover sources cover sources. """
+
 import abc
 import asyncio
 import itertools
@@ -14,7 +16,7 @@ import fake_useragent
 import web_cache
 
 from sacad import http_helpers
-from sacad.cover import CoverImageFormat, CoverSourceQuality
+from sacad.cover import CoverSourceQuality
 
 MAX_THUMBNAIL_SIZE = 256
 
@@ -80,7 +82,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                 logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
 
     async def closeSession(self):
-        """ Closes HTTP session to make aiohttp happy. """
+        """ Close HTTP session to make aiohttp happy. """
         await self.http.close()
 
     async def search(self, album, artist):

@@ -1,3 +1,5 @@
+""" Additions to the tempfile module. """
+
 import contextlib
 import os
 import tempfile
@@ -6,9 +8,10 @@ import tempfile
 @contextlib.contextmanager
 def mkstemp(*args, **kwargs):
     """
-    Context manager similar to tempfile.NamedTemporaryFile except the file is not deleted on close, and only the filepath
-    is returned
-    .. warnings:: Unlike tempfile.mkstemp, this is not secure
+    Safely generate a temporary file path.
+
+    Context manager similar to tempfile.NamedTemporaryFile except the file is not deleted on close, and only the
+    filepath is returned
     """
     fd, filename = tempfile.mkstemp(*args, **kwargs)
     os.close(fd)

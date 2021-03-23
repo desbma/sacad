@@ -27,6 +27,9 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
 class Http:
+
+    """ Async HTTP client code. """
+
     def __init__(
         self,
         *,
@@ -47,12 +50,17 @@ class Http:
         self.logger = logger
 
     async def close(self):
-        """ Closes HTTP session to make aiohttp happy. """
+        """ Close HTTP session to make aiohttp happy. """
         if self.session is not None:
             await self.session.close()
 
     async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
-        """ Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache callback, response content. """
+        """
+        Send a GET/POST request.
+
+        Send a GET/POST request or get data from cache, retry if it fails, and return a tuple of store in cache
+        callback, response content.
+        """
 
         async def store_in_cache_callback():
             pass
@@ -147,7 +155,12 @@ class Http:
         return store_in_cache_callback, content
 
     async def isReachable(self, url, *, headers=None, verify=True, response_headers=None, cache=None):
-        """ Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code, False instead. """
+        """
+        Send a HEAD request.
+
+        Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code,
+        False instead.
+        """
         if (cache is not None) and (url in cache):
             # try from cache first
             self.logger.debug("Got headers for URL '%s' from cache" % (url))
@@ -244,7 +257,7 @@ class Http:
 
     def _initSession(self):
         """
-        Initialize HTTP session
+        Initialize HTTP session.
 
         It must be done in a coroutine, see
         https://docs.aiohttp.org/en/stable/faq.html#why-is-creating-a-clientsession-outside-of-an-event-loop-dangerous

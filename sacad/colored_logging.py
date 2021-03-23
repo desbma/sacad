@@ -11,7 +11,11 @@ LEVEL_BOLD_MAPPING = {logging.WARNING: False, logging.ERROR: False, logging.CRIT
 
 
 class ColoredFormatter(logging.Formatter):
+
+    """ Logging formatter coloring terminal output according to error criticity. """
+
     def format(self, record):
+        """ See logging.Formatter.format. """
         message = super().format(record)
         if sys.stderr.isatty() and not sys.platform.startswith("win32"):
             try:
@@ -20,5 +24,5 @@ class ColoredFormatter(logging.Formatter):
             except KeyError:
                 pass
             else:
-                message = "\033[%u;%um%s\033[0m" % (int(bold), 30 + color_code, message)
+                message = f"\033[{bold:d};{30 + color_code}m{message}\033[0m"
         return message

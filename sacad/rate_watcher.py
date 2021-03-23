@@ -1,4 +1,4 @@
-""" This module provides a class with a context manager to help avoid overloading web servers. """
+""" Provide a class with a context manager to help avoid overloading web servers. """
 
 import asyncio
 import logging
