@@ -29,6 +29,8 @@ import web_cache
 
 from sacad import mkstemp_ctx
 
+PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
+
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
 
 CoverSourceQuality = enum.Enum("CoverSourceQuality", ("LOW", "NORMAL", "REFERENCE"))
