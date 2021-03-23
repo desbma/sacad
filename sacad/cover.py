@@ -242,7 +242,7 @@ class CoverSourceResult:
         img.save(out_bytes, format=target_format.name, quality=90, optimize=True)
         return out_bytes.getvalue()
 
-    async def updateImageMetadata(self):
+    async def updateImageMetadata(self):  # noqa: C901
         """ Download image file(s) partially to get its real metadata, or get it from cache. """
         assert self.needMetadataUpdate()
 

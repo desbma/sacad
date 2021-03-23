@@ -54,7 +54,9 @@ class Http:
         if self.session is not None:
             await self.session.close()
 
-    async def query(self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None):
+    async def query(  # noqa: C901
+        self, url, *, post_data=None, headers=None, verify=True, cache=None, pre_cache_callback=None
+    ):
         """
         Send a GET/POST request.
 
