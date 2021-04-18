@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import logging
 import math
+import os
 import socket
 import unittest
 import unittest.mock
@@ -170,6 +171,7 @@ class TestSacad(unittest.TestCase):
             img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
         self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[1]))
 
+    @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_coverSources(self):
         """ Check all sources return valid results with different parameters. """
         for size in range(300, 1200 + 1, 300):
