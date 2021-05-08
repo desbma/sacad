@@ -131,7 +131,7 @@ def get_file_metadata(audio_filepath):
     elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
         has_embedded_cover = "covr" in mf
     else:
-        return
+        has_embedded_cover = False
 
     return Metadata(artist, album, has_embedded_cover)
 
