@@ -33,6 +33,9 @@ PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
 
+# LOW quality means source can return completely unrelated images
+# REFERENCE means the api query is not fuzzy, this is an exact match for the artist/album couple
+# NORMAL is in between: reliable source buyt can return wrong album for example
 CoverSourceQuality = enum.Enum("CoverSourceQuality", ("LOW", "NORMAL", "REFERENCE"))
 
 CoverImageMetadata = enum.IntEnum("CoverImageMetadata", (("NONE", 0), ("FORMAT", 1), ("SIZE", 2), ("ALL", 3)))
