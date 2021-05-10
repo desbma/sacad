@@ -100,7 +100,7 @@ def get_file_metadata(audio_filepath):
         return
 
     # artist
-    for key in ("albumartist", "artist", "TPE1", "TPE2", "aART", "\xa9ART"):  # ogg  # mp3  # mp4
+    for key in ("albumartist", "artist", "TPE1", "TPE2", "aART", "\xa9ART"):  # ogg/ape, mp3, mp4
         try:
             val = mf.get(key, None)
         except ValueError:
@@ -112,7 +112,7 @@ def get_file_metadata(audio_filepath):
         return
 
     # album
-    for key in ("_album", "album", "TALB", "\xa9alb"):  # ogg  # mp3  # mp4
+    for key in ("_album", "album", "TALB", "\xa9alb"):  # ogg/ape, mp3, mp4
         try:
             val = mf.get(key, None)
         except ValueError:
@@ -130,7 +130,11 @@ def get_file_metadata(audio_filepath):
         has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
     elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
         has_embedded_cover = "covr" in mf
+    elif isinstance(mf.tags, mutagen.apev2.APEv2):
+        # APEv2 does not support embedded album art
+        has_embedded_cover = False
     else:
+        # unknown tag format
         return
 
     return Metadata(artist, album, has_embedded_cover)
@@ -249,10 +253,19 @@ def embed_album_art(cover_filepath, audio_filepaths):
             picture.mime = "image/jpeg"
             encoded_data = base64.b64encode(picture.write())
             mf["metadata_block_picture"] = encoded_data.decode("ascii")
+
         elif isinstance(mf.tags, mutagen.id3.ID3) or isinstance(mf, mutagen.id3.ID3FileType):
             mf.tags.add(mutagen.id3.APIC(mime="image/jpeg", type=mutagen.id3.PictureType.COVER_FRONT, data=cover_data))
+
         elif isinstance(mf.tags, mutagen.mp4.MP4Tags) or isinstance(mf, mutagen.mp4.MP4):
             mf["covr"] = [mutagen.mp4.MP4Cover(cover_data, imageformat=mutagen.mp4.AtomDataType.JPEG)]
+
+        elif isinstance(mf.tags, mutagen.apev2.APEv2) or isinstance(mf, mutagen.apev2.APEv2File):
+            logging.getLogger("sacad_r").warning(
+                f"APEv2 tag format does not support embedding album art, skipping file {filepath!r}"
+            )
+            continue
+
         mf.save()
 
 
