@@ -161,15 +161,22 @@ class TestSacad(unittest.TestCase):
         self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[2], img_sig[0]))
         self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[2], img_sig[1]))
 
-        urls = (
-            "https://images-na.ssl-images-amazon.com/images/I/91euo%2BzpKEL._SL1500_.jpg",
-            "https://lastfm.freetls.fastly.net/i/u/300x300/ae3c6b3e81cfd5f5fec71285955d63eb.png",
+        not_similar_urls = (
+            (
+                "https://images-na.ssl-images-amazon.com/images/I/91euo%2BzpKEL._SL1500_.jpg",
+                "https://lastfm.freetls.fastly.net/i/u/300x300/ae3c6b3e81cfd5f5fec71285955d63eb.png",
+            ),
+            (
+                "https://lastfm.freetls.fastly.net/i/u/300x300/306101fec6ce447e941d2aaca22777c1.png",
+                "https://m.media-amazon.com/images/I/816CGCFeXKL.jpg",
+            ),
         )
-        img_sig = {}
-        for i, url in enumerate(urls):
-            img_data = download(url)
-            img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
-        self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[1]))
+        for urls in not_similar_urls:
+            img_sig = {}
+            for i, url in enumerate(urls):
+                img_data = download(url)
+                img_sig[i] = sacad.CoverSourceResult.computeImgSignature(img_data)
+            self.assertFalse(sacad.CoverSourceResult.areImageSigsSimilar(img_sig[0], img_sig[1]))
 
     @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_coverSources(self):
