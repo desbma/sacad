@@ -20,6 +20,8 @@ async def search_and_download(
     album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources, preserve_format=False
 ):
     """ Search and download a cover, return True if success, False instead. """
+    logger = logging.getLogger("Main")
+
     # register sources
     source_args = (size, size_tolerance_prct)
     cover_sources = [
@@ -58,7 +60,10 @@ async def search_and_download(
         ),
     )
     if not results:
-        logging.getLogger("Main").info("No results")
+        logger.info("No results")
+    else:
+        for i, result in enumerate(results, 1):
+            logger.debug(f"#{i:02} {result}")
 
     # download
     done = False
@@ -66,7 +71,7 @@ async def search_and_download(
         try:
             await result.get(format, size, size_tolerance_prct, out_filepath, preserve_format=preserve_format)
         except Exception as e:
-            logging.getLogger("Main").warning("Download of %s failed: %s %s" % (result, e.__class__.__qualname__, e))
+            logger.warning("Download of %s failed: %s %s" % (result, e.__class__.__qualname__, e))
             continue
         else:
             done = True
