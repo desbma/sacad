@@ -40,7 +40,15 @@ def download(url, filepath=None):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-        with contextlib.closing(requests.get(url, timeout=5, verify=False, stream=(filepath is not None))) as response:
+        with contextlib.closing(
+            requests.get(
+                url,
+                timeout=5,
+                verify=False,
+                stream=(filepath is not None),
+                headers={"User-Agent": "Mozilla/5.0 (nope) Gecko/20100101 Firefox/90.0"},
+            )
+        ) as response:
             response.raise_for_status()
             if filepath is None:
                 return response.content
