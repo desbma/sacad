@@ -71,10 +71,10 @@ class Http:
             # try from cache first
             if post_data is not None:
                 if (url, post_data) in cache:
-                    self.logger.debug("Got data for URL '%s' %s from cache" % (url, dict(post_data)))
+                    self.logger.debug(f"Got data for URL {url!r} {dict(post_data)} from cache")
                     return store_in_cache_callback, cache[(url, post_data)]
             elif url in cache:
-                self.logger.debug("Got data for URL '%s' from cache" % (url))
+                self.logger.debug(f"Got data for URL {url!r} from cache")
                 return store_in_cache_callback, cache[url]
 
         if self.session is None:
@@ -140,13 +140,12 @@ class Http:
 
             except (asyncio.TimeoutError, aiohttp.ClientError) as e:
                 self.logger.warning(
-                    "Querying '%s' failed (attempt %u/%u): %s %s"
-                    % (url, attempt, HTTP_MAX_ATTEMPTS, e.__class__.__qualname__, e)
+                    f"Querying {url!r} failed (attempt {attempt}/{HTTP_MAX_ATTEMPTS}): {e.__class__.__qualname_} {e}"
                 )
                 if attempt == HTTP_MAX_ATTEMPTS:
                     raise
                 else:
-                    self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
+                    self.logger.debug(f"Retrying in {time_to_sleep:.3f}s")
                     await asyncio.sleep(time_to_sleep)
 
             else:
@@ -165,7 +164,7 @@ class Http:
         """
         if (cache is not None) and (url in cache):
             # try from cache first
-            self.logger.debug("Got headers for URL '%s' from cache" % (url))
+            self.logger.debug(f"Got headers for URL {url!r} from cache")
             resp_ok, response_headers = pickle.loads(cache[url])
             return resp_ok
 
@@ -209,13 +208,12 @@ class Http:
 
                 except (asyncio.TimeoutError, aiohttp.ClientError) as e:
                     self.logger.warning(
-                        "Probing '%s' failed (attempt %u/%u): %s %s"
-                        % (url, attempt, HTTP_MAX_ATTEMPTS, e.__class__.__qualname__, e)
+                        f"Probing {url!r} failed (attempt {attempt}/{HTTP_MAX_ATTEMPTS}): {e.__class__.__qualname_} {e}"
                     )
                     if attempt == HTTP_MAX_ATTEMPTS:
                         resp_ok = False
                     else:
-                        self.logger.debug("Retrying in %.3fs" % (time_to_sleep))
+                        self.logger.debug(f"Retrying in {time_to_sleep:.3f}s")
                         await asyncio.sleep(time_to_sleep)
 
                 else:
@@ -227,7 +225,7 @@ class Http:
                     break  # http retry loop
 
         except aiohttp.ClientResponseError as e:
-            self.logger.debug("Probing '%s' failed: %s %s" % (url, e.__class__.__qualname__, e))
+            self.logger.debug(f"Probing {url!r} failed: {e.__class__.__qualname__} {e}")
             resp_ok = False
 
         if cache is not None:

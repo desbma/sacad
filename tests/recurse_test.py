@@ -262,7 +262,7 @@ class TestRecursive(unittest.TestCase):
                         stats,
                         __class__.album2_dir,
                         os.listdir(__class__.album2_dir),
-                        "1.%s" % (format_ext),
+                        f"1.{format_ext}",
                         all_formats=all_formats,
                     )
                     self.assertIn("files", stats)
@@ -276,7 +276,7 @@ class TestRecursive(unittest.TestCase):
                         self.assertIn("missing covers", stats)
                         self.assertEqual(stats["missing covers"], 1)
                         self.assertEqual(len(r), 1)
-                        self.assertEqual(r[0].cover_filepath, os.path.join(__class__.album2_dir, "1.%s" % (format_ext)))
+                        self.assertEqual(r[0].cover_filepath, os.path.join(__class__.album2_dir, f"1.{format_ext}"))
                         self.assertEqual(r[0].audio_filepaths, (__class__.album2_filepath2,))
                         self.assertEqual(r[0].metadata, Metadata("ARTIST2", "ALBUM2", False))
                     self.assertNotIn("errors", stats)

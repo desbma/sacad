@@ -71,7 +71,7 @@ async def search_and_download(
         try:
             await result.get(format, size, size_tolerance_prct, out_filepath, preserve_format=preserve_format)
         except Exception as e:
-            logger.warning("Download of %s failed: %s %s" % (result, e.__class__.__qualname__, e))
+            logger.warning(f"Download of {result} failed: {e.__class__.__qualname__} {e}")
             continue
         else:
             done = True
@@ -130,7 +130,7 @@ def cl_main():
     """ Command line entry point for sacad_r. """
     # parse args
     arg_parser = argparse.ArgumentParser(
-        description="SACAD v%s. Search and download an album cover." % (__version__),
+        description=f"SACAD v{__version__}. Search and download an album cover.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     arg_parser.add_argument("artist", help="Artist to search for")
@@ -151,7 +151,7 @@ def cl_main():
     try:
         args.format = SUPPORTED_IMG_FORMATS[args.format]
     except KeyError:
-        print("Unable to guess image format from extension, or unknown format: %s" % (args.format))
+        print(f"Unable to guess image format from extension, or unknown format: {args.format}")
         exit(1)
 
     # setup logger

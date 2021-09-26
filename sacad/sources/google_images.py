@@ -39,7 +39,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         # build request url
         params = collections.OrderedDict()
         params["gbv"] = "2"
-        params["q"] = '"%s" "%s" front cover' % (artist, album)
+        params["q"] = f'"{artist}" "{album}" front cover'
         if abs(self.target_size - 500) < 300:
             params["tbs"] = "isz:m"
         elif self.target_size > 800:

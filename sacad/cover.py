@@ -125,15 +125,15 @@ class CoverSourceResult:
             ):
                 purged_count = cache.purge()
                 logging.getLogger("Cache").debug(
-                    "%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name)
+                    f"{purged_count} obsolete entries have been removed from cache {cache_name!r}"
                 )
                 row_count = len(cache)
-                logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
+                logging.getLogger("Cache").debug(f"Cache {cache_name!r} contains {row_count} entries")
 
     def __str__(self):
-        s = "%s '%s'" % (self.__class__.__name__, self.urls[0])
+        s = f"{self.__class__.__name__} {self.urls[0]!r}"
         if len(self.urls) > 1:
-            s += " [x%u]" % (len(self.urls))
+            s += f" [x{len(self.urls)}]"
         return s
 
     async def get(self, target_format, target_size, size_tolerance_prct, out_filepath, *, preserve_format=False):
@@ -146,7 +146,7 @@ class CoverSourceResult:
         images_data = []
         for i, url in enumerate(self.urls):
             # download
-            logging.getLogger("Cover").info("Downloading cover '%s' (part %u/%u)..." % (url, i + 1, len(self.urls)))
+            logging.getLogger("Cover").info(f"Downloading cover {url!r} (part {i + 1}/{len(self.urls)})...")
             headers = {}
             self.source.updateHttpHeaders(headers)
 
@@ -184,7 +184,7 @@ class CoverSourceResult:
         # write it
         if need_format_change and (not format_changed):
             assert preserve_format
-            out_filepath = "%s.%s" % (os.path.splitext(out_filepath)[0], FORMAT_EXTENSIONS[self.format])
+            out_filepath = f"{os.path.splitext(out_filepath)[0]}.{FORMAT_EXTENSIONS[self.format]}"
         with open(out_filepath, "wb") as file:
             file.write(image_data)
 
@@ -203,7 +203,7 @@ class CoverSourceResult:
 
         else:
             # images need to be joined before further processing
-            logging.getLogger("Cover").info("Joining %u images..." % (len(images_data)))
+            logging.getLogger("Cover").info(f"Joining {len(images_data)} images...")
             # TODO find a way to do this losslessly for JPEG
             new_img = PIL.Image.new("RGB", self.size)
             assert is_square(len(images_data))
@@ -230,9 +230,7 @@ class CoverSourceResult:
 
         out_bytes = io.BytesIO()
         if new_size is not None:
-            logging.getLogger("Cover").info(
-                "Resizing from %ux%u to %ux%u..." % (self.size[0], self.size[1], new_size, new_size)
-            )
+            logging.getLogger("Cover").info(f"Resizing from {self.size[0]}x{self.size[1]} to {new_size}x{new_size}...")
             img = img.resize((new_size, new_size), PIL.Image.LANCZOS)
             # apply unsharp filter to remove resize blur (equivalent to (images/graphics)magick -unsharp 1.5x1+0.7+0.02)
             # we don't use PIL.ImageFilter.SHARPEN or PIL.ImageEnhance.Sharpness because we want precise control over
@@ -240,7 +238,7 @@ class CoverSourceResult:
             unsharper = PIL.ImageFilter.UnsharpMask(radius=1.5, percent=70, threshold=5)
             img = img.filter(unsharper)
         if new_format is not None:
-            logging.getLogger("Cover").info("Converting to %s..." % (new_format.name.upper()))
+            logging.getLogger("Cover").info(f"Converting to {new_format.name.upper()}...")
             target_format = new_format
         else:
             target_format = self.format
@@ -273,11 +271,11 @@ class CoverSourceResult:
                 pass
             except Exception as e:
                 logging.getLogger("Cover").warning(
-                    "Unable to load metadata for URL '%s' from cache: %s %s" % (url, e.__class__.__qualname__, e)
+                    f"Unable to load metadata for URL {url!r} from cache: {e.__class__.__qualname__} {e}"
                 )
             else:
                 # cache hit
-                logging.getLogger("Cover").debug("Got metadata for URL '%s' from cache" % (url))
+                logging.getLogger("Cover").debug(f"Got metadata for URL {url!r} from cache")
                 if format is not None:
                     self.setFormatMetadata(format)
 
@@ -285,7 +283,7 @@ class CoverSourceResult:
                 self.needMetadataUpdate(CoverImageMetadata.SIZE) and ((width is None) or (height is None))
             ):
                 # download
-                logging.getLogger("Cover").debug("Downloading file header for URL '%s'..." % (url))
+                logging.getLogger("Cover").debug(f"Downloading file header for URL {url!r}...")
                 try:
                     headers = {}
                     self.source.updateHttpHeaders(headers)
@@ -310,21 +308,21 @@ class CoverSourceResult:
 
                 except Exception as e:
                     logging.getLogger("Cover").warning(
-                        "Failed to get file metadata for URL '%s' " "(%s %s)" % (url, e.__class__.__qualname__, e)
+                        f"Failed to get file metadata for URL {url!r} ({e.__class__.__qualname__} {e})"
                     )
 
                 if self.needMetadataUpdate():  # did we fail to get needed metadata at this point?
                     if (self.format is None) or ((self.size is None) and ((width is None) or (height is None))):
                         # if we get here, file is probably not reachable, or not even an image
                         logging.getLogger("Cover").debug(
-                            "Unable to get file metadata from file or HTTP headers for URL '%s', "
-                            "skipping this result" % (url)
+                            f"Unable to get file metadata from file or HTTP headers for URL {url!r}, "
+                            "skipping this result"
                         )
                         return
 
                     if (self.format is not None) and ((self.size is not None) and (width is None) and (height is None)):
                         logging.getLogger("Cover").debug(
-                            "Unable to get file metadata from file or HTTP headers for URL '%s', "
+                            f"Unable to get file metadata from file or HTTP headers for URL {url!r}, "
                             "falling back to API data" % (url)
                         )
                         self.check_metadata = CoverImageMetadata.NONE
@@ -361,11 +359,11 @@ class CoverSourceResult:
         assert self.thumbnail_sig is None
 
         if self.thumbnail_url is None:
-            logging.getLogger("Cover").warning("No thumbnail available for %s" % (self))
+            logging.getLogger("Cover").warning(f"No thumbnail available for {self}")
             return
 
         # download
-        logging.getLogger("Cover").debug("Downloading cover thumbnail '%s'..." % (self.thumbnail_url))
+        logging.getLogger("Cover").debug(f"Downloading cover thumbnail {self.thumbnail_url!r}...")
         headers = {}
         self.source.updateHttpHeaders(headers)
 
@@ -378,17 +376,17 @@ class CoverSourceResult:
             )
         except Exception as e:
             logging.getLogger("Cover").warning(
-                "Download of '%s' failed: %s %s" % (self.thumbnail_url, e.__class__.__qualname__, e)
+                f"Download of {self.thumbnail_url!r} failed: {e.__class__.__qualname__} {e}"
             )
             return
 
         # compute sig
-        logging.getLogger("Cover").debug("Computing signature of %s..." % (self))
+        logging.getLogger("Cover").debug(f"Computing signature of {self}...")
         try:
             self.thumbnail_sig = __class__.computeImgSignature(image_data)
         except Exception as e:
             logging.getLogger("Cover").warning(
-                "Failed to compute signature of '%s': %s %s" % (self, e.__class__.__qualname__, e)
+                f"Failed to compute signature of '{self}': {e.__class__.__qualname__} {e}"
             )
         else:
             await store_in_cache_callback()
@@ -496,9 +494,9 @@ class CoverSourceResult:
             (format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM)
         ):
             return image_data
-        with mkstemp_ctx.mkstemp(suffix=".%s" % (format.name.lower())) as tmp_out_filepath:
+        with mkstemp_ctx.mkstemp(suffix=f".{format.name.lower()}") as tmp_out_filepath:
             if not silent:
-                logging.getLogger("Cover").info("Crunching %s image..." % (format.name.upper()))
+                logging.getLogger("Cover").info(f"Crunching {format.name.upper()} image...")
             with open(tmp_out_filepath, "wb") as tmp_out_file:
                 tmp_out_file.write(image_data)
             size_before = len(image_data)
@@ -523,7 +521,7 @@ class CoverSourceResult:
             size_after = len(crunched_image_data)
             pct_saved = 100 * (size_before - size_after) / size_before
             if not silent:
-                logging.getLogger("Cover").debug("Crunching image saved %.2f%% filesize" % (pct_saved))
+                logging.getLogger("Cover").debug(f"Crunching image saved {pct_saved:.2f}% filesize")
         return crunched_image_data
 
     @staticmethod
@@ -628,11 +626,11 @@ class CoverSourceResult:
                 no_dup_results.append(result)
         dup_count = len(results) - len(no_dup_results)
         if dup_count > 0:
-            logging.getLogger("Cover").info("Removed %u duplicate results" % (dup_count))
+            logging.getLogger("Cover").info(f"Removed {dup_count} duplicate results")
             results = no_dup_results
 
         if reference is not None:
-            logging.getLogger("Cover").info("Reference is: %s" % (reference))
+            logging.getLogger("Cover").info(f"Reference is: {reference}")
             reference.is_similar_to_reference = True
 
             # calculate sigs
@@ -662,9 +660,9 @@ class CoverSourceResult:
                         result.thumbnail_sig, reference.thumbnail_sig
                     )
                     if result.is_similar_to_reference:
-                        logging.getLogger("Cover").debug("%s is similar to reference" % (result))
+                        logging.getLogger("Cover").debug(f"{result} is similar to reference")
                     else:
-                        logging.getLogger("Cover").debug("%s is NOT similar to reference" % (result))
+                        logging.getLogger("Cover").debug(f"{result} is NOT similar to reference")
         else:
             logging.getLogger("Cover").warning("No reference result found")
 

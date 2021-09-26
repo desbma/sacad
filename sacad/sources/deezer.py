@@ -45,7 +45,7 @@ class DeezerCoverSource(CoverSource):
         url_params = collections.OrderedDict()
         # url_params["strict"] = "on"
         url_params["order"] = "RANKING"
-        url_params["q"] = " ".join('%s:"%s"' % (k, v) for k, v in search_params.items())
+        url_params["q"] = " ".join(f'{k}:"{v}"' for k, v in search_params.items())
         return __class__.assembleUrl(__class__.BASE_URL, url_params)
 
     def processQueryString(self, s):

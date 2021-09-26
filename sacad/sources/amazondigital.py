@@ -60,8 +60,8 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
         super().__init__(*args, base_domain=urllib.parse.urlsplit(__class__.BASE_URL).netloc, **kwargs)
 
     def getSearchUrl(self, album, artist):
-        """ See CoverSource.getSearchUrl. """
-        url = "%s/s" % (__class__.BASE_URL)
+        """See CoverSource.getSearchUrl."""
+        url = f"{__class__.BASE_URL}/s"
         params = collections.OrderedDict()
         params["k"] = " ".join((artist, album))
         params["i"] = "digital-music"

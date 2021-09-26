@@ -67,7 +67,7 @@ class LastFmCoverSource(CoverSource):
         xml_root = xml.etree.ElementTree.fromstring(xml_text)
         status = xml_root.get("status")
         if status != "ok":
-            raise Exception("Unexpected Last.fm response status: %s" % (status))
+            raise Exception(f"Unexpected Last.fm response status: {status}")
         img_elements = xml_root.findall("album/image")
 
         # build results from xml

@@ -41,19 +41,18 @@ class Work:
         self.metadata = metadata
 
     def __repr__(self):
-        return "<%s cover_filepath=%s tmp_cover_filepath=%s " "audio_filepaths=%s metadata=%s>" % (
-            __class__.__qualname__,
-            repr(self.cover_filepath),
-            repr(self.tmp_cover_filepath),
-            repr(self.audio_filepaths),
-            repr(self.metadata),
+        return (
+            f"<{__class__.__qualname__} "
+            f"cover_filepath={self.cover_filepath!r} "
+            f"tmp_cover_filepath={self.tmp_cover_filepath!r} "
+            f"audio_filepaths={self.audio_filepaths!r} "
+            f"metadata={self.metadata!r}>"
         )
 
     def __str__(self):
-        return "cover for '%s' by '%s' from %s" % (
-            self.metadata.album,
-            self.metadata.artist,
-            ", ".join(map(repr, self.audio_filepaths)),
+        return (
+            f"cover for {self.metadata.album!r} by {self.metadata.artist!r} "
+            f"from {', '.join(map(repr, self.audio_filepaths))}"
         )
 
     def __eq__(self, other):
@@ -70,7 +69,7 @@ class Work:
 def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False, all_formats=False):
     """ Recursively analyze library, and return a list of work. """
     work = []
-    stats = collections.OrderedDict(((k, 0) for k in ("files", "albums", "missing covers", "errors")))
+    stats = collections.OrderedDict((k, 0) for k in ("files", "albums", "missing covers", "errors"))
     with tqdm.tqdm(desc="Analyzing library", unit="dir", postfix=stats) as progress, tqdm_logging.redirect_logging(
         progress
     ):
@@ -207,7 +206,7 @@ def analyze_dir(
     if audio_filepaths and (not dir_metadata):
         # failed to get any metadata for this directory
         stats["errors"] += 1
-        logging.getLogger("sacad_r").error("Unable to read metadata for album directory '%s'" % (parent_dir))
+        logging.getLogger("sacad_r").error(f"Unable to read metadata for album directory {parent_dir!r}")
 
     for metadata, album_audio_filepaths in dir_metadata.items():
         # update stats
@@ -219,7 +218,7 @@ def analyze_dir(
             if all_formats:
                 missing = ignore_existing or (
                     not any(
-                        os.path.isfile("%s.%s" % (os.path.splitext(cover_filepath)[0], ext))
+                        os.path.isfile(f"{os.path.splitext(cover_filepath)[0]}.{ext}")
                         for ext in sacad.SUPPORTED_IMG_FORMATS
                     )
                 )
@@ -284,11 +283,11 @@ def get_covers(work, args):
     with contextlib.ExitStack() as cm:
 
         if args.cover_pattern == EMBEDDED_ALBUM_ART_SYMBOL:
-            tmp_prefix = "%s_" % (os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0])
+            tmp_prefix = f"{os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0]}_"
             tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
 
         # setup progress report
-        stats = collections.OrderedDict(((k, 0) for k in ("ok", "errors", "no result found")))
+        stats = collections.OrderedDict((k, 0) for k in ("ok", "errors", "no result found"))
         progress = cm.enter_context(
             tqdm.tqdm(total=len(work), miniters=1, desc="Searching covers", unit="cover", postfix=stats)
         )
@@ -301,7 +300,7 @@ def get_covers(work, args):
             except Exception as exception:
                 stats["errors"] += 1
                 logging.getLogger("sacad_r").error(
-                    "Error occured while searching %s: " "%s %s" % (work, exception.__class__.__qualname__, exception)
+                    f"Error occured while searching {work}: {exception.__class__.__qualname__} {exception}"
                 )
             else:
                 if status:
@@ -311,8 +310,8 @@ def get_covers(work, args):
                         except Exception as exception:
                             stats["errors"] += 1
                             logging.getLogger("sacad_r").error(
-                                "Error occured while embedding %s: "
-                                "%s %s" % (work, exception.__class__.__qualname__, exception)
+                                f"Error occured while embedding {work}: "
+                                f"{exception.__class__.__qualname__} {exception}"
                             )
                         else:
                             stats["ok"] += 1
@@ -322,7 +321,7 @@ def get_covers(work, args):
                         stats["ok"] += 1
                 else:
                     stats["no result found"] += 1
-                    logging.getLogger("sacad_r").warning("Unable to find %s" % (work))
+                    logging.getLogger("sacad_r").warning(f"Unable to find {work}")
 
             progress.set_postfix(stats, refresh=False)
             progress.update(1)
@@ -340,7 +339,7 @@ def get_covers(work, args):
             futures = {}
             for i, cur_work in enumerate(work_chunk, i):
                 if cur_work.cover_filepath == EMBEDDED_ALBUM_ART_SYMBOL:
-                    cover_filepath = os.path.join(tmp_dir, "%00u.%s" % (i, args.format.name.lower()))
+                    cover_filepath = os.path.join(tmp_dir, f"{i:02}.{args.format.name.lower()}")
                     cur_work.tmp_cover_filepath = cover_filepath
                 else:
                     cover_filepath = cur_work.cover_filepath
@@ -371,7 +370,7 @@ def cl_main():
     """ Command line entry point. """
     # parse args
     arg_parser = argparse.ArgumentParser(
-        description="SACAD (recursive tool) v%s.%s" % (sacad.__version__, __doc__),
+        description=f"SACAD (recursive tool) v{sacad.__version__}.{__doc__}",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     arg_parser.add_argument("lib_dir", help="Music library directory to recursively analyze")
@@ -415,7 +414,7 @@ def cl_main():
     try:
         args.format = sacad.SUPPORTED_IMG_FORMATS[args.format]
     except KeyError:
-        print("Unable to guess image format from extension, or unknown format: %s" % (args.format))
+        print(f"Unable to guess image format from extension, or unknown format: {args.format}")
         exit(1)
 
     # setup logger
@@ -441,7 +440,7 @@ def cl_main():
         soft_lim, hard_lim = resource.getrlimit(resource.RLIMIT_NOFILE)
         if (soft_lim != resource.RLIM_INFINITY) and ((soft_lim < hard_lim) or (hard_lim == resource.RLIM_INFINITY)):
             resource.setrlimit(resource.RLIMIT_NOFILE, (hard_lim, hard_lim))
-            logging.getLogger().debug("Max open files count set from %u to %u" % (soft_lim, hard_lim))
+            logging.getLogger().debug(f"Max open files count set from {soft_lim} to {hard_lim}")
     except (AttributeError, ImportError, OSError, ValueError):
         # not supported on system
         pass

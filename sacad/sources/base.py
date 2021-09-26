@@ -69,17 +69,17 @@ class CoverSource(metaclass=abc.ABCMeta):
                 expiration=day_s * 30 * 6,
             )  # 6 months
             logging.getLogger("Cache").debug(
-                "Total size of file '%s': %s" % (db_filepath, __class__.api_cache.getDatabaseFileSize())
+                f"Total size of file {db_filepath!r}: {__class__.api_cache.getDatabaseFileSize()}"
             )
             for cache, cache_name in zip(
                 (__class__.api_cache, __class__.probe_cache), ("cover_source_api_data", "cover_source_probe_data")
             ):
                 purged_count = cache.purge()
                 logging.getLogger("Cache").debug(
-                    "%u obsolete entries have been removed from cache '%s'" % (purged_count, cache_name)
+                    f"{purged_count} obsolete entries have been removed from cache {cache_name!r}"
                 )
                 row_count = len(cache)
-                logging.getLogger("Cache").debug("Cache '%s' contains %u entries" % (cache_name, row_count))
+                logging.getLogger("Cache").debug(f"Cache {cache_name!r} contains {row_count} entries")
 
     async def closeSession(self):
         """ Close HTTP session to make aiohttp happy. """
@@ -87,7 +87,7 @@ class CoverSource(metaclass=abc.ABCMeta):
 
     async def search(self, album, artist):
         """ Search for a given album/artist and return an iterable of CoverSourceResult. """
-        self.logger.debug("Searching with source '%s'..." % (self.__class__.__name__))
+        self.logger.debug(f"Searching with source {self.__class__.__name__!r}...")
         album = self.processAlbumString(album)
         artist = self.processArtistString(artist)
         url_data = self.getSearchUrl(album, artist)
@@ -102,7 +102,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         except Exception as e:
             # raise
             self.logger.warning(
-                "Search with source '%s' failed: %s %s" % (self.__class__.__name__, e.__class__.__qualname__, e)
+                f"Search with source {self.__class__.__name__!r} failed: {e.__class__.__qualname__} {e}"
             )
             return ()
         else:
@@ -147,8 +147,8 @@ class CoverSource(metaclass=abc.ABCMeta):
 
         # log
         self.logger.info(
-            "Got %u relevant (%u excluded) results from source '%s'"
-            % (result_kept_count, results_excluded_count + reference_only_count, self.__class__.__name__)
+            f"Got {result_kept_count} relevant ({results_excluded_count + reference_only_count} excluded) results "
+            f"from source {self.__class__.__name__!r}"
         )
         for result in itertools.filterfalse(operator.attrgetter("is_only_reference"), results_kept):
             self.logger.debug(
@@ -168,16 +168,16 @@ class CoverSource(metaclass=abc.ABCMeta):
     async def fetchResults(self, url, post_data=None):
         """ Get a (store in cache callback, search results) tuple from an URL. """
         if post_data is not None:
-            self.logger.debug("Querying URL '%s' %s..." % (url, dict(post_data)))
+            self.logger.debug(f"Querying URL {url!r} {dict(post_data)}...")
         else:
-            self.logger.debug("Querying URL '%s'..." % (url))
+            self.logger.debug(f"Querying URL {url!r}...")
         headers = {}
         self.updateHttpHeaders(headers)
         return await self.http.query(url, post_data=post_data, headers=headers, cache=__class__.api_cache)
 
     async def probeUrl(self, url, response_headers=None):
         """ Probe URL reachability from cache or HEAD request. """
-        self.logger.debug("Probing URL '%s'..." % (url))
+        self.logger.debug(f"Probing URL {url!r}...")
         headers = {}
         self.updateHttpHeaders(headers)
         resp_headers = {}
@@ -193,7 +193,7 @@ class CoverSource(metaclass=abc.ABCMeta):
     @staticmethod
     def assembleUrl(base_url, params):
         """ Build an URL from URL base and parameters. """
-        return "%s?%s" % (base_url, urllib.parse.urlencode(params))
+        return f"{base_url}?{urllib.parse.urlencode(params)}"
 
     @staticmethod
     def unaccentuate(s):

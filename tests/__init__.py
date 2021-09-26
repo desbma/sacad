@@ -87,7 +87,7 @@ class TestSacad(unittest.TestCase):
                 for size_tolerance in (0, 25, 50):
                     with self.subTest(format=format, size=size, size_tolerance=size_tolerance):
                         with sacad.mkstemp_ctx.mkstemp(
-                            prefix="sacad_test_", suffix=".%s" % (format.name.lower())
+                            prefix="sacad_test_", suffix=f".{format.name.lower()}"
                         ) as tmp_filepath:
                             coroutine = sacad.search_and_download(
                                 "Master of Puppets",
