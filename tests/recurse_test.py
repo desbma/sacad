@@ -27,7 +27,9 @@ def download(url, filepath):
         if os.path.isfile(cache_filepath):
             shutil.copyfile(cache_filepath, filepath)
             return
-    with contextlib.closing(requests.get(url, stream=True)) as response:
+    with contextlib.closing(
+        requests.get(url, stream=True, headers={"User-Agent": "Mozilla/5.0 (nope) Gecko/20100101 Firefox/90.0"})
+    ) as response:
         response.raise_for_status()
         with open(filepath, "wb") as f:
             for chunk in response.iter_content(2 ** 14):
