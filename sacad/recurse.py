@@ -10,6 +10,7 @@ import contextlib
 import inspect
 import itertools
 import logging
+import mimetypes
 import operator
 import os
 import string
@@ -24,7 +25,11 @@ import sacad
 from sacad import colored_logging, tqdm_logging
 
 EMBEDDED_ALBUM_ART_SYMBOL = "+"
-AUDIO_EXTENSIONS = frozenset(("aac", "ape", "flac", "m4a", "mp3", "mp4", "ogg", "oga", "opus", "wv"))
+AUDIO_EXTENSIONS = frozenset(
+    ("aac", "ape", "flac", "m4a", "mp3", "mp4", "mpc", "ogg", "oga", "opus", "tta", "wv")
+) | frozenset(
+    ext for ext, mime in {**mimetypes.types_map, **mimetypes.common_types}.items() if mime.startswith("audio/")
+)
 
 Metadata = collections.namedtuple("Metadata", ("artist", "album", "has_embedded_cover"))
 
@@ -245,7 +250,7 @@ def embed_album_art(cover_filepath, audio_filepaths):
         if mf.tags is None:
             mf.add_tags()
 
-        if isinstance(mf.tags, mutagen._vorbis.VComment) or isinstance(mf, mutagen.ogg.OggFileType):
+        if isinstance(mf.tags, mutagen._vorbis.VComment):
             picture = mutagen.flac.Picture()
             picture.data = cover_data
             picture.type = mutagen.id3.PictureType.COVER_FRONT
@@ -253,13 +258,13 @@ def embed_album_art(cover_filepath, audio_filepaths):
             encoded_data = base64.b64encode(picture.write())
             mf["metadata_block_picture"] = encoded_data.decode("ascii")
 
-        elif isinstance(mf.tags, mutagen.id3.ID3) or isinstance(mf, mutagen.id3.ID3FileType):
+        elif isinstance(mf.tags, mutagen.id3.ID3):
             mf.tags.add(mutagen.id3.APIC(mime="image/jpeg", type=mutagen.id3.PictureType.COVER_FRONT, data=cover_data))
 
-        elif isinstance(mf.tags, mutagen.mp4.MP4Tags) or isinstance(mf, mutagen.mp4.MP4):
+        elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
             mf["covr"] = [mutagen.mp4.MP4Cover(cover_data, imageformat=mutagen.mp4.AtomDataType.JPEG)]
 
-        elif isinstance(mf.tags, mutagen.apev2.APEv2) or isinstance(mf, mutagen.apev2.APEv2File):
+        elif isinstance(mf.tags, mutagen.apev2.APEv2):
             logging.getLogger("sacad_r").warning(
                 f"APEv2 tag format does not support embedding album art, skipping file {filepath!r}"
             )
