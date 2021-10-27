@@ -135,8 +135,7 @@ def get_file_metadata(audio_filepath):
     elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
         has_embedded_cover = "covr" in mf
     elif isinstance(mf.tags, mutagen.apev2.APEv2):
-        # APEv2 does not support embedded album art
-        has_embedded_cover = False
+        has_embedded_cover = "cover art (front)" in mf
     else:
         # unknown tag format
         return
@@ -265,10 +264,7 @@ def embed_album_art(cover_filepath, audio_filepaths):
             mf["covr"] = [mutagen.mp4.MP4Cover(cover_data, imageformat=mutagen.mp4.AtomDataType.JPEG)]
 
         elif isinstance(mf.tags, mutagen.apev2.APEv2):
-            logging.getLogger("sacad_r").warning(
-                f"APEv2 tag format does not support embedding album art, skipping file {filepath!r}"
-            )
-            continue
+            mf["cover art (front)"] = cover_data
 
         mf.save()
 
