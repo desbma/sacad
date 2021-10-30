@@ -70,7 +70,7 @@ Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/saca
 
 #### Optional
 
-Additionnaly, if you want to benefit from image crunching (lossless recompression to save additional space):
+Additionally, if you want to benefit from image crunching (lossless recompression to save additional space):
 
 - Install [optipng](http://optipng.sourceforge.net/)
 - Install [jpegoptim](http://freecode.com/projects/jpegoptim)
