@@ -28,7 +28,7 @@ BITARRAY_WHEEL                  := ${BITARRAY_WHEEL-${WINEARCH}}
 # native env & tools
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
 WINE_DIR := /tmp/$(subst /,_,${CURDIR})/wine-${WINEARCH}
-UNZIP    := unzip -q -DD
+UNZIP    := unzip -q -o -DD
 
 # installed files
 PYTHON_INSTALLED   := ${WINE_DIR}/drive_c/Python${PYTHON_VERSION_SHORT}/python.exe
