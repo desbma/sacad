@@ -23,7 +23,7 @@ MAX_THUMBNAIL_SIZE = 256
 
 class CoverSource(metaclass=abc.ABCMeta):
 
-    """ Base class for all cover sources. """
+    """Base class for all cover sources."""
 
     def __init__(
         self,
@@ -82,11 +82,11 @@ class CoverSource(metaclass=abc.ABCMeta):
                 logging.getLogger("Cache").debug(f"Cache {cache_name!r} contains {row_count} entries")
 
     async def closeSession(self):
-        """ Close HTTP session to make aiohttp happy. """
+        """Close HTTP session to make aiohttp happy."""
         await self.http.close()
 
     async def search(self, album, artist):
-        """ Search for a given album/artist and return an iterable of CoverSourceResult. """
+        """Search for a given album/artist and return an iterable of CoverSourceResult."""
         self.logger.debug(f"Searching with source {self.__class__.__name__!r}...")
         album = self.processAlbumString(album)
         artist = self.processArtistString(artist)
@@ -166,7 +166,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         return results_kept
 
     async def fetchResults(self, url, post_data=None):
-        """ Get a (store in cache callback, search results) tuple from an URL. """
+        """Get a (store in cache callback, search results) tuple from an URL."""
         if post_data is not None:
             self.logger.debug(f"Querying URL {url!r} {dict(post_data)}...")
         else:
@@ -176,7 +176,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         return await self.http.query(url, post_data=post_data, headers=headers, cache=__class__.api_cache)
 
     async def probeUrl(self, url, response_headers=None):
-        """ Probe URL reachability from cache or HEAD request. """
+        """Probe URL reachability from cache or HEAD request."""
         self.logger.debug(f"Probing URL {url!r}...")
         headers = {}
         self.updateHttpHeaders(headers)
@@ -192,17 +192,17 @@ class CoverSource(metaclass=abc.ABCMeta):
 
     @staticmethod
     def assembleUrl(base_url, params):
-        """ Build an URL from URL base and parameters. """
+        """Build an URL from URL base and parameters."""
         return f"{base_url}?{urllib.parse.urlencode(params)}"
 
     @staticmethod
     def unaccentuate(s):
-        """ Replace accentuated chars in string by their non accentuated equivalent. """
+        """Replace accentuated chars in string by their non accentuated equivalent."""
         return "".join(c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c))
 
     @staticmethod
     def unpunctuate(s, *, char_blacklist=string.punctuation):
-        """ Remove punctuation from string s. """
+        """Remove punctuation from string s."""
         # remove punctuation
         s = "".join(c for c in s if c not in char_blacklist)
         # remove consecutive spaces
@@ -213,15 +213,15 @@ class CoverSource(metaclass=abc.ABCMeta):
     #
 
     def processQueryString(self, s):
-        """ Process artist or album string before building query URL. """
+        """Process artist or album string before building query URL."""
         return __class__.unpunctuate(s.lower())
 
     def processArtistString(self, artist):
-        """ Process artist string before building query URL. """
+        """Process artist string before building query URL."""
         return self.processQueryString(artist)
 
     def processAlbumString(self, album):
-        """ Process album string before building query URL. """
+        """Process album string before building query URL."""
         return self.processQueryString(album)
 
     @abc.abstractmethod
@@ -238,10 +238,10 @@ class CoverSource(metaclass=abc.ABCMeta):
         pass
 
     def updateHttpHeaders(self, headers):
-        """ Add API specific HTTP headers. """
+        """Add API specific HTTP headers."""
         pass
 
     @abc.abstractmethod
     async def parseResults(self, api_data):
-        """ Parse API data and return an iterable of results. """
+        """Parse API data and return an iterable of results."""
         pass

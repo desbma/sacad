@@ -13,7 +13,7 @@ from sacad import rate_watcher, redo
 
 
 def aiohttp_socket_timeout(socket_timeout_s):
-    """ Return a aiohttp.ClientTimeout object with only socket timeouts set. """
+    """Return a aiohttp.ClientTimeout object with only socket timeouts set."""
     return aiohttp.ClientTimeout(total=None, connect=None, sock_connect=socket_timeout_s, sock_read=socket_timeout_s)
 
 
@@ -28,7 +28,7 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 class Http:
 
-    """ Async HTTP client code. """
+    """Async HTTP client code."""
 
     def __init__(
         self,
@@ -50,7 +50,7 @@ class Http:
         self.logger = logger
 
     async def close(self):
-        """ Close HTTP session to make aiohttp happy. """
+        """Close HTTP session to make aiohttp happy."""
         if self.session is not None:
             await self.session.close()
 
@@ -235,7 +235,7 @@ class Http:
         return resp_ok
 
     async def fastStreamedQuery(self, url, *, headers=None, verify=True):
-        """ Send a GET request with short timeout, do not retry, and return streamed response. """
+        """Send a GET request with short timeout, do not retry, and return streamed response."""
         if self.session is None:
             self._initSession()
 
@@ -248,7 +248,7 @@ class Http:
         return response
 
     def _buildHeaders(self, headers):
-        """ Build HTTP headers dictionary. """
+        """Build HTTP headers dictionary."""
         if headers is None:
             headers = {}
         if "User-Agent" not in headers:

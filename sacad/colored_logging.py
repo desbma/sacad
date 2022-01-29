@@ -12,10 +12,10 @@ LEVEL_BOLD_MAPPING = {logging.WARNING: False, logging.ERROR: False, logging.CRIT
 
 class ColoredFormatter(logging.Formatter):
 
-    """ Logging formatter coloring terminal output according to error criticity. """
+    """Logging formatter coloring terminal output according to error criticity."""
 
     def format(self, record):
-        """ See logging.Formatter.format. """
+        """See logging.Formatter.format."""
         message = super().format(record)
         if sys.stderr.isatty() and not sys.platform.startswith("win32"):
             try:

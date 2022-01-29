@@ -11,7 +11,7 @@ import urllib.parse
 
 class AccessRateWatcher:
 
-    """ Access rate limiter, supporting concurrent access by threads and/or processes. """
+    """Access rate limiter, supporting concurrent access by threads and/or processes."""
 
     def __init__(
         self, db_filepath, url, min_delay_between_accesses, *, jitter_range_ms=None, logger=logging.getLogger()
@@ -30,7 +30,7 @@ class AccessRateWatcher:
         self.lock = None
 
     async def waitAccessAsync(self):
-        """ Wait the needed time before sending a request to honor rate limit. """
+        """Wait the needed time before sending a request to honor rate limit."""
         if self.lock is None:
             self.lock = asyncio.Lock()
 
@@ -71,7 +71,7 @@ class AccessRateWatcher:
             ).fetchone()
 
     def __access(self, ts):
-        """ Record an API access. """
+        """Record an API access."""
         with self.connection:
             self.connection.execute(
                 "INSERT OR REPLACE INTO access_timestamp (timestamp, domain) VALUES (?, ?)", (ts, self.domain)

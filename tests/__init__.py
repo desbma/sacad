@@ -22,7 +22,7 @@ web_cache.DISABLE_PERSISTENT_CACHING = True
 
 
 def is_internet_reachable():
-    """ Return True if we can reach remote servers. """
+    """Return True if we can reach remote servers."""
     try:
         # open TCP socket to Google DNS server
         with socket.create_connection(("8.8.8.8", 53)):
@@ -35,7 +35,7 @@ def is_internet_reachable():
 
 
 def download(url, filepath=None):
-    """ Download URL. """
+    """Download URL."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
@@ -57,7 +57,7 @@ def download(url, filepath=None):
 
 
 def sched_and_run(coroutine, delay=0):
-    """ Schedule, run and wait for the result of a coroutine. """
+    """Schedule, run and wait for the result of a coroutine."""
 
     async def delay_coroutine(coroutine, delay):
         r = await coroutine
@@ -75,11 +75,11 @@ def sched_and_run(coroutine, delay=0):
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
 class TestSacad(unittest.TestCase):
 
-    """ Test suite for main module. """
+    """Test suite for main module."""
 
     @staticmethod
     def getImgInfo(img_filepath):
-        """ Get image file metadata. """
+        """Get image file metadata."""
         with open(img_filepath, "rb") as img_file:
             img = PIL.Image.open(img_file)
             format = img.format.lower()
@@ -88,7 +88,7 @@ class TestSacad(unittest.TestCase):
         return format, width, height
 
     def test_getMasterOfPuppetsCover(self):
-        """ Search and download cover for 'Master of Puppets' with different parameters. """
+        """Search and download cover for 'Master of Puppets' with different parameters."""
         for format in sacad.cover.CoverImageFormat:
             for size in (300, 600, 1200):
                 for size_tolerance in (0, 25, 50):
@@ -114,7 +114,7 @@ class TestSacad(unittest.TestCase):
 
     @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_getImageUrlMetadata(self):
-        """ Download the beginning of image files to guess their format and resolution. """
+        """Download the beginning of image files to guess their format and resolution."""
         refs = {
             "https://upload.wikimedia.org/wikipedia/commons/b/b1/New_view_of_the_Pillars_of_Creation_%E2%80%94_infrared_Heic1501b.jpg": (  # noqa
                 sacad.cover.CoverImageFormat.JPEG,
@@ -150,7 +150,7 @@ class TestSacad(unittest.TestCase):
             self.assertLessEqual(sacad.CoverSourceResult.guessImageMetadataFromData.call_count, block_read)
 
     def test_compareImageSignatures(self):
-        """ Compare images using their signatures. """
+        """Compare images using their signatures."""
         urls = (
             "https://is4-ssl.mzstatic.com/image/thumb/Features6/v4/ee/bd/69/eebd6962-9b25-c177-c175-b3b3e641a29d/dj.edqjfvzd.jpg/828x0w.jpg",  # noqa: E501
             "http://www.jesus-is-savior.com/Evils%20in%20America/Rock-n-Roll/highway_to_hell-large.jpg",
@@ -186,7 +186,7 @@ class TestSacad(unittest.TestCase):
 
     @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_coverSources(self):
-        """ Check all sources return valid results with different parameters. """
+        """Check all sources return valid results with different parameters."""
         for size in range(300, 1200 + 1, 300):
             source_args = (size, 0)
             sources = [
@@ -230,11 +230,11 @@ class TestSacad(unittest.TestCase):
             self.assertGreaterEqual(len(results), 1)
 
     def test_unaccentuate(self):
-        """ Check unaccentuate remove accents. """
+        """Check unaccentuate remove accents."""
         self.assertEqual(sacad.sources.base.CoverSource.unaccentuate("EéeAàaOöoIïi"), "EeeAaaOooIii")
 
     def test_is_square(self):
-        """ Check is_square identify squares. """
+        """Check is_square identify squares."""
         for x in range(1, 100):
             if x in (1, 4, 9, 16, 25, 36, 49, 64, 81):
                 self.assertTrue(sacad.cover.is_square(x), x)

@@ -9,7 +9,7 @@ import random
 
 
 def retrier(*, max_attempts, sleeptime, max_sleeptime, sleepscale=1.5, jitter=0.2):
-    """ Yield time to wait for, after the attempt, if it failed. """
+    """Yield time to wait for, after the attempt, if it failed."""
     assert max_attempts > 1
     assert sleeptime >= 0
     assert 0 <= jitter <= sleeptime

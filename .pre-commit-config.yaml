@@ -1,7 +1,7 @@
 # https://pre-commit.com
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
+    rev: v4.0.1
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -31,7 +31,7 @@ repos:
           - --ignore-missing-imports
 
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.2
     hooks:
       - id: flake8
         args:
@@ -43,7 +43,7 @@ repos:
           - --max-line-length=120
 
   - repo: https://github.com/pycqa/pydocstyle
-    rev: 5.1.1
+    rev: 6.1.1
     hooks:
       - id: pydocstyle
         args:
@@ -51,12 +51,12 @@ repos:
           - --ignore=D105,D107,D202,D210,D211,D212
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.7.1.1
+    rev: v0.7.2.1
     hooks:
       - id: shellcheck
 
   - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.7.0
+    rev: v5.9.3
     hooks:
       - id: isort
         args:
@@ -65,7 +65,7 @@ repos:
           - --profile=black
 
   - repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 21.9b0
     hooks:
       - id: black
         language_version: python3
@@ -73,7 +73,7 @@ repos:
           - --line-length=120
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.2.1
+    rev: v2.4.1
     hooks:
       - id: prettier
         args:

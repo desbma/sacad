@@ -13,7 +13,7 @@ from sacad.sources.base import CoverSource
 
 class GoogleImagesCoverSourceResult(CoverSourceResult):
 
-    """ Google Images cover search result. """
+    """Google Images cover search result."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.LOW, **kwargs)
@@ -35,7 +35,7 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         super().__init__(*args, min_delay_between_accesses=2 / 3, jitter_range_ms=(0, 600), **kwargs)
 
     def getSearchUrl(self, album, artist):
-        """ See CoverSource.getSearchUrl. """
+        """See CoverSource.getSearchUrl."""
         # build request url
         params = collections.OrderedDict()
         params["gbv"] = "2"
@@ -48,11 +48,11 @@ class GoogleImagesWebScrapeCoverSource(CoverSource):
         return __class__.assembleUrl(__class__.BASE_URL, params)
 
     def updateHttpHeaders(self, headers):
-        """ See CoverSource.updateHttpHeaders. """
+        """See CoverSource.updateHttpHeaders."""
         headers["User-Agent"] = self.ua.firefox
 
     async def parseResults(self, api_data):
-        """ See CoverSource.parseResults. """
+        """See CoverSource.parseResults."""
         results = []
 
         # parse HTML and get results

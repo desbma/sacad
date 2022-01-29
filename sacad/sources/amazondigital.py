@@ -37,7 +37,7 @@ AMAZON_DIGITAL_IMAGE_FORMATS.sort(key=operator.attrgetter("total_res"), reverse=
 
 class AmazonDigitalCoverSourceResult(CoverSourceResult):
 
-    """ Amazon digital cover search result. """
+    """Amazon digital cover search result."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
@@ -45,7 +45,7 @@ class AmazonDigitalCoverSourceResult(CoverSourceResult):
 
 class AmazonDigitalCoverSource(AmazonBaseCoverSource):
 
-    """ Cover source returning Amazon.com digital music images. """
+    """Cover source returning Amazon.com digital music images."""
 
     BASE_URL = "https://www.amazon.com"
     DYNAPI_KEY = "A17SFUTIVB227Z"
@@ -69,7 +69,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
         return __class__.assembleUrl(url, params)
 
     async def parseResults(self, api_data):
-        """ See CoverSource.parseResults. """
+        """See CoverSource.parseResults."""
         results = []
 
         # parse page
@@ -140,7 +140,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
         return results
 
     def generateImgUrls(self, product_id, dynapi_key, format_id, slice_count):
-        """ Generate URLs for slice_count^2 subimages of a product. """
+        """Generate URLs for slice_count^2 subimages of a product."""
         for x in range(slice_count):
             for y in range(slice_count):
                 yield (

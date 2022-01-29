@@ -11,7 +11,7 @@ from sacad.sources.base import MAX_THUMBNAIL_SIZE, CoverSource
 
 class LastFmCoverSourceResult(CoverSourceResult):
 
-    """ LastFM cover search result. """
+    """LastFM cover search result."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.REFERENCE, **kwargs)
@@ -40,7 +40,7 @@ class LastFmCoverSource(CoverSource):
         super().__init__(*args, min_delay_between_accesses=0.1, **kwargs)
 
     def getSearchUrl(self, album, artist):
-        """ See CoverSource.getSearchUrl. """
+        """See CoverSource.getSearchUrl."""
         # build request url
         params = collections.OrderedDict()
         params["method"] = "album.getinfo"
@@ -51,7 +51,7 @@ class LastFmCoverSource(CoverSource):
         return __class__.assembleUrl(__class__.BASE_URL, params)
 
     def processQueryString(self, s):
-        """ See CoverSource.processQueryString. """
+        """See CoverSource.processQueryString."""
         char_blacklist = set(string.punctuation)
         char_blacklist.remove("'")
         char_blacklist.remove("&")
@@ -59,7 +59,7 @@ class LastFmCoverSource(CoverSource):
         return __class__.unpunctuate(s.lower(), char_blacklist=char_blacklist)
 
     async def parseResults(self, api_data):
-        """ See CoverSource.parseResults. """
+        """See CoverSource.parseResults."""
         results = []
 
         # get xml results list

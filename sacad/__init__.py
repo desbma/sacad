@@ -36,7 +36,7 @@ async def search_and_download(
     source_classes: Optional[Sequence[Any]] = None,
     preserve_format: bool = False,
 ) -> bool:
-    """ Search and download a cover, return True if success, False instead. """
+    """Search and download a cover, return True if success, False instead."""
     logger = logging.getLogger("Main")
 
     # register sources
@@ -70,7 +70,11 @@ async def search_and_download(
     results.sort(
         reverse=True,
         key=functools.cmp_to_key(
-            functools.partial(CoverSourceResult.compare, target_size=size, size_tolerance_prct=size_tolerance_prct)
+            functools.partial(
+                CoverSourceResult.compare,
+                target_size=size,
+                size_tolerance_prct=size_tolerance_prct,
+            )
         ),
     )
     if not results:
@@ -83,7 +87,13 @@ async def search_and_download(
     done = False
     for result in results:
         try:
-            await result.get(format, size, size_tolerance_prct, out_filepath, preserve_format=preserve_format)
+            await result.get(
+                format,
+                size,
+                size_tolerance_prct,
+                out_filepath,
+                preserve_format=preserve_format,
+            )
         except Exception as e:
             logger.warning(f"Download of {result} failed: {e.__class__.__qualname__} {e}")
             continue
@@ -101,7 +111,7 @@ async def search_and_download(
 
 
 def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
-    """ Set up command line arguments shared between sacad and sacad_r. """
+    """Set up command line arguments shared between sacad and sacad_r."""
     arg_parser.add_argument(
         "-t",
         "--size-tolerance",
@@ -109,8 +119,8 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
         default=25,
         dest="size_tolerance_prct",
         help="""Tolerate this percentage of size difference with the target size.
-                                  Note that covers with size above or close to the target size will still be preferred
-                                  if available""",
+                Note that covers with size above or close to the target size will still be preferred
+                if available""",
     )
     arg_parser.add_argument(
         "-a",
@@ -139,7 +149,7 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
 
 
 def cl_main() -> None:
-    """ Command line entry point for sacad_r. """
+    """Command line entry point for sacad_r."""
     # parse args
     arg_parser = argparse.ArgumentParser(
         description=f"SACAD v{__version__}. Search and download an album cover.",

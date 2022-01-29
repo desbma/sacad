@@ -47,13 +47,13 @@ FORMAT_EXTENSIONS = {CoverImageFormat.JPEG: "jpg", CoverImageFormat.PNG: "png"}
 
 
 def is_square(x):
-    """ Return True if integer x is a perfect square, False otherwise. """
+    """Return True if integer x is a perfect square, False otherwise."""
     return math.sqrt(x).is_integer()
 
 
 class CoverSourceResult:
 
-    """ Cover image returned by a source, candidate to be downloaded. """
+    """Cover image returned by a source, candidate to be downloaded."""
 
     METADATA_PEEK_SIZE_INCREMENT = 2 ** 12
     MAX_FILE_METADATA_PEEK_SIZE = 20 * METADATA_PEEK_SIZE_INCREMENT
@@ -137,7 +137,7 @@ class CoverSourceResult:
         return s
 
     async def get(self, target_format, target_size, size_tolerance_prct, out_filepath, *, preserve_format=False):
-        """ Download cover and process it. """
+        """Download cover and process it."""
         if self.source_quality.value <= CoverSourceQuality.LOW.value:
             logging.getLogger("Cover").warning(
                 "Cover is from a potentially unreliable source and may be unrelated to the search"
@@ -246,7 +246,7 @@ class CoverSourceResult:
         return out_bytes.getvalue()
 
     async def updateImageMetadata(self):  # noqa: C901
-        """ Download image file(s) partially to get its real metadata, or get it from cache. """
+        """Download image file(s) partially to get its real metadata, or get it from cache."""
         assert self.needMetadataUpdate()
 
         width_sum, height_sum = 0, 0
@@ -341,21 +341,21 @@ class CoverSourceResult:
             self.setSizeMetadata((width_sum, height_sum))
 
     def needMetadataUpdate(self, what=CoverImageMetadata.ALL):
-        """ Return True if image metadata needs to be checked, False instead. """
+        """Return True if image metadata needs to be checked, False instead."""
         return (self.check_metadata & what) != 0
 
     def setFormatMetadata(self, format):
-        """ Set format image metadata to what has been reliably identified. """
+        """Set format image metadata to what has been reliably identified."""
         self.format = format
         self.check_metadata &= ~CoverImageMetadata.FORMAT
 
     def setSizeMetadata(self, size):
-        """ Set size image metadata to what has been reliably identified. """
+        """Set size image metadata to what has been reliably identified."""
         self.size = size
         self.check_metadata &= ~CoverImageMetadata.SIZE
 
     async def updateSignature(self):
-        """ Calculate a cover's "signature" using its thumbnail url. """
+        """Calculate a cover's "signature" using its thumbnail url."""
         assert self.thumbnail_sig is None
 
         if self.thumbnail_url is None:
@@ -489,7 +489,7 @@ class CoverSourceResult:
 
     @staticmethod
     async def crunch(image_data, format, silent=False):
-        """ Crunch image data, and return the processed data, or orignal data if operation failed. """
+        """Crunch image data, and return the processed data, or orignal data if operation failed."""
         if ((format is CoverImageFormat.PNG) and (not HAS_OPTIPNG)) or (
             (format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM)
         ):
@@ -526,7 +526,7 @@ class CoverSourceResult:
 
     @staticmethod
     def guessImageMetadataFromData(img_data):
-        """ Identify an image format and size from its first bytes. """
+        """Identify an image format and size from its first bytes."""
         format, width, height = None, None, None
         img_stream = io.BytesIO(img_data)
         try:
@@ -542,7 +542,7 @@ class CoverSourceResult:
 
     @staticmethod
     async def guessImageMetadataFromHttpData(response):
-        """ Identify an image format and size from the beginning of its HTTP data. """
+        """Identify an image format and size from the beginning of its HTTP data."""
         metadata = None
         img_data = bytearray()
 
@@ -560,7 +560,7 @@ class CoverSourceResult:
 
     @staticmethod
     def guessImageFormatFromHttpResponse(response):
-        """ Guess file format from HTTP response, return format or None. """
+        """Guess file format from HTTP response, return format or None."""
         extensions = []
 
         # try to guess extension from response content-type header
@@ -589,7 +589,7 @@ class CoverSourceResult:
 
     @staticmethod
     async def preProcessForComparison(results, target_size, size_tolerance_prct):
-        """ Process results to prepare them for future comparison and sorting. """
+        """Process results to prepare them for future comparison and sorting."""
         # find reference (=image most likely to match target cover ignoring factors like size and format)
         reference = None
         for result in results:
@@ -702,7 +702,7 @@ class CoverSourceResult:
 
     @staticmethod
     def areImageSigsSimilar(sig1, sig2):
-        """ Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise. """
+        """Compare 2 image "signatures" and return True if they seem to come from a similar image, False otherwise."""
         return bitdiff(sig1, sig2) < 100
 
 

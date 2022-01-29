@@ -37,7 +37,7 @@ Metadata = collections.namedtuple("Metadata", ("artist", "album", "has_embedded_
 # TODO use a dataclasses.dataclass when Python < 3.7 is dropped
 class Work:
 
-    """ Represent a single search & download work item. """
+    """Represent a single search & download work item."""
 
     def __init__(self, cover_filepath, audio_filepaths, metadata):
         self.cover_filepath = cover_filepath
@@ -72,7 +72,7 @@ class Work:
 
 
 def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=False, all_formats=False):
-    """ Recursively analyze library, and return a list of work. """
+    """Recursively analyze library, and return a list of work."""
     work = []
     stats = collections.OrderedDict((k, 0) for k in ("files", "albums", "missing covers", "errors"))
     with tqdm.tqdm(desc="Analyzing library", unit="dir", postfix=stats) as progress, tqdm_logging.redirect_logging(
@@ -95,7 +95,7 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=Fals
 
 
 def get_file_metadata(audio_filepath):
-    """ Get a Metadata object for this file or None. """
+    """Get a Metadata object for this file or None."""
     try:
         mf = mutagen.File(audio_filepath)
     except Exception:
@@ -144,7 +144,7 @@ def get_file_metadata(audio_filepath):
 
 
 def get_dir_metadata(audio_filepaths, *, full_scan=False):
-    """ Build a dict of Metadata to audio filepath list by analyzing audio files. """
+    """Build a dict of Metadata to audio filepath list by analyzing audio files."""
     r = collections.defaultdict(list)
 
     audio_filepaths = tuple(sorted(audio_filepaths))
@@ -168,7 +168,7 @@ VALID_PATH_CHARS = frozenset(r"-_.()!#$%&'@^{}~" + string.ascii_letters + string
 
 
 def sanitize_for_path(s):
-    """ Sanitize a string to be FAT/NTFS friendly when used in file path. """
+    """Sanitize a string to be FAT/NTFS friendly when used in file path."""
     s = s.translate(str.maketrans("/\\|*", "---x"))
     s = "".join(c for c in unidecode.unidecode_expect_ascii(s) if c in VALID_PATH_CHARS)
     s = s.strip()
@@ -177,7 +177,7 @@ def sanitize_for_path(s):
 
 
 def pattern_to_filepath(pattern, parent_dir, metadata):
-    """ Build absolute cover file path from pattern. """
+    """Build absolute cover file path from pattern."""
     assert pattern != EMBEDDED_ALBUM_ART_SYMBOL
     assert metadata.artist is not None
     assert metadata.album is not None
@@ -190,7 +190,7 @@ def pattern_to_filepath(pattern, parent_dir, metadata):
 def analyze_dir(
     stats, parent_dir, rel_filepaths, cover_pattern, *, ignore_existing=False, full_scan=False, all_formats=False
 ):
-    """ Analyze a directory (non recursively) and return a list of Work objects. """
+    """Analyze a directory (non recursively) and return a list of Work objects."""
     r = []
 
     # filter out non audio files
@@ -239,7 +239,7 @@ def analyze_dir(
 
 
 def embed_album_art(cover_filepath, audio_filepaths):
-    """ Embed album art into audio files. """
+    """Embed album art into audio files."""
     with open(cover_filepath, "rb") as f:
         cover_data = f.read()
 
@@ -270,7 +270,7 @@ def embed_album_art(cover_filepath, audio_filepaths):
 
 
 def ichunk(iterable, n):
-    """ Split an iterable into n-sized chunks. """
+    """Split an iterable into n-sized chunks."""
     it = iter(iterable)
     while True:
         chunk = tuple(itertools.islice(it, n))
@@ -280,7 +280,7 @@ def ichunk(iterable, n):
 
 
 def get_covers(work, args):
-    """ Get missing covers. """
+    """Get missing covers."""
     with contextlib.ExitStack() as cm:
 
         if args.cover_pattern == EMBEDDED_ALBUM_ART_SYMBOL:
@@ -368,7 +368,7 @@ def get_covers(work, args):
 
 
 def cl_main():
-    """ Command line entry point. """
+    """Command line entry point."""
     # parse args
     arg_parser = argparse.ArgumentParser(
         description=f"SACAD (recursive tool) v{sacad.__version__}.{__doc__}",

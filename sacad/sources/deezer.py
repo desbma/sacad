@@ -10,7 +10,7 @@ from sacad.sources.base import CoverSource
 
 class DeezerCoverSourceResult(CoverSourceResult):
 
-    """ Deezer search cover result. """
+    """Deezer search cover result."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
@@ -37,7 +37,7 @@ class DeezerCoverSource(CoverSource):
         super().__init__(*args, min_delay_between_accesses=0.1, **kwargs)
 
     def getSearchUrl(self, album, artist):
-        """ See CoverSource.getSearchUrl. """
+        """See CoverSource.getSearchUrl."""
         # build request url
         search_params = collections.OrderedDict()
         search_params["artist"] = artist
@@ -49,12 +49,12 @@ class DeezerCoverSource(CoverSource):
         return __class__.assembleUrl(__class__.BASE_URL, url_params)
 
     def processQueryString(self, s):
-        """ See CoverSource.processQueryString. """
+        """See CoverSource.processQueryString."""
         # API search is fuzzy, not need to alter query
         return s
 
     async def parseResults(self, api_data):
-        """ See CoverSource.parseResults. """
+        """See CoverSource.parseResults."""
         results = []
 
         # get unique albums

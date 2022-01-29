@@ -12,7 +12,7 @@ from sacad.sources.amazonbase import AmazonBaseCoverSource
 
 class AmazonCdCoverSourceResult(CoverSourceResult):
 
-    """ Amazon CD cover search result. """
+    """Amazon CD cover search result."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
@@ -20,7 +20,7 @@ class AmazonCdCoverSourceResult(CoverSourceResult):
 
 class AmazonCdCoverSource(AmazonBaseCoverSource):
 
-    """ Cover source returning Amazon.com audio CD images. """
+    """Cover source returning Amazon.com audio CD images."""
 
     TLDS = ("com", "ca", "cn", "fr", "de", "co.jp", "co.uk")
     RESULTS_SELECTORS = (
@@ -37,7 +37,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
         super().__init__(*args, base_domain=urllib.parse.urlsplit(self.base_url).netloc, **kwargs)
 
     def getSearchUrl(self, album, artist):
-        """ See CoverSource.getSearchUrl. """
+        """See CoverSource.getSearchUrl."""
         params = collections.OrderedDict()
         params["i"] = "popular"
         params["rh"] = f"p_32:{artist},p_28:{album}"
@@ -45,7 +45,7 @@ class AmazonCdCoverSource(AmazonBaseCoverSource):
         return __class__.assembleUrl(self.base_url, params)
 
     async def parseResults(self, api_data):
-        """ See CoverSource.parseResults. """
+        """See CoverSource.parseResults."""
         results = []
 
         # parse page
