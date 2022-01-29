@@ -5,7 +5,6 @@
 import asyncio
 import contextlib
 import logging
-import math
 import os
 import socket
 import unittest
@@ -118,10 +117,10 @@ class TestSacad(unittest.TestCase):
     def test_getImageUrlMetadata(self):
         """ Download the beginning of image files to guess their format and resolution. """
         refs = {
-            "https://www.nuclearblast.de/static/articles/152/152118.jpg/1000x1000.jpg": (
+            "https://upload.wikimedia.org/wikipedia/commons/b/b1/New_view_of_the_Pillars_of_Creation_%E2%80%94_infrared_Heic1501b.jpg": (  # noqa
                 sacad.cover.CoverImageFormat.JPEG,
-                (700, 700),
-                math.ceil(18000 / sacad.CoverSourceResult.METADATA_PEEK_SIZE_INCREMENT),
+                (3249, 3045),
+                4,
             ),
             "http://img2-ak.lst.fm/i/u/55ad95c53e6043e3b150ba8a0a3b20a1.png": (
                 sacad.cover.CoverImageFormat.PNG,
