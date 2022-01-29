@@ -23,7 +23,7 @@ LXML_WHEEL                      := ${LXML_WHEEL-${WINEARCH}}
 BITARRAY_WHEEL-win32            := ${DOWNLOAD_DIR}/bitarray-${BITARRAY_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}-${WINEARCH}.whl
 BITARRAY_WHEEL-win64            := ${DOWNLOAD_DIR}/bitarray-${BITARRAY_VERSION}-cp${PYTHON_VERSION_SHORT}-cp${PYTHON_VERSION_SHORT}-win_amd64.whl
 BITARRAY_WHEEL                  := ${BITARRAY_WHEEL-${WINEARCH}}
-7ZIP_INSTALLER                  := ${DOWNLOAD_DIR}/7z938.msi
+7ZIP_INSTALLER                  := ${DOWNLOAD_DIR}/7z2107.msi
 
 # native env & tools
 CURL     := curl -s -f -L -m 600 --connect-timeout 30 --retry 10 --retry-max-time 5
@@ -195,7 +195,7 @@ ${BITARRAY_WHEEL-win64}:
 ${7ZIP_INSTALLER}:
 	mkdir -p $(dir $@)
 	${CURL} http://www.7-zip.org/a/$(notdir $@) > $@.unckecked
-	echo "673377a03f91ff0f7f384794934b767c3389e50d7dc308f7c73f4633121518b3e4af8d33cf282398a710577e12fbb963152591c3e29b1092c79530bb2d8aa882  $@.unckecked" | sha512sum --status -c - && mv $@.unckecked $@
+	echo "103210153e60b4234015796bb5f12483f99b5909df8c2fe5c9d3a823d4bdc721602a5261ad794e5280ff9f0d5f79add4e2a732dfb087fe8b4844d789acb8ea42  $@.unckecked" | sha512sum --status -c - && mv $@.unckecked $@
 
 ${DOWNLOAD_DIR}/sample.ogg:
 	mkdir -p $(dir $@)
