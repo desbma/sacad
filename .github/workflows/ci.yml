@@ -28,3 +28,26 @@ jobs:
       - run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-win:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        win-version: ["win32", "win64"]
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get install p7zip-full mingw-w64
+      - if: ${{matrix.win-version ==  'win32'}}
+        run: |
+          sudo dpkg --add-architecture i386
+          # https://github.com/actions/virtual-environments/issues/3339#issuecomment-834355074
+          sudo apt-add-repository "ppa:ondrej/php" -y
+          sudo apt-get update
+          sudo apt-get install wine32
+      - if: ${{matrix.win-version ==  'win64'}}
+        run: sudo apt-get install wine64
+      - run: make -C win all test
+        env:
+          WINEARCH: ${{matrix.win-version}}
+        continue-on-error: true
