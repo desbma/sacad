@@ -114,6 +114,7 @@ class TestSacad(unittest.TestCase):
                             self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
                             self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
 
+    @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_getImageUrlMetadata(self):
         """ Download the beginning of image files to guess their format and resolution. """
         refs = {
