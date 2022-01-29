@@ -22,7 +22,7 @@ import tqdm
 import unidecode
 
 import sacad
-from sacad import colored_logging, tqdm_logging
+from sacad import COVER_SOURCE_CLASSES, colored_logging, tqdm_logging
 
 EMBEDDED_ALBUM_ART_SYMBOL = "+"
 AUDIO_EXTENSIONS = frozenset(
@@ -353,7 +353,7 @@ def get_covers(work, args):
                     cover_filepath,
                     size_tolerance_prct=args.size_tolerance_prct,
                     amazon_tlds=args.amazon_tlds,
-                    no_lq_sources=args.no_lq_sources,
+                    source_classes=args.cover_sources,
                     preserve_format=args.preserve_format,
                 )
                 future = asyncio.ensure_future(coroutine)
@@ -417,6 +417,7 @@ def cl_main():
     except KeyError:
         print(f"Unable to guess image format from extension, or unknown format: {args.format}")
         exit(1)
+    args.cover_sources = tuple(COVER_SOURCE_CLASSES[source] for source in args.cover_sources)
 
     # setup logger
     if not args.verbose:

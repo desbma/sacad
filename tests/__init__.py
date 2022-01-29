@@ -103,8 +103,6 @@ class TestSacad(unittest.TestCase):
                                 size,
                                 tmp_filepath,
                                 size_tolerance_prct=size_tolerance,
-                                amazon_tlds=(),
-                                no_lq_sources=False,
                             )
                             sched_and_run(coroutine, delay=0.5)
                             out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)

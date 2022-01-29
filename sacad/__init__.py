@@ -9,31 +9,45 @@ __license__ = "MPL 2.0"
 import argparse
 import asyncio
 import functools
+import inspect
 import logging
 import os
+from typing import Any, Optional, Sequence
 
 from sacad import colored_logging, sources
-from sacad.cover import HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS, CoverSourceResult
+from sacad.cover import HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS, CoverImageFormat, CoverSourceResult
+from sacad.sources.base import CoverSource
+
+COVER_SOURCE_CLASSES = {
+    m[0][: -len(CoverSource.__name__)].lower(): m[1]
+    for m in inspect.getmembers(sources, lambda x: inspect.isclass(x) and issubclass(x, CoverSource))
+}
 
 
 async def search_and_download(
-    album, artist, format, size, out_filepath, *, size_tolerance_prct, amazon_tlds, no_lq_sources, preserve_format=False
-):
+    album: str,
+    artist: str,
+    format: CoverImageFormat,
+    size: int,
+    out_filepath: str,
+    *,
+    size_tolerance_prct: int,
+    amazon_tlds: Sequence[str] = (),
+    source_classes: Optional[Sequence[Any]] = None,
+    preserve_format: bool = False,
+) -> bool:
     """ Search and download a cover, return True if success, False instead. """
     logger = logging.getLogger("Main")
 
     # register sources
     source_args = (size, size_tolerance_prct)
-    cover_sources = [
-        sources.LastFmCoverSource(*source_args),
-        sources.DeezerCoverSource(*source_args),
-        sources.AmazonCdCoverSource(*source_args),
-        sources.AmazonDigitalCoverSource(*source_args),
-    ]
-    for tld in amazon_tlds:
-        cover_sources.append(sources.AmazonCdCoverSource(*source_args, tld=tld))
-    if not no_lq_sources:
-        cover_sources.append(sources.GoogleImagesWebScrapeCoverSource(*source_args))
+    if source_classes is None:
+        source_classes = tuple(COVER_SOURCE_CLASSES.values())
+    assert source_classes is not None  # makes MyPy chill
+    cover_sources = [cls(*source_args) for cls in source_classes]
+    if sources.AmazonCdCoverSource in source_classes:
+        for tld in amazon_tlds:
+            cover_sources.append(sources.AmazonCdCoverSource(*source_args, tld=tld))
 
     # schedule search work
     search_futures = []
@@ -86,7 +100,7 @@ async def search_and_download(
     return done
 
 
-def setup_common_args(arg_parser):
+def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
     """ Set up command line arguments shared between sacad and sacad_r. """
     arg_parser.add_argument(
         "-t",
@@ -108,14 +122,12 @@ def setup_common_args(arg_parser):
         help="""Amazon site TLDs to use as search source, in addition to amazon.com""",
     )
     arg_parser.add_argument(
-        "-d",
-        "--disable-low-quality-sources",
-        action="store_true",
-        default=False,
-        dest="no_lq_sources",
-        help="""Disable cover sources that may return unreliable results (ie. Google Images).
-                                  It will speed up search and improve reliability, but may fail to find results for
-                                  some difficult searches.""",
+        "-s",
+        "--cover-sources",
+        choices=tuple(COVER_SOURCE_CLASSES.keys()),
+        default=tuple(COVER_SOURCE_CLASSES.keys()),
+        nargs="+",
+        help="Cover sources to use, if not set use all of them.",
     )
     arg_parser.add_argument(
         "-p",
@@ -126,7 +138,7 @@ def setup_common_args(arg_parser):
     )
 
 
-def cl_main():
+def cl_main() -> None:
     """ Command line entry point for sacad_r. """
     # parse args
     arg_parser = argparse.ArgumentParser(
@@ -153,6 +165,7 @@ def cl_main():
     except KeyError:
         print(f"Unable to guess image format from extension, or unknown format: {args.format}")
         exit(1)
+    args.cover_sources = tuple(COVER_SOURCE_CLASSES[source] for source in args.cover_sources)
 
     # setup logger
     logging_level = {
@@ -190,7 +203,7 @@ def cl_main():
         args.out_filepath,
         size_tolerance_prct=args.size_tolerance_prct,
         amazon_tlds=args.amazon_tlds,
-        no_lq_sources=args.no_lq_sources,
+        source_classes=args.cover_sources,
         preserve_format=args.preserve_format,
     )
     if hasattr(asyncio, "run"):
