@@ -323,7 +323,7 @@ class CoverSourceResult:
                     if (self.format is not None) and ((self.size is not None) and (width is None) and (height is None)):
                         logging.getLogger("Cover").debug(
                             f"Unable to get file metadata from file or HTTP headers for URL {url!r}, "
-                            "falling back to API data" % (url)
+                            "falling back to API data"
                         )
                         self.check_metadata = CoverImageMetadata.NONE
                         self.reliable_metadata = False
