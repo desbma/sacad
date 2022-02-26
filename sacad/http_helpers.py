@@ -17,12 +17,11 @@ def aiohttp_socket_timeout(socket_timeout_s):
     return aiohttp.ClientTimeout(total=None, connect=None, sock_connect=socket_timeout_s, sock_read=socket_timeout_s)
 
 
-IS_TRAVIS = os.getenv("CI") and os.getenv("TRAVIS")
-HTTP_NORMAL_TIMEOUT = aiohttp_socket_timeout(30.1 if IS_TRAVIS else 9.1)
-HTTP_SHORT_TIMEOUT = aiohttp_socket_timeout(12.1 if IS_TRAVIS else 3.1)
-HTTP_MAX_ATTEMPTS = 6 if IS_TRAVIS else 3
-HTTP_MAX_RETRY_SLEEP_S = 0 if IS_TRAVIS else 5
-HTTP_MAX_RETRY_SLEEP_SHORT_S = 0 if IS_TRAVIS else 2
+HTTP_NORMAL_TIMEOUT = aiohttp_socket_timeout(12.1)
+HTTP_SHORT_TIMEOUT = aiohttp_socket_timeout(6.1)
+HTTP_MAX_ATTEMPTS = 3
+HTTP_MAX_RETRY_SLEEP_S = 5
+HTTP_MAX_RETRY_SLEEP_SHORT_S = 2
 DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
