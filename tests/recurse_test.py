@@ -56,7 +56,7 @@ class TestRecursive(unittest.TestCase):
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.album1_dir = os.path.join(cls.temp_dir.name, "album1")
         os.mkdir(cls.album1_dir)
-        url = "https://upload.wikimedia.org/wikipedia/en/4/45/ACDC_-_Back_In_Black-sample.ogg"
+        url = "https://www.dropbox.com/s/5xr61miqznv06sx/ACDC_-_Back_In_Black-sample.ogg?dl=1"
         cls.album1_filepath = os.path.join(cls.album1_dir, "2 track.ogg")
         download(url, cls.album1_filepath)
         mf = mutagen.File(cls.album1_filepath)
