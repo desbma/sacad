@@ -531,7 +531,7 @@ class CoverSourceResult:
         img_stream = io.BytesIO(img_data)
         try:
             img = PIL.Image.open(img_stream)
-        except (IOError, RuntimeError):
+        except (IOError, OSError, RuntimeError):  # PIL.UnidentifiedImageError inherits from OSError
             format = imghdr.what(None, h=img_data)
             format = SUPPORTED_IMG_FORMATS.get(format, None)
         else:
