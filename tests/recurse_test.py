@@ -32,7 +32,7 @@ def download(url, filepath):
     ) as response:
         response.raise_for_status()
         with open(filepath, "wb") as f:
-            for chunk in response.iter_content(2 ** 14):
+            for chunk in response.iter_content(2**14):
                 f.write(chunk)
     if cache_dir is not None:
         shutil.copyfile(filepath, cache_filepath)

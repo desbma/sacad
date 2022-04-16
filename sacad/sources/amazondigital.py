@@ -105,7 +105,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
                 # TODO don't pick up highest res image if user asked less?
                 for amazon_img_format in AMAZON_DIGITAL_IMAGE_FORMATS:
                     # TODO review this, it seem to always fail now
-                    self.logger.debug("Trying %u subimages..." % (amazon_img_format.slice_count ** 2))
+                    self.logger.debug("Trying %u subimages..." % (amazon_img_format.slice_count**2))
                     urls = tuple(
                         self.generateImgUrls(
                             product_id, __class__.DYNAPI_KEY, amazon_img_format.id, amazon_img_format.slice_count

@@ -55,7 +55,7 @@ class CoverSourceResult:
 
     """Cover image returned by a source, candidate to be downloaded."""
 
-    METADATA_PEEK_SIZE_INCREMENT = 2 ** 12
+    METADATA_PEEK_SIZE_INCREMENT = 2**12
     MAX_FILE_METADATA_PEEK_SIZE = 20 * METADATA_PEEK_SIZE_INCREMENT
     IMG_SIG_SIZE = 16
 

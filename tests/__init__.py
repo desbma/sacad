@@ -52,7 +52,7 @@ def download(url, filepath=None):
             if filepath is None:
                 return response.content
             with open(filepath, "wb") as f:
-                for chunk in response.iter_content(2 ** 14):
+                for chunk in response.iter_content(2**14):
                     f.write(chunk)
 
 
