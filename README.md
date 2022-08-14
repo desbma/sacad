@@ -48,7 +48,7 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 ## Installation
 
-SACAD requires [Python](https://www.python.org/downloads/) >= 3.6.
+SACAD requires [Python](https://www.python.org/downloads/) >= 3.7.
 
 ### Standalone Windows executable
 
