@@ -7,13 +7,17 @@ from sacad import __version__
 from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceQuality, CoverSourceResult
 from sacad.sources.base import CoverSource
 
+FUZZY_MODE = False
+
 
 class DiscogsCoverSourceResult(CoverSourceResult):
 
     """Deezer search cover result."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, source_quality=CoverSourceQuality.REFERENCE, **kwargs)
+        super().__init__(
+            *args, source_quality=CoverSourceQuality.NORMAL if FUZZY_MODE else CoverSourceQuality.HIGH, **kwargs
+        )
 
 
 class DiscogsCoverSource(CoverSource):
@@ -35,8 +39,11 @@ class DiscogsCoverSource(CoverSource):
     def getSearchUrl(self, album, artist):
         """See CoverSource.getSearchUrl."""
         url_params = collections.OrderedDict()
-        url_params["artist"] = artist
-        url_params["release_title"] = album
+        if FUZZY_MODE:
+            url_params["q"] = f"{artist} - {album}"
+        else:
+            url_params["artist"] = artist
+            url_params["release_title"] = album
         url_params["type"] = "release"
         return __class__.assembleUrl(f"{__class__.BASE_URL}/database/search", url_params)
 
