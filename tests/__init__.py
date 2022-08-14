@@ -193,6 +193,7 @@ class TestSacad(unittest.TestCase):
                 sacad.sources.LastFmCoverSource(*source_args),
                 sacad.sources.DeezerCoverSource(*source_args),
                 # sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
+                sacad.sources.DiscogsCoverSource(*source_args),
                 sacad.sources.AmazonDigitalCoverSource(*source_args),
             ]
             sources.extend(
@@ -207,7 +208,12 @@ class TestSacad(unittest.TestCase):
                         coroutine = sacad.CoverSourceResult.preProcessForComparison(results, size, 0)
                         results = sched_and_run(coroutine, delay=0.5)
                         if not (
-                            ((size > 500) and isinstance(source, sacad.sources.LastFmCoverSource))
+                            (
+                                (size > 500)
+                                and isinstance(
+                                    source, (sacad.sources.LastFmCoverSource, sacad.sources.DiscogsCoverSource)
+                                )
+                            )
                             or ((size > 1000) and isinstance(source, sacad.sources.DeezerCoverSource))
                             or (
                                 isinstance(source, sacad.sources.AmazonCdCoverSource)

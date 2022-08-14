@@ -26,6 +26,7 @@ SACAD is a multi platform command line tool to download album covers without man
   - Amazon digital music
   - ~~CoverLib~~ (site is down)
   - Deezer
+  - Discogs
   - Google Images
   - Last.fm
 - Smart sorting algorithm to select THE best cover for a given query, using several factors: source reliability, image format, image size, image similarity with reference cover, etc.
