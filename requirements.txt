@@ -1,11 +1,11 @@
-aiohttp~=3.6
+aiohttp>=3.6
 appdirs>=1.4.0
-bitarray>=0.8.3
-cssselect>=0.9.1
+bitarray>=2.0.0
+cssselect>=1.1.0
 fake-useragent>=0.1.11
 lxml>=4.0.0
 mutagen>=1.31
-pillow>=2.7.0
+pillow>=8.0.0
 tqdm>=4.28.1
 unidecode>=1.1.1
 web_cache>=1.1.0

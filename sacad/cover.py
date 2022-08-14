@@ -681,7 +681,7 @@ class CoverSourceResult:
         parser.feed(image_data)
         img = parser.close()
         target_size = (__class__.IMG_SIG_SIZE, __class__.IMG_SIG_SIZE)
-        img.thumbnail(target_size, PIL.Image.BICUBIC)
+        img.thumbnail(target_size, PIL.Image.Resampling.BICUBIC)
         if img.size != target_size:
             logging.getLogger("Cover").debug(
                 "Non square thumbnail after resize to %ux%u, unable to compute signature" % target_size
