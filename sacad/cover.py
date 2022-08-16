@@ -33,13 +33,38 @@ PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
 
-# LOW quality means source can return completely unrelated images
-# REFERENCE means the api query is not fuzzy, this is an exact match for the artist/album couple
-# NORMAL is in between: reliable source but can return wrong album for example
-# HIGH is like REFERENCE, but can sometimes return scan/photographs of the actual cover
-CoverSourceQuality = enum.Enum("CoverSourceQuality", ("LOW", "NORMAL", "HIGH", "REFERENCE"))
 
-CoverImageMetadata = enum.IntEnum("CoverImageMetadata", (("NONE", 0), ("FORMAT", 1), ("SIZE", 2), ("ALL", 3)))
+class CoverSourceQuality(enum.IntFlag):
+
+    """Flags to describe cover source quality."""
+
+    # whether or not the search query matching is fuzzy (does a typo return results ?)
+    FUZZY_SEARCH = 0
+    EXACT_SEARCH = 1 << 1
+    # whether or not the source will return complete crap instead of no results when it has not found a real match
+    # this seems similar to the previous flags but is different
+    UNRELATED_RESULT_RISK = 0
+    NO_UNRELATED_RESULT_RISK = 1 << 2
+
+    def isReference(self) -> bool:
+        """
+        Return True if the source if of 'reference' quality.
+
+        'Reference' means a result can only be the correct cover (but can be wrong size/format).
+        """
+        mask = self.EXACT_SEARCH | self.NO_UNRELATED_RESULT_RISK
+        return (self.value & mask) == mask
+
+
+class CoverImageMetadata(enum.IntFlag):
+
+    """Flags to describe image metadata."""
+
+    NONE = 0
+    FORMAT = 1
+    SIZE = 2
+    ALL = 3
+
 
 HAS_JPEGOPTIM = shutil.which("jpegoptim") is not None
 HAS_OPTIPNG = shutil.which("optipng") is not None
@@ -95,7 +120,6 @@ class CoverSourceResult:
         self.thumbnail_url = thumbnail_url
         self.thumbnail_sig = None
         self.source = source
-        assert source_quality in CoverSourceQuality
         self.source_quality = source_quality
         self.rank = rank
         assert (format is not None) or ((check_metadata & CoverImageMetadata.FORMAT) != 0)
@@ -139,11 +163,6 @@ class CoverSourceResult:
 
     async def get(self, target_format, target_size, size_tolerance_prct, out_filepath, *, preserve_format=False):
         """Download cover and process it."""
-        if self.source_quality.value <= CoverSourceQuality.LOW.value:
-            logging.getLogger("Cover").warning(
-                "Cover is from a potentially unreliable source and may be unrelated to the search"
-            )
-
         images_data = []
         for i, url in enumerate(self.urls):
             # download
@@ -594,7 +613,7 @@ class CoverSourceResult:
         # find reference (=image most likely to match target cover ignoring factors like size and format)
         reference = None
         for result in results:
-            if result.source_quality is CoverSourceQuality.REFERENCE:
+            if result.source_quality.isReference():
                 if (reference is None) or (
                     CoverSourceResult.compare(
                         result, reference, target_size=target_size, size_tolerance_prct=size_tolerance_prct

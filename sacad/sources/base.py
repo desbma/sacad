@@ -16,7 +16,7 @@ import fake_useragent
 import web_cache
 
 from sacad import http_helpers
-from sacad.cover import CoverSourceQuality
+from sacad.cover import CoverSourceQuality  # noqa: F401
 
 MAX_THUMBNAIL_SIZE = 256
 
@@ -134,7 +134,7 @@ class CoverSource(metaclass=abc.ABCMeta):
                 or (result.format is None)
                 or result.needMetadataUpdate()  # unknown format
             ):  # if still true, it means we failed to grab metadata, so exclude it
-                if result.source_quality is CoverSourceQuality.REFERENCE:
+                if result.source_quality.isReference():
                     # we keep this result just for the reference, it will be excluded from the results
                     result.is_only_reference = True
                     results_kept.append(result)

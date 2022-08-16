@@ -13,7 +13,11 @@ class DeezerCoverSourceResult(CoverSourceResult):
     """Deezer search cover result."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
+        super().__init__(
+            *args,
+            source_quality=CoverSourceQuality.EXACT_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK,
+            **kwargs,
+        )
 
 
 class DeezerCoverSource(CoverSource):

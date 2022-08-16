@@ -15,9 +15,12 @@ class DiscogsCoverSourceResult(CoverSourceResult):
     """Deezer search cover result."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(
-            *args, source_quality=CoverSourceQuality.NORMAL if FUZZY_MODE else CoverSourceQuality.HIGH, **kwargs
-        )
+        quality = CoverSourceQuality.NO_UNRELATED_RESULT_RISK
+        if FUZZY_MODE:
+            quality |= CoverSourceQuality.FUZZY_SEARCH
+        else:
+            quality |= CoverSourceQuality.EXACT_SEARCH
+        super().__init__(*args, source_quality=quality, **kwargs)
 
 
 class DiscogsCoverSource(CoverSource):

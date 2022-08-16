@@ -16,7 +16,9 @@ class GoogleImagesCoverSourceResult(CoverSourceResult):
     """Google Images cover search result."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, source_quality=CoverSourceQuality.LOW, **kwargs)
+        super().__init__(
+            *args, source_quality=CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.UNRELATED_RESULT_RISK, **kwargs
+        )
 
 
 class GoogleImagesWebScrapeCoverSource(CoverSource):

@@ -139,7 +139,7 @@ class TestSacad(unittest.TestCase):
                 None,
                 source=source,
                 thumbnail_url=None,
-                source_quality=sacad.cover.CoverSourceQuality.NORMAL,
+                source_quality=0,
                 check_metadata=sacad.cover.CoverImageMetadata.ALL,
             )
             coroutine = cover.updateImageMetadata()

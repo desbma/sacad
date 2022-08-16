@@ -40,7 +40,9 @@ class AmazonDigitalCoverSourceResult(CoverSourceResult):
     """Amazon digital cover search result."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, source_quality=CoverSourceQuality.NORMAL, **kwargs)
+        super().__init__(
+            *args, source_quality=CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.UNRELATED_RESULT_RISK, **kwargs
+        )
 
 
 class AmazonDigitalCoverSource(AmazonBaseCoverSource):
