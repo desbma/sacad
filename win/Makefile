@@ -4,7 +4,7 @@ WINEARCH ?= win32
 PYTHON_VERSION       := 3.8.10
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
-CXFREEZE_VERSION     := 6.10
+CXFREEZE_VERSION     := 6.11.1
 LXML_VERSION         := 4.7.1
 BITARRAY_VERSION     := 2.3.5
 
@@ -136,7 +136,9 @@ ${PYTHON_INSTALLED}: ${PYTHON_EMBEDDABLE_ARCHIVE}
 
 ${PIP_INSTALLED}: ${PYTHON_INSTALLED} ${GET_PIP}
 	${WINE_PYTHON} ${GET_PIP} install -qq
-	cp -r $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
+	mv $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
+	${WINE_PIP} -qq install setuptools==60.10.0
+	mv $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
 	touch $@
 
 ${CXFREEZE_INSTALLED}: ${CXFREEZE_WHEEL} ${PIP_INSTALLED}
@@ -166,15 +168,15 @@ ${PYTHON_EMBEDDABLE_ARCHIVE}:
 
 ${GET_PIP}:
 	mkdir -p $(dir $@)
-	${CURL} https://bootstrap.pypa.io/$(notdir $@) > $@
+	${CURL} https://bootstrap.pypa.io/pip/3.6/$(notdir $@) > $@
 
 ${CXFREEZE_WHEEL-win32}:
 	mkdir -p $(dir $@)
-	${CURL} https://files.pythonhosted.org/packages/9c/73/200ff06563430919f6f52e161c9be5ce23cc23e22675896f8691f38a1542/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/9e/5f/7872323430985758cea081315f66b015093edbbcea6da3561cc321c8128c/$(notdir $@) > $@
 
 ${CXFREEZE_WHEEL-win64}:
 	mkdir -p $(dir $@)
-	${CURL} https://files.pythonhosted.org/packages/ab/29/fe15bfebe9c8d7d2fa82917dc55e8f24eac3ba05e8381c110445362e8171/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/ce/96/0af2b244d91cc118c762a6510af403a590a3b3949aa6e6673b19f7bd3977/$(notdir $@) > $@
 
 ${LXML_WHEEL-win32}:
 	mkdir -p $(dir $@)
