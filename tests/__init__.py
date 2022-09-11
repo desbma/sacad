@@ -193,7 +193,6 @@ class TestSacad(unittest.TestCase):
                 sacad.sources.ItunesCoverSource(*source_args),
                 sacad.sources.LastFmCoverSource(*source_args),
                 sacad.sources.DeezerCoverSource(*source_args),
-                # sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
                 sacad.sources.DiscogsCoverSource(*source_args),
                 sacad.sources.AmazonDigitalCoverSource(*source_args),
             ]

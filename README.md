@@ -22,10 +22,10 @@ SACAD also provides a second command line tool, `sacad_r`, to scan a music libra
 - Currently support the following cover sources:
   - Amazon CD (.com, .ca, .cn, .fr, .de, .co.jp and .co.uk variants)
   - Amazon digital music
-  - ~~CoverLib~~ (site is down)
+  - ~~CoverLib~~ (site is dead)
   - Deezer
   - Discogs
-  - Google Images
+  - ~~Google Images~~ (removed, too unreliable)
   - Last.fm
   - Itunes
 - Smart sorting algorithm to select THE best cover for a given query, using several factors: source reliability, image format, image size, image similarity with reference cover, etc.
