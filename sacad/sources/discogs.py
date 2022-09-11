@@ -12,7 +12,7 @@ FUZZY_MODE = False
 
 class DiscogsCoverSourceResult(CoverSourceResult):
 
-    """Deezer search cover result."""
+    """Discogs search cover result."""
 
     def __init__(self, *args, **kwargs):
         quality = CoverSourceQuality.NO_UNRELATED_RESULT_RISK

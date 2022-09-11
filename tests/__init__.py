@@ -190,6 +190,7 @@ class TestSacad(unittest.TestCase):
         for size in range(300, 1200 + 1, 300):
             source_args = (size, 0)
             sources = [
+                sacad.sources.ItunesCoverSource(*source_args),
                 sacad.sources.LastFmCoverSource(*source_args),
                 sacad.sources.DeezerCoverSource(*source_args),
                 # sacad.sources.GoogleImagesWebScrapeCoverSource(*source_args),
