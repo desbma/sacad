@@ -1,4 +1,4 @@
-""" Discogs cover source. """
+""" Itunes cover source. """
 
 import collections
 import json
