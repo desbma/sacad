@@ -106,7 +106,7 @@ To download covers for your library with the same parameters as previous example
 
 `sacad_r . 300 folder.jpg`
 
-Limitations
+## Limitations
 
 - Only supports front covers
 
