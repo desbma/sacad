@@ -91,7 +91,22 @@ To download the cover of _Master of Puppets_ from _Metallica_, to the file `Albu
 
 To download covers for your library with the same parameters as previous example: `sacad_r library_directory 600 AlbumArt.jpg`.
 
-## Limitations
+
+## Docker Usage
+
+1. Build and tag the sacad container. Note `optipng jpegoptim` will be installed alongside the latest pip sacad version - [![PyPI version](https://img.shields.io/pypi/v/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
+
+`docker build -t sacad .`
+
+2. Run the docker container in interactive mode. Mount your Music directory to /music
+
+`docker run -it -v /srv/some_path/Music:/music sacad /bin/sh`
+
+3. You will now be at a new prompt inside your docker container, inside your mapped Music volume, and you can run your scan with your chosen command. 
+
+`sacad_r . 300 folder.jpg`
+
+Limitations
 
 - Only supports front covers
 
