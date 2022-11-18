@@ -49,7 +49,9 @@ class CoverSource(metaclass=abc.ABCMeta):
 
         ua_cache_dir = os.path.join(appdirs.user_cache_dir(appname="sacad", appauthor=False), "fake_useragent")
         os.makedirs(ua_cache_dir, exist_ok=True)
-        self.ua = fake_useragent.UserAgent(path=os.path.join(ua_cache_dir, "ua.json"))
+        self.ua = fake_useragent.UserAgent(
+            path=os.path.join(ua_cache_dir, f"ua_{fake_useragent.settings.__version__}.json")
+        )
 
         if not hasattr(__class__, "api_cache"):
             db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad", appauthor=False), "sacad-cache.sqlite")
