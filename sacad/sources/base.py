@@ -12,7 +12,6 @@ import unicodedata
 import urllib.parse
 
 import appdirs
-import fake_useragent
 import web_cache
 
 from sacad import http_helpers
@@ -47,11 +46,7 @@ class CoverSource(metaclass=abc.ABCMeta):
             logger=self.logger,
         )
 
-        ua_cache_dir = os.path.join(appdirs.user_cache_dir(appname="sacad", appauthor=False), "fake_useragent")
-        os.makedirs(ua_cache_dir, exist_ok=True)
-        self.ua = fake_useragent.UserAgent(
-            path=os.path.join(ua_cache_dir, f"ua_{fake_useragent.settings.__version__}.json")
-        )
+        self.ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0"
 
         if not hasattr(__class__, "api_cache"):
             db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad", appauthor=False), "sacad-cache.sqlite")

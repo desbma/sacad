@@ -24,8 +24,6 @@ jobs:
           pip install -U pip
           pip install coveralls
           pip install -r requirements.txt
-      - if: ${{matrix.python-version ==  '3.7'}}
-        run: "pip3 install importlib_metadata"
       - run: coverage run --source=sacad setup.py test
       - run: coveralls --service=github
         env:

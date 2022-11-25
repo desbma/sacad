@@ -16,7 +16,6 @@ class AmazonBaseCoverSource(CoverSource):
             rate_limited_domains=(base_domain,),
             **kwargs,
         )
-        self.current_ua = self.ua.firefox
         self.base_domain = base_domain
 
     def processQueryString(self, s):
@@ -26,7 +25,7 @@ class AmazonBaseCoverSource(CoverSource):
     def updateHttpHeaders(self, headers):
         """See CoverSource.updateHttpHeaders."""
         # mimic Firefox headers
-        headers["User-Agent"] = self.current_ua
+        headers["User-Agent"] = self.ua
         headers["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         headers["Accept-Language"] = "en-US,en;q=0.9"
         headers["DNT"] = "1"
