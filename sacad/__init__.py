@@ -216,12 +216,8 @@ def cl_main() -> None:
         source_classes=args.cover_sources,
         preserve_format=args.preserve_format,
     )
-    if hasattr(asyncio, "run"):
-        # Python >=3.7.0
-        asyncio.run(coroutine)
-    else:
-        future = asyncio.ensure_future(coroutine)
-        asyncio.get_event_loop().run_until_complete(future)
+    future = asyncio.ensure_future(coroutine)
+    asyncio.get_event_loop().run_until_complete(future)
 
 
 if __name__ == "__main__":
