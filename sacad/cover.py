@@ -41,10 +41,14 @@ class CoverSourceQuality(enum.IntFlag):
     # whether or not the search query matching is fuzzy (does a typo return results ?)
     FUZZY_SEARCH = 0
     EXACT_SEARCH = 1 << 1
+    # whether or not the source can return cover images for the correct album, but not being the front cover
+    # unused for now
+    NOT_FRONT_COVER_RESULT_RISK = 0
+    NO_NOT_FRONT_COVER_RESULT_RISK = 1 << 2
     # whether or not the source will return complete crap instead of no results when it has not found a real match
-    # this seems similar to the previous flags but is different
+    # this seems similar to the fuzzy flags but is different
     UNRELATED_RESULT_RISK = 0
-    NO_UNRELATED_RESULT_RISK = 1 << 2
+    NO_UNRELATED_RESULT_RISK = 1 << 3
 
     def isReference(self) -> bool:
         """

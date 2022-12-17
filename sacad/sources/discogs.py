@@ -62,6 +62,8 @@ class DiscogsCoverSource(CoverSource):
 
         results = []
         for rank, release in enumerate(json_data["results"], 1):
+            if release["formats"][0]["name"] != "CD":
+                continue
             thumbnail_url = release["thumb"]
             img_url = release["cover_image"]
             url_tokens = img_url.split("/")
