@@ -29,7 +29,7 @@ SACAD also provides a second command line tool, `sacad_r`, to scan a music libra
   - Last.fm
   - Itunes
 - Smart sorting algorithm to select THE best cover for a given query, using several factors: source reliability, image format, image size, image similarity with reference cover, etc.
-- Automatically crunch images with optipng or jpegoptim (can save 30% of filesize without any loss of quality, great for portable players)
+- Automatically crunch images with optipng, oxipng or jpegoptim (can save 30% of filesize without any loss of quality, great for portable players)
 - Cache search results locally for faster future search
 - Do everything to avoid getting blocked by the sources: hide user-agent and automatically take care of rate limiting
 - Automatically convert/resize image if needed
@@ -72,12 +72,12 @@ Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/saca
 
 Additionally, if you want to benefit from image crunching (lossless recompression to save additional space):
 
-- Install [optipng](http://optipng.sourceforge.net/)
+- Install [oxipng](https://github.com/shssoichiro/oxipng) or [optipng](http://optipng.sourceforge.net/)
 - Install [jpegoptim](http://freecode.com/projects/jpegoptim)
 
-On Ubuntu and other Debian derivatives, you can install both with `sudo apt-get install optipng jpegoptim`.
+On Ubuntu and other Debian derivatives, you can install them with `sudo apt-get install optipng jpegoptim`.
 
-Note that depending of the speed of your CPU, crunching may significantly slow down processing as it is very CPU intensive (especially for PNG files).
+Note that depending of the speed of your CPU, crunching may significantly slow down processing as it is very CPU intensive (especially with optipng).
 
 ## Command line usage
 

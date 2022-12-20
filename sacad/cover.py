@@ -72,6 +72,7 @@ class CoverImageMetadata(enum.IntFlag):
 
 HAS_JPEGOPTIM = shutil.which("jpegoptim") is not None
 HAS_OPTIPNG = shutil.which("optipng") is not None
+HAS_OXIPNG = shutil.which("oxipng") is not None
 SUPPORTED_IMG_FORMATS = {"jpg": CoverImageFormat.JPEG, "jpeg": CoverImageFormat.JPEG, "png": CoverImageFormat.PNG}
 FORMAT_EXTENSIONS = {CoverImageFormat.JPEG: "jpg", CoverImageFormat.PNG: "png"}
 
@@ -514,7 +515,7 @@ class CoverSourceResult:
     @staticmethod
     async def crunch(image_data, format, silent=False):
         """Crunch image data, and return the processed data, or orignal data if operation failed."""
-        if ((format is CoverImageFormat.PNG) and (not HAS_OPTIPNG)) or (
+        if ((format is CoverImageFormat.PNG) and (not (HAS_OPTIPNG or HAS_OXIPNG))) or (
             (format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM)
         ):
             return image_data
@@ -525,7 +526,10 @@ class CoverSourceResult:
                 tmp_out_file.write(image_data)
             size_before = len(image_data)
             if format is CoverImageFormat.PNG:
-                cmd = ["optipng", "-quiet", "-o1"]
+                if HAS_OXIPNG:
+                    cmd = ["oxipng", "-q", "-s"]
+                else:
+                    cmd = ["optipng", "-quiet", "-o1"]
             elif format is CoverImageFormat.JPEG:
                 cmd = ["jpegoptim", "-q", "--strip-all"]
             cmd.append(tmp_out_filepath)

@@ -15,7 +15,14 @@ import os
 from typing import Any, Optional, Sequence
 
 from sacad import colored_logging, sources
-from sacad.cover import HAS_JPEGOPTIM, HAS_OPTIPNG, SUPPORTED_IMG_FORMATS, CoverImageFormat, CoverSourceResult
+from sacad.cover import (
+    HAS_JPEGOPTIM,
+    HAS_OPTIPNG,
+    HAS_OXIPNG,
+    SUPPORTED_IMG_FORMATS,
+    CoverImageFormat,
+    CoverSourceResult,
+)
 from sacad.sources.base import CoverSource
 
 COVER_SOURCE_CLASSES = {
@@ -198,11 +205,11 @@ def cl_main() -> None:
     else:
         logging.getLogger("asyncio").setLevel(logging.CRITICAL + 1)
 
-    # display warning if optipng or jpegoptim are missing
+    # display warning if optipng/oxipng or jpegoptim are missing
     if not HAS_JPEGOPTIM:
         logging.getLogger("Main").warning("jpegoptim could not be found, JPEG crunching will be disabled")
-    if not HAS_OPTIPNG:
-        logging.getLogger("Main").warning("optipng could not be found, PNG crunching will be disabled")
+    if not (HAS_OPTIPNG or HAS_OXIPNG):
+        logging.getLogger("Main").warning("optipng or oxipng could not be found, PNG crunching will be disabled")
 
     # search and download
     coroutine = search_and_download(
