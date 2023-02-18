@@ -129,7 +129,10 @@ def get_file_metadata(audio_filepath):
 
     # album art
     if isinstance(mf.tags, mutagen._vorbis.VComment):
-        has_embedded_cover = "metadata_block_picture" in mf
+        has_embedded_cover = ("metadata_block_picture" in mf) or (
+            isinstance(mf, mutagen.flac.FLAC)
+            and any((p.type == mutagen.id3.PictureType.COVER_FRONT) for p in mf.pictures)
+        )
     elif isinstance(mf.tags, mutagen.id3.ID3):
         has_embedded_cover = any(map(operator.methodcaller("startswith", "APIC:"), mf.keys()))
     elif isinstance(mf.tags, mutagen.mp4.MP4Tags):
@@ -254,8 +257,11 @@ def embed_album_art(cover_filepath, audio_filepaths):
             picture.data = cover_data
             picture.type = mutagen.id3.PictureType.COVER_FRONT
             picture.mime = "image/jpeg"
-            encoded_data = base64.b64encode(picture.write())
-            mf["metadata_block_picture"] = encoded_data.decode("ascii")
+            if isinstance(mf, mutagen.flac.FLAC):
+                mf.add_picture(picture)
+            else:
+                encoded_data = base64.b64encode(picture.write())
+                mf["metadata_block_picture"] = encoded_data.decode("ascii")
 
         elif isinstance(mf.tags, mutagen.id3.ID3):
             mf.tags.add(mutagen.id3.APIC(mime="image/jpeg", type=mutagen.id3.PictureType.COVER_FRONT, data=cover_data))
