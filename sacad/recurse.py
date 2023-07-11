@@ -288,7 +288,6 @@ def ichunk(iterable, n):
 def get_covers(work, args):
     """Get missing covers."""
     with contextlib.ExitStack() as cm:
-
         if args.cover_pattern == EMBEDDED_ALBUM_ART_SYMBOL:
             tmp_prefix = f"{os.path.splitext(os.path.basename(inspect.getfile(inspect.currentframe())))[0]}_"
             tmp_dir = cm.enter_context(tempfile.TemporaryDirectory(prefix=tmp_prefix))
@@ -361,6 +360,7 @@ def get_covers(work, args):
                     amazon_tlds=args.amazon_tlds,
                     source_classes=args.cover_sources,
                     preserve_format=args.preserve_format,
+                    convert_progressive_jpeg=args.convert_progressive_jpeg,
                 )
                 future = asyncio.ensure_future(coroutine)
                 futures[future] = cur_work

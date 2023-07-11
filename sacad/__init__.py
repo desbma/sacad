@@ -42,6 +42,7 @@ async def search_and_download(
     amazon_tlds: Sequence[str] = (),
     source_classes: Optional[Sequence[Any]] = None,
     preserve_format: bool = False,
+    convert_progressive_jpeg: bool = False,
 ) -> bool:
     """Search and download a cover, return True if success, False instead."""
     logger = logging.getLogger("Main")
@@ -100,6 +101,7 @@ async def search_and_download(
                 size_tolerance_prct,
                 out_filepath,
                 preserve_format=preserve_format,
+                convert_progressive_jpeg=convert_progressive_jpeg,
             )
         except Exception as e:
             logger.warning(f"Download of {result} failed: {e.__class__.__qualname__} {e}")
@@ -152,6 +154,12 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
         action="store_true",
         default=False,
         help="Preserve source image format if possible. Target format will still be prefered when sorting results.",
+    )
+    arg_parser.add_argument(
+        "--convert-progressive-jpeg",
+        action="store_true",
+        default=False,
+        help="Convert progressive JPEG to baseline if needed. May result in bigger files and loss of quality.",
     )
 
 
@@ -222,6 +230,7 @@ def cl_main() -> None:
         amazon_tlds=args.amazon_tlds,
         source_classes=args.cover_sources,
         preserve_format=args.preserve_format,
+        convert_progressive_jpeg=args.convert_progressive_jpeg,
     )
     future = asyncio.ensure_future(coroutine)
     asyncio.get_event_loop().run_until_complete(future)

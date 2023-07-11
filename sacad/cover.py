@@ -13,6 +13,7 @@ import os
 import pickle
 import shutil
 import urllib.parse
+from typing import Dict
 
 import appdirs
 import bitarray
@@ -166,13 +167,22 @@ class CoverSourceResult:
             s += f" [x{len(self.urls)}]"
         return s
 
-    async def get(self, target_format, target_size, size_tolerance_prct, out_filepath, *, preserve_format=False):
+    async def get(
+        self,
+        target_format: CoverImageFormat,
+        target_size: int,
+        size_tolerance_prct: float,
+        out_filepath: str,
+        *,
+        preserve_format: bool = False,
+        convert_progressive_jpeg: bool = False,
+    ) -> None:
         """Download cover and process it."""
         images_data = []
         for i, url in enumerate(self.urls):
             # download
             logging.getLogger("Cover").info(f"Downloading cover {url!r} (part {i + 1}/{len(self.urls)})...")
-            headers = {}
+            headers: Dict[str, str] = {}
             self.source.updateHttpHeaders(headers)
 
             async def pre_cache_callback(img_data):
@@ -193,7 +203,11 @@ class CoverSourceResult:
             abs(max(self.size) - target_size) > target_size * size_tolerance_prct / 100
         )
         need_join = len(images_data) > 1
-        if (need_format_change and (not preserve_format)) or need_join or need_size_change:
+        need_post_process = (need_format_change and (not preserve_format)) or need_join or need_size_change
+        need_post_process = need_post_process or (
+            __class__.isProgressiveJpegData(images_data[0]) and convert_progressive_jpeg
+        )
+        if need_post_process:
             # post process
             image_data = self.postProcess(
                 images_data, target_format if need_format_change else None, target_size if need_size_change else None
@@ -212,6 +226,16 @@ class CoverSourceResult:
             out_filepath = f"{os.path.splitext(out_filepath)[0]}.{FORMAT_EXTENSIONS[self.format]}"
         with open(out_filepath, "wb") as file:
             file.write(image_data)
+
+    @staticmethod
+    def isProgressiveJpegData(data: bytes) -> bool:
+        """Return True if data is from a progressive JPEG."""
+        in_bytes = io.BytesIO(data)
+        try:
+            img = PIL.Image.open(in_bytes)
+            return bool(img.info["progressive"])
+        except Exception:
+            return False
 
     def postProcess(self, images_data, new_format, new_size):
         """
