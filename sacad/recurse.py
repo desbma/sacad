@@ -167,7 +167,7 @@ def get_dir_metadata(audio_filepaths, *, full_scan=False):
     return r
 
 
-VALID_PATH_CHARS = frozenset(r"-_.()!#$%&'@^{}~" + string.ascii_letters + string.digits)
+VALID_PATH_CHARS = frozenset(r"-_.()!#$%&'@^{}~" + string.ascii_letters + string.digits + " ")
 
 
 def sanitize_for_path(s):
