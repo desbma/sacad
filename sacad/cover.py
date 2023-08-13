@@ -189,7 +189,11 @@ class CoverSourceResult:
                 return await __class__.crunch(img_data, self.format)
 
             store_in_cache_callback, image_data = await self.source.http.query(
-                url, headers=headers, verify=False, cache=__class__.image_cache, pre_cache_callback=pre_cache_callback
+                url,
+                headers=headers,
+                verify=False,
+                cache=__class__.image_cache,  # type: ignore
+                pre_cache_callback=pre_cache_callback,
             )
 
             # store immediately in cache
@@ -205,7 +209,7 @@ class CoverSourceResult:
         need_join = len(images_data) > 1
         need_post_process = (need_format_change and (not preserve_format)) or need_join or need_size_change
         need_post_process = need_post_process or (
-            __class__.isProgressiveJpegData(images_data[0]) and convert_progressive_jpeg
+            __class__.isProgressiveJpegData(images_data[0]) and convert_progressive_jpeg  # type: ignore
         )
         if need_post_process:
             # post process
@@ -214,7 +218,7 @@ class CoverSourceResult:
             )
 
             # crunch image again
-            image_data = await __class__.crunch(image_data, target_format)
+            image_data = await __class__.crunch(image_data, target_format)  # type: ignore
 
             format_changed = need_format_change
         else:
