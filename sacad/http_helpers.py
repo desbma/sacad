@@ -222,7 +222,6 @@ class Http:
                         response_headers.update(response.headers)
 
                     break  # http retry loop
-
         except aiohttp.ClientResponseError as e:
             self.logger.debug(f"Probing {url!r} failed: {e.__class__.__qualname__} {e}")
             resp_ok = False
