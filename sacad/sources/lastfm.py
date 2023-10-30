@@ -62,7 +62,7 @@ class LastFmCoverSource(CoverSource):
         char_blacklist = frozenset(char_blacklist)
         return __class__.unpunctuate(s.lower(), char_blacklist=char_blacklist)
 
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """See CoverSource.parseResults."""
         results = []
 

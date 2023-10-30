@@ -70,7 +70,7 @@ class AmazonDigitalCoverSource(AmazonBaseCoverSource):
         params["s"] = "relevancerank"
         return __class__.assembleUrl(url, params)
 
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """See CoverSource.parseResults."""
         results = []
 

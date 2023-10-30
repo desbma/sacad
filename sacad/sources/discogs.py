@@ -56,7 +56,7 @@ class DiscogsCoverSource(CoverSource):
         headers["Accept"] = "application/vnd.discogs.v2.discogs+json"
         headers["Authorization"] = f"Discogs key={__class__.API_KEY}, secret={__class__.API_SECRET}"
 
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """See CoverSource.parseResults."""
         json_data = json.loads(api_data)
 

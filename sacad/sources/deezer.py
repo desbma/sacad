@@ -57,19 +57,25 @@ class DeezerCoverSource(CoverSource):
         # API search is fuzzy, not need to alter query
         return s
 
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """See CoverSource.parseResults."""
         results = []
 
         # get unique albums
         json_data = json.loads(api_data)
         albums = []
+        index_exact_match = 0
         for e in json_data["data"]:
             album = e["album"]
             album_id = album["id"]
             if album_id in map(operator.itemgetter("id"), albums):
                 continue
-            albums.append(album)
+            if album["title"].lower() == search_album.lower():
+                # override default sorting by putting exact matches first
+                albums.insert(index_exact_match, album)
+                index_exact_match += 1
+            else:
+                albums.append(album)
 
         for rank, album in enumerate(albums, 1):
             for key, size in __class__.COVER_SIZES.items():

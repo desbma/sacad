@@ -95,7 +95,7 @@ class CoverSource(metaclass=abc.ABCMeta):
             post_data = None
         try:
             store_in_cache_callback, api_data = await self.fetchResults(url, post_data)
-            results = await self.parseResults(api_data)
+            results = await self.parseResults(api_data, search_album=album, search_artist=artist)
         except Exception as e:
             # raise
             self.logger.warning(
@@ -239,6 +239,6 @@ class CoverSource(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """Parse API data and return an iterable of results."""
         pass

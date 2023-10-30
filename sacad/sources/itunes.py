@@ -15,7 +15,7 @@ class ItunesCoverSourceResult(CoverSourceResult):
     def __init__(self, *args, **kwargs):
         super().__init__(
             *args,
-            source_quality=CoverSourceQuality.NO_UNRELATED_RESULT_RISK | CoverSourceQuality.EXACT_SEARCH,
+            source_quality=CoverSourceQuality.EXACT_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK,
             **kwargs,
         )
 
@@ -38,7 +38,7 @@ class ItunesCoverSource(CoverSource):
         url_params["term"] = f"{artist} {album}"
         return __class__.assembleUrl(__class__.SEARCH_URL, url_params)
 
-    async def parseResults(self, api_data):
+    async def parseResults(self, api_data, *, search_album, search_artist):
         """See CoverSource.parseResults."""
         json_data = json.loads(api_data)
 
