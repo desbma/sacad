@@ -2,7 +2,6 @@
 
 import asyncio
 import enum
-import imghdr
 import io
 import itertools
 import logging
@@ -588,8 +587,7 @@ class CoverSourceResult:
         try:
             img = PIL.Image.open(img_stream)
         except (IOError, OSError, RuntimeError):  # PIL.UnidentifiedImageError inherits from OSError
-            format = imghdr.what(None, h=img_data)
-            format = SUPPORTED_IMG_FORMATS.get(format, None)
+            pass
         else:
             format = img.format.lower()
             format = SUPPORTED_IMG_FORMATS.get(format, None)
