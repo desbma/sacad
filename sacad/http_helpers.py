@@ -1,4 +1,4 @@
-""" Common HTTP code. """
+"""Common HTTP code."""
 
 import asyncio
 import logging
@@ -26,7 +26,6 @@ DEFAULT_USER_AGENT = "Mozilla/5.0"
 
 
 class Http:
-
     """Async HTTP client code."""
 
     def __init__(

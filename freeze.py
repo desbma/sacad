@@ -1,4 +1,4 @@
-""" Package freezing for Windows. """
+"""Package freezing for Windows."""
 
 import os
 import re

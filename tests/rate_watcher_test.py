@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Unit tests for rate watcher. """
+"""Unit tests for rate watcher."""
 
 import os
 import tempfile
@@ -15,7 +15,6 @@ ALMOST_NO_TIME = 0.05
 
 
 class TestRateWatcher(unittest.TestCase):
-
     """Test suite for rate watcher."""
 
     def test_minDelayBetweenAccesses(self):

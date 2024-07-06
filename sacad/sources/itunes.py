@@ -1,4 +1,4 @@
-""" Itunes cover source. """
+"""Itunes cover source."""
 
 import collections
 import json
@@ -9,7 +9,6 @@ from sacad.sources.base import CoverSource
 
 
 class ItunesCoverSourceResult(CoverSourceResult):
-
     """Itunes search cover result."""
 
     def __init__(self, *args, **kwargs):
@@ -21,7 +20,6 @@ class ItunesCoverSourceResult(CoverSourceResult):
 
 
 class ItunesCoverSource(CoverSource):
-
     """Itunes cover source."""
 
     SEARCH_URL = "https://itunes.apple.com/search"

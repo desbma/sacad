@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Smart Automatic Cover Art Downloader : search and download music album covers. """
+"""Smart Automatic Cover Art Downloader : search and download music album covers."""
 
 __version__ = "2.7.5"
 __author__ = "desbma"

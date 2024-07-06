@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Package setup. """
+"""Package setup."""
 
 import os
 import re

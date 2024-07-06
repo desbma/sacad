@@ -1,4 +1,4 @@
-""" Formatter for the logging module, coloring terminal output according to error criticity. """
+"""Formatter for the logging module, coloring terminal output according to error criticity."""
 
 import enum
 import logging
@@ -11,7 +11,6 @@ LEVEL_BOLD_MAPPING = {logging.WARNING: False, logging.ERROR: False, logging.CRIT
 
 
 class ColoredFormatter(logging.Formatter):
-
     """Logging formatter coloring terminal output according to error criticity."""
 
     def format(self, record):

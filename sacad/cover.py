@@ -1,4 +1,4 @@
-""" Sacad album cover. """
+"""Sacad album cover."""
 
 import asyncio
 import enum
@@ -35,7 +35,6 @@ CoverImageFormat = enum.Enum("CoverImageFormat", ("JPEG", "PNG"))
 
 
 class CoverSourceQuality(enum.IntFlag):
-
     """Flags to describe cover source quality."""
 
     # whether or not the search query matching is fuzzy (does a typo return results ?)
@@ -61,7 +60,6 @@ class CoverSourceQuality(enum.IntFlag):
 
 
 class CoverImageMetadata(enum.IntFlag):
-
     """Flags to describe image metadata."""
 
     NONE = 0
@@ -83,7 +81,6 @@ def is_square(x):
 
 
 class CoverSourceResult:
-
     """Cover image returned by a source, candidate to be downloaded."""
 
     METADATA_PEEK_SIZE_INCREMENT = 2**12

@@ -1,4 +1,4 @@
-""" Amazon CD cover source. """
+"""Amazon CD cover source."""
 
 import collections
 import urllib.parse
@@ -11,7 +11,6 @@ from sacad.sources.amazonbase import AmazonBaseCoverSource
 
 
 class AmazonCdCoverSourceResult(CoverSourceResult):
-
     """Amazon CD cover search result."""
 
     def __init__(self, *args, **kwargs):
@@ -21,7 +20,6 @@ class AmazonCdCoverSourceResult(CoverSourceResult):
 
 
 class AmazonCdCoverSource(AmazonBaseCoverSource):
-
     """Cover source returning Amazon.com audio CD images."""
 
     TLDS = ("com", "ca", "cn", "fr", "de", "co.jp", "co.uk")

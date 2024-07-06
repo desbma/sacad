@@ -1,4 +1,4 @@
-""" Common code for all cover sources cover sources. """
+"""Common code for all cover sources cover sources."""
 
 import abc
 import asyncio
@@ -21,7 +21,6 @@ MAX_THUMBNAIL_SIZE = 256
 
 
 class CoverSource(metaclass=abc.ABCMeta):
-
     """Base class for all cover sources."""
 
     def __init__(

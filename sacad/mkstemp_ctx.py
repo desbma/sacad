@@ -1,4 +1,4 @@
-""" Additions to the tempfile module. """
+"""Additions to the tempfile module."""
 
 import contextlib
 import os

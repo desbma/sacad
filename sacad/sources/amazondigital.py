@@ -1,4 +1,4 @@
-""" Amazon digital cover source. """
+"""Amazon digital cover source."""
 
 import collections
 import operator
@@ -36,7 +36,6 @@ AMAZON_DIGITAL_IMAGE_FORMATS.sort(key=operator.attrgetter("total_res"), reverse=
 
 
 class AmazonDigitalCoverSourceResult(CoverSourceResult):
-
     """Amazon digital cover search result."""
 
     def __init__(self, *args, **kwargs):
@@ -46,7 +45,6 @@ class AmazonDigitalCoverSourceResult(CoverSourceResult):
 
 
 class AmazonDigitalCoverSource(AmazonBaseCoverSource):
-
     """Cover source returning Amazon.com digital music images."""
 
     BASE_URL = "https://www.amazon.com"

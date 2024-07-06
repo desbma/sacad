@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Unit tests for main module. """
+"""Unit tests for main module."""
 
 import asyncio
 import contextlib
@@ -74,7 +74,6 @@ def sched_and_run(coroutine, delay=0):
 
 @unittest.skipUnless(is_internet_reachable(), "Need Internet access")
 class TestSacad(unittest.TestCase):
-
     """Test suite for main module."""
 
     @staticmethod

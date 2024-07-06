@@ -1,4 +1,4 @@
-""" Provide a class with a context manager to help avoid overloading web servers. """
+"""Provide a class with a context manager to help avoid overloading web servers."""
 
 import asyncio
 import logging
@@ -10,7 +10,6 @@ import urllib.parse
 
 
 class AccessRateWatcher:
-
     """Access rate limiter, supporting concurrent access by threads and/or processes."""
 
     def __init__(

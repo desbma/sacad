@@ -1,4 +1,4 @@
-""" Discogs cover source. """
+"""Discogs cover source."""
 
 import collections
 import json
@@ -11,7 +11,6 @@ FUZZY_MODE = False
 
 
 class DiscogsCoverSourceResult(CoverSourceResult):
-
     """Discogs search cover result."""
 
     def __init__(self, *args, **kwargs):
@@ -24,7 +23,6 @@ class DiscogsCoverSourceResult(CoverSourceResult):
 
 
 class DiscogsCoverSource(CoverSource):
-
     """
     Cover source using the official API.
 

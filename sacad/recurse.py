@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Recursively search and download album covers for a music library. """
+"""Recursively search and download album covers for a music library."""
 
 import argparse
 import asyncio
@@ -36,7 +36,6 @@ Metadata = collections.namedtuple("Metadata", ("artist", "album", "has_embedded_
 
 # TODO use a dataclasses.dataclass when Python < 3.7 is dropped
 class Work:
-
     """Represent a single search & download work item."""
 
     def __init__(self, cover_filepath, audio_filepaths, metadata):

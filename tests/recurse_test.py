@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Unit tests for recurse module. """
+"""Unit tests for recurse module."""
 
 import collections
 import contextlib
@@ -39,7 +39,6 @@ def download(url, filepath):
 
 
 class TestRecursive(unittest.TestCase):
-
     """Test suite for recurse module."""
 
     def __init__(self, *args, **kwargs):

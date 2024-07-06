@@ -1,4 +1,4 @@
-""" Code to help using the logging module with tqdm progress bars. """
+"""Code to help using the logging module with tqdm progress bars."""
 
 import contextlib
 import logging
@@ -8,7 +8,6 @@ logging_handlers_lock = threading.Lock()
 
 
 class TqdmLoggingHandler(logging.Handler):
-
     """Logging handler sending messages to the tqdm write method (avoids overlap)."""
 
     def __init__(self, tqdm, *args, **kwargs):

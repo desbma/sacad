@@ -1,10 +1,9 @@
-""" Base class for Amazon cover sources. """
+"""Base class for Amazon cover sources."""
 
 from sacad.sources.base import CoverSource
 
 
 class AmazonBaseCoverSource(CoverSource):
-
     """Base class for Amazon cover sources."""
 
     def __init__(self, *args, base_domain, **kwargs):
