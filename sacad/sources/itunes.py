@@ -44,6 +44,10 @@ class ItunesCoverSource(CoverSource):
 
         results = []
         for rank, result in enumerate(json_data["results"], 1):
+            if (search_album != self.processAlbumString(result["collectionName"])) or (
+                search_artist != self.processArtistString(result["artistName"])
+            ):
+                continue
             thumbnail_url = result["artworkUrl60"]
             base_img_url = result["artworkUrl60"].rsplit("/", 1)[0]
             url_found = False
