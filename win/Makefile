@@ -4,7 +4,7 @@ WINEARCH ?= win32
 PYTHON_VERSION       := 3.8.10
 PYTHON_VERSION_MAJOR := $(word 1,$(subst ., ,${PYTHON_VERSION})).$(word 2,$(subst ., ,${PYTHON_VERSION}))
 PYTHON_VERSION_SHORT := $(subst .,,${PYTHON_VERSION_MAJOR})
-CXFREEZE_VERSION     := 6.11.1
+CXFREEZE_VERSION     := 7.2.0
 LXML_VERSION         := 4.7.1
 BITARRAY_VERSION     := 2.3.5
 
@@ -135,10 +135,8 @@ ${PYTHON_INSTALLED}: ${PYTHON_EMBEDDABLE_ARCHIVE}
 	rm $(dir $@)python${PYTHON_VERSION_SHORT}.zip
 
 ${PIP_INSTALLED}: ${PYTHON_INSTALLED} ${GET_PIP}
-	${WINE_PYTHON} ${GET_PIP} install -qq
-	mv $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
-	${WINE_PIP} -qq install setuptools==60.10.0
-	mv $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
+	${WINE_PYTHON} ${GET_PIP}
+	mv -f $(dir ${PYTHON_INSTALLED})Lib/site-packages/* $(dir ${PYTHON_INSTALLED})
 	touch $@
 
 ${CXFREEZE_INSTALLED}: ${CXFREEZE_WHEEL} ${PIP_INSTALLED}
@@ -168,15 +166,15 @@ ${PYTHON_EMBEDDABLE_ARCHIVE}:
 
 ${GET_PIP}:
 	mkdir -p $(dir $@)
-	${CURL} https://bootstrap.pypa.io/pip/3.6/$(notdir $@) > $@
+	${CURL} https://bootstrap.pypa.io/pip/3.7/$(notdir $@) > $@
 
 ${CXFREEZE_WHEEL-win32}:
 	mkdir -p $(dir $@)
-	${CURL} https://files.pythonhosted.org/packages/9e/5f/7872323430985758cea081315f66b015093edbbcea6da3561cc321c8128c/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/2e/46/0afe229acba3d0976bddc0f03b09c43602391abf23f10e5bf14e03be9b56/$(notdir $@) > $@
 
 ${CXFREEZE_WHEEL-win64}:
 	mkdir -p $(dir $@)
-	${CURL} https://files.pythonhosted.org/packages/ce/96/0af2b244d91cc118c762a6510af403a590a3b3949aa6e6673b19f7bd3977/$(notdir $@) > $@
+	${CURL} https://files.pythonhosted.org/packages/17/86/6242fdb636b88a16a2a0924111fe84d9b8df14f4d9ecba40e299f3488ba1/$(notdir $@) > $@
 
 ${LXML_WHEEL-win32}:
 	mkdir -p $(dir $@)
@@ -201,7 +199,8 @@ ${7ZIP_INSTALLER}:
 
 ${DOWNLOAD_DIR}/sample.ogg:
 	mkdir -p $(dir $@)
-	${CURL} https://www.dropbox.com/s/zg80jd35ie3aury/Hydrate-Kenny_Beltrey.ogg > $@
+	# https://en.wikipedia.org/wiki/File:Opeth_-_Deliverance.ogg
+	${CURL} 'https://www.dropbox.com/scl/fi/jmxbozi9210svk7jhqaju/Opeth_-_Deliverance.ogg?rlkey=9vzbakz3hu7sru07tub3kxuoc&st=dogd1iwk' > $@
 
 
 #
