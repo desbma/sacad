@@ -356,7 +356,6 @@ def get_covers(work, args):
                     args.size,
                     cover_filepath,
                     size_tolerance_prct=args.size_tolerance_prct,
-                    amazon_tlds=args.amazon_tlds,
                     source_classes=args.cover_sources,
                     preserve_format=args.preserve_format,
                     convert_progressive_jpeg=args.convert_progressive_jpeg,

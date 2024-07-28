@@ -9,7 +9,6 @@ import os
 import socket
 import unittest
 import unittest.mock
-import urllib.parse
 import warnings
 
 import PIL.Image
@@ -193,12 +192,7 @@ class TestSacad(unittest.TestCase):
                 sacad.sources.LastFmCoverSource(*source_args),
                 sacad.sources.DeezerCoverSource(*source_args),
                 sacad.sources.DiscogsCoverSource(*source_args),
-                sacad.sources.AmazonDigitalCoverSource(*source_args),
             ]
-            sources.extend(
-                sacad.sources.AmazonCdCoverSource(*source_args, tld=tld)
-                for tld in sacad.sources.AmazonCdCoverSource.TLDS
-            )
             for artist, album in zip(("Michael Jackson", "Björk"), ("Thriller", "Vespertine")):
                 for source in sources:
                     with self.subTest(size=size, source=source, artist=artist, album=album):
@@ -214,10 +208,6 @@ class TestSacad(unittest.TestCase):
                                 )
                             )
                             or ((size > 1000) and isinstance(source, sacad.sources.DeezerCoverSource))
-                            or (
-                                isinstance(source, sacad.sources.AmazonCdCoverSource)
-                                and (urllib.parse.urlsplit(source.base_url).netloc.rsplit(".", 1)[-1] in ("cn", "jp"))
-                            )
                         ):
                             self.assertGreaterEqual(len(results), 1)
 

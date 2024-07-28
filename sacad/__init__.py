@@ -39,7 +39,6 @@ async def search_and_download(
     out_filepath: str,
     *,
     size_tolerance_prct: int,
-    amazon_tlds: Sequence[str] = (),
     source_classes: Optional[Sequence[Any]] = None,
     preserve_format: bool = False,
     convert_progressive_jpeg: bool = False,
@@ -53,9 +52,6 @@ async def search_and_download(
         source_classes = tuple(COVER_SOURCE_CLASSES.values())
     assert source_classes is not None  # makes MyPy chill
     cover_sources = [cls(*source_args) for cls in source_classes]
-    if sources.AmazonCdCoverSource in source_classes:
-        for tld in amazon_tlds:
-            cover_sources.append(sources.AmazonCdCoverSource(*source_args, tld=tld))
 
     # schedule search work
     search_futures = []
@@ -130,15 +126,6 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
         help="""Tolerate this percentage of size difference with the target size.
                 Note that covers with size above or close to the target size will still be preferred
                 if available""",
-    )
-    arg_parser.add_argument(
-        "-a",
-        "--amazon-sites",
-        nargs="+",
-        choices=sources.AmazonCdCoverSource.TLDS[1:],
-        default=(),
-        dest="amazon_tlds",
-        help="""Amazon site TLDs to use as search source, in addition to amazon.com""",
     )
     arg_parser.add_argument(
         "-s",
@@ -227,7 +214,6 @@ def cl_main() -> None:
         args.size,
         args.out_filepath,
         size_tolerance_prct=args.size_tolerance_prct,
-        amazon_tlds=args.amazon_tlds,
         source_classes=args.cover_sources,
         preserve_format=args.preserve_format,
         convert_progressive_jpeg=args.convert_progressive_jpeg,

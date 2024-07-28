@@ -20,8 +20,7 @@ SACAD also provides a second command line tool, `sacad_r`, to scan a music libra
 - Support JPEG and PNG formats
 - Customizable output: save image along with the audio files / in a different directory named by artist/album / embed cover in audio files...
 - Currently support the following cover sources:
-  - Amazon CD (.com, .ca, .cn, .fr, .de, .co.jp and .co.uk variants)
-  - Amazon digital music
+  - ~~Amazon CD (.com, .ca, .cn, .fr, .de, .co.jp and .co.uk variants) & Amazon digital music~~ (removed, too unreliable)
   - ~~CoverLib~~ (site is dead)
   - Deezer
   - Discogs
