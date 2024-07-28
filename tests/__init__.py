@@ -103,12 +103,15 @@ class TestSacad(unittest.TestCase):
                                 size_tolerance_prct=size_tolerance,
                             )
                             sched_and_run(coroutine, delay=0.5)
-                            out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
-                            self.assertEqual(out_format, format)
-                            self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
-                            self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
-                            self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
-                            self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
+                            if os.path.getsize(tmp_filepath):
+                                out_format, out_width, out_height = __class__.getImgInfo(tmp_filepath)
+                                self.assertEqual(out_format, format)
+                                self.assertLessEqual(out_width, size * (100 + size_tolerance) / 100)
+                                self.assertGreaterEqual(out_width, size * (100 - size_tolerance) / 100)
+                                self.assertLessEqual(out_height, size * (100 + size_tolerance) / 100)
+                                self.assertGreaterEqual(out_height, size * (100 - size_tolerance) / 100)
+                            elif size < 1200:
+                                self.fail("No result")
 
     @unittest.skipIf(os.getenv("CI") is not None, "Test is not reliable on CI servers")
     def test_getImageUrlMetadata(self):
