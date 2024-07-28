@@ -4,9 +4,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![AUR version](https://img.shields.io/aur/version/sacad.svg?style=flat)](https://aur.archlinux.org/packages/sacad/)
-[![Tests status](https://github.com/desbma/sacad/actions/workflows/ci.yml/badge.svg)](https://github.com/desbma/sacad/actions)
-[![Coverage](https://img.shields.io/coveralls/desbma/sacad/master.svg?style=flat)](https://coveralls.io/github/desbma/sacad?branch=master)
-[![Lines of code](https://tokei.rs/b1/github/desbma/sacad)](https://github.com/desbma/sacad)
+[![CI status](https://img.shields.io/github/actions/workflow/status/desbma/sacad/ci.yml)](https://github.com/desbma/sacad/actions)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![License](https://img.shields.io/github/license/desbma/sacad.svg?style=flat)](https://github.com/desbma/sacad/blob/master/LICENSE)
 

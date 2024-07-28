@@ -21,10 +21,6 @@ jobs:
           python-version: ${{matrix.python-version}}
       - run: |
           sudo apt-get install libxml2-dev libxslt1-dev
-          pip install -U pip setuptools
-          pip install coveralls
+          pip install -U requests pip setuptools
           pip install -r requirements.txt
-      - run: coverage run --source=sacad setup.py test
-      - run: coveralls --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: python -m unittest discover -v .
