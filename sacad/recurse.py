@@ -103,7 +103,7 @@ def get_file_metadata(audio_filepath):
         return
 
     # artist
-    for key in ("albumartist", "artist", "TPE1", "TPE2", "aART", "\xa9ART"):  # ogg/ape, mp3, mp4
+    for key in ("albumartist", "TPE2", "aART", "artist", "TPE1", "\xa9ART"):  # ogg/ape, mp3, mp4
         try:
             val = mf.get(key, None)
         except ValueError:
