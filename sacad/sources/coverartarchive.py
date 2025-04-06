@@ -1,7 +1,7 @@
 """Cover art archive cover source."""
 
 from sacad import __version__
-from sacad.cover import CoverImageFormat, CoverImageMetadata, CoverSourceResult, CoverSourceQuality
+from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality
 from sacad.sources.base import CoverSource
 import aiohttp
 import json
@@ -44,13 +44,14 @@ class CoverArtArchiveSource(CoverSource):
                 assert resp.status == 200
                 cover_json = json.loads(resp.text)
                 for rank, x in enumerate(cover_json.images, 1):
+                    quality = CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
                     yield CoverSourceResult(
                         urls=x.image,
                         size=None,
-                        format=CoverImageFormat.NONE,
+                        format=None,
                         rank=rank,
                         thumbnail_url=x.thumbnails.small,
-                        source_quality=CoverSourceQuality.EXACT_SEARCH,
+                        source_quality=quality,
                         metadata=CoverImageMetadata.NONE,
                         check_metadata=1,
                     )
