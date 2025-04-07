@@ -14,7 +14,7 @@ import urllib.parse
 import appdirs
 import web_cache
 
-from sacad import http_helpers
+from sacad import http_helpers, __version__
 from sacad.cover import CoverSourceQuality  # noqa: F401
 
 MAX_THUMBNAIL_SIZE = 256
@@ -44,8 +44,6 @@ class CoverSource(metaclass=abc.ABCMeta):
             rate_limited_domains=rate_limited_domains,
             logger=self.logger,
         )
-
-        self.ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0"
 
         if not hasattr(__class__, "api_cache"):
             db_filepath = os.path.join(appdirs.user_cache_dir(appname="sacad", appauthor=False), "sacad-cache.sqlite")
@@ -235,7 +233,7 @@ class CoverSource(metaclass=abc.ABCMeta):
 
     def updateHttpHeaders(self, headers):
         """Add API specific HTTP headers."""
-        pass
+        headers["User-Agent"] = f"sacad/{__version__}"
 
     @abc.abstractmethod
     async def parseResults(self, api_data, *, search_album, search_artist):
