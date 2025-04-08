@@ -33,18 +33,17 @@ class CoverArtArchiveSource(CoverSource):
     async def parseResults(self, api_data):
         release_group = json.loads(api_data)
         mbid = release_group.release_groups[0].id
+        base_url = "https://coverartarchive.org"
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://coverartarchive.org/release-group/{mbid}/front") as resp:
-                assert resp.status == 200
-                cover_json = json.loads(resp.text)
-                for rank, x in enumerate(cover_json.images, 1):
-                    quality = CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
-                    yield CoverSourceResult(
-                        urls=x.image,
+            async with session.get(f"{base_url}/release-group/{mbid}/front") as resp:
+                assert resp.status == 307
+                quality = CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
+                yield CoverSourceResult(
+                        urls=resp.text,
                         size=None,
                         format=None,
-                        rank=rank,
-                        thumbnail_url=x.thumbnails.small,
+                        rank=1,
+                        thumbnail_url=f"{base_url}/release-group/{mbid}/front-250",
                         source_quality=quality,
                         metadata=CoverImageMetadata.NONE,
                         check_metadata=CoverImageMetadata.NONE,
