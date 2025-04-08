@@ -1,9 +1,10 @@
 """Cover art archive cover source."""
 
-from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality
+from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality, CoverImageFormat
 from sacad.sources.base import CoverSource
 import aiohttp
 import json
+from pathlib import PurePath
 
 
 class CoverArtArchiveSource(CoverSource):
@@ -37,11 +38,18 @@ class CoverArtArchiveSource(CoverSource):
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{base_url}/release-group/{mbid}/front") as resp:
                 assert resp.status == 307
+                p = PurePath(resp.text)
+                if p.suffix.lower() in [".jpg", ".jpeg"]:
+                    format = CoverImageFormat.JPEG
+                elif p.suffix.lower() == ".png":
+                    format = CoverImageFormat.PNG
+                else:
+                    format = None
                 quality = CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
                 yield CoverSourceResult(
                         urls=resp.text,
                         size=None,
-                        format=None,
+                        format=format,
                         rank=1,
                         thumbnail_url=f"{base_url}/release-group/{mbid}/front-250",
                         source_quality=quality,
