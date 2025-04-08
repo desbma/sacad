@@ -47,5 +47,5 @@ class CoverArtArchiveSource(CoverSource):
                         thumbnail_url=x.thumbnails.small,
                         source_quality=quality,
                         metadata=CoverImageMetadata.NONE,
-                        check_metadata=1,
+                        check_metadata=CoverImageMetadata.NONE,
                     )
