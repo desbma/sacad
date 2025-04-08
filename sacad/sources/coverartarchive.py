@@ -1,6 +1,5 @@
 """Cover art archive cover source."""
 
-from sacad import __version__
 from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality
 from sacad.sources.base import CoverSource
 import aiohttp
