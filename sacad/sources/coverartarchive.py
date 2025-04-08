@@ -25,16 +25,11 @@ class CoverArtArchiveSource(CoverSource):
     # See https://musicbrainz.org/doc/MusicBrainz_API for the API of
     # musicbrainz.
     BASE_URL = "https://musicbrainz.org/ws/2"
-    API_KEY = ""
-    API_SECRET = ""
 
     def getSearchUrl(self, album, artist):
         return CoverSource.assembleUrl(
             f"{self.BASE_URL}/release-group", {"query": f"artist:{artist} AND album:{album}", "fmt": "json"}
         )
-
-    def updateHttpHeaders(self, headers):
-        headers["User-Agent"] = f"sacad/{__version__}"
 
     async def parseResults(self, api_data):
         release_group = json.loads(api_data)
