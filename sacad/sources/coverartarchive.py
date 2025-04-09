@@ -1,10 +1,8 @@
 """Cover art archive cover source."""
 
-from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality, CoverImageFormat
+from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality
 from sacad.sources.base import CoverSource
-import aiohttp
 import json
-from pathlib import PurePath
 
 
 class CoverArtArchiveSource(CoverSource):
