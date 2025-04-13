@@ -1,5 +1,6 @@
 """Cover art archive cover source."""
 
+from sacad import __version__
 from sacad.cover import CoverImageMetadata, CoverSourceResult, CoverSourceQuality
 from sacad.sources.base import CoverSource
 import json
@@ -29,21 +30,25 @@ class CoverArtArchiveSource(CoverSource):
             f"{self.BASE_URL}/release-group", {"query": f"artist:{artist} AND album:{album}", "fmt": "json"}
         )
 
-    async def parseResults(self, api_data):
-        release_groups = json.loads(api_data)
+    def updateHttpHeaders(self, headers):
+        headers["User-Agent"] = f"sacad/{__version__} (https://github.com/desbma/sacad)"
+
+    async def parseResults(self, api_data, *, search_album, search_artist):
+        response = json.loads(api_data)
         base_url = "https://coverartarchive.org"
-        # Iterate over release groups
-        for release_group, rank in enumerate(release_groups):
-            mbid = release_group.id
-            quality = CoverSourceQuality.FUZZY_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
+
+        def f(rank, release_group):
+            mbid = release_group["id"]
+            quality = CoverSourceQuality.EXACT_SEARCH | CoverSourceQuality.NO_UNRELATED_RESULT_RISK
             # and yield the biggest front picture for the release group
-            yield CoverSourceResult(
+            return CoverSourceResult(
                 urls=f"{base_url}/release-group/{mbid}/front-1200",
                 size=(1200, 1200),
-                format=CoverImageMetadata.NONE,
+                format=None,
                 rank=rank + 1,
                 thumbnail_url=f"{base_url}/release-group/{mbid}/front-250",
+                source=self,
                 source_quality=quality,
-                metadata=CoverImageMetadata.NONE,
-                check_metadata=CoverImageMetadata.NONE,
+                check_metadata=CoverImageMetadata.FORMAT,
             )
+        return (f(rank, rg) for (rank, rg) in enumerate(response["release-groups"]))
