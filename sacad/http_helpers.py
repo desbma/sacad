@@ -157,7 +157,7 @@ class Http:
         """
         Send a HEAD request.
 
-        Send a HEAD request with short timeout or get data from cache, return True if ressource has 2xx status code,
+        Send a HEAD request with short timeout or get data from cache, return True if resource has 2xx status code,
         False instead.
         """
         if (cache is not None) and (url in cache):

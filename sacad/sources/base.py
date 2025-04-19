@@ -203,7 +203,7 @@ class CoverSource(metaclass=abc.ABCMeta):
         return " ".join(filter(None, s.split(" ")))
 
     #
-    # The following methods can or should be overriden in subclasses
+    # The following methods can or should be overridden in subclasses
     #
 
     def processQueryString(self, s):
