@@ -140,7 +140,7 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
         "--preserve-format",
         action="store_true",
         default=False,
-        help="Preserve source image format if possible. Target format will still be prefered when sorting results.",
+        help="Preserve source image format if possible. Target format will still be preferred when sorting results.",
     )
     arg_parser.add_argument(
         "--convert-progressive-jpeg",

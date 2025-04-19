@@ -305,7 +305,7 @@ def get_covers(work, args):
             except Exception as exception:
                 stats["errors"] += 1
                 logging.getLogger("sacad_r").error(
-                    f"Error occured while searching {work}: {exception.__class__.__qualname__} {exception}"
+                    f"Error occurred while searching {work}: {exception.__class__.__qualname__} {exception}"
                 )
             else:
                 if status:
@@ -315,7 +315,7 @@ def get_covers(work, args):
                         except Exception as exception:
                             stats["errors"] += 1
                             logging.getLogger("sacad_r").error(
-                                f"Error occured while embedding {work}: "
+                                f"Error occurred while embedding {work}: "
                                 f"{exception.__class__.__qualname__} {exception}"
                             )
                         else:

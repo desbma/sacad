@@ -538,7 +538,7 @@ class CoverSourceResult:
 
     @staticmethod
     async def crunch(image_data, format, silent=False):
-        """Crunch image data, and return the processed data, or orignal data if operation failed."""
+        """Crunch image data, and return the processed data, or original data if operation failed."""
         if ((format is CoverImageFormat.PNG) and (not (HAS_OPTIPNG or HAS_OXIPNG))) or (
             (format is CoverImageFormat.JPEG) and (not HAS_JPEGOPTIM)
         ):
