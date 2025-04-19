@@ -74,8 +74,9 @@ def analyze_lib(lib_dir, cover_pattern, *, ignore_existing=False, full_scan=Fals
     """Recursively analyze library, and return a list of work."""
     work = []
     stats = collections.OrderedDict((k, 0) for k in ("files", "albums", "missing covers", "errors"))
-    with tqdm.tqdm(desc="Analyzing library", unit="dir", postfix=stats) as progress, tqdm_logging.redirect_logging(
-        progress
+    with (
+        tqdm.tqdm(desc="Analyzing library", unit="dir", postfix=stats) as progress,
+        tqdm_logging.redirect_logging(progress),
     ):
         for rootpath, rel_dirpaths, rel_filepaths in os.walk(lib_dir):
             new_work = analyze_dir(
@@ -315,8 +316,7 @@ def get_covers(work, args):
                         except Exception as exception:
                             stats["errors"] += 1
                             logging.getLogger("sacad_r").error(
-                                f"Error occured while embedding {work}: "
-                                f"{exception.__class__.__qualname__} {exception}"
+                                f"Error occured while embedding {work}: {exception.__class__.__qualname__} {exception}"
                             )
                         else:
                             stats["ok"] += 1

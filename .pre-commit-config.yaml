@@ -1,7 +1,7 @@
 # https://pre-commit.com
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -24,7 +24,7 @@ repos:
           - --markdown-linebreak-ext=md
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.15.0
     hooks:
       - id: mypy
         args:
@@ -33,7 +33,7 @@ repos:
           - types-requests
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
+    rev: v0.11.6
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -45,7 +45,7 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         args:
