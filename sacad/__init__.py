@@ -133,7 +133,9 @@ def setup_common_args(arg_parser: argparse.ArgumentParser) -> None:
         choices=tuple(COVER_SOURCE_CLASSES.keys()),
         default=tuple(COVER_SOURCE_CLASSES.keys()),
         nargs="+",
-        help="Cover sources to use, if not set use all of them.",
+        help="""Cover sources to use, if not set use all of them.
+                This option should either be the last one in the command line, or be passed immediately
+                before positional arguments and followed by '--' (ie. 'sacad -s source1 source2 -- artist album size out_filepath').""",
     )
     arg_parser.add_argument(
         "-p",
