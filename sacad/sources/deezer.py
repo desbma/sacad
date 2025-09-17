@@ -78,6 +78,8 @@ class DeezerCoverSource(CoverSource):
         for rank, album in enumerate(albums, 1):
             for key, size in __class__.COVER_SIZES.items():
                 img_url = album[key]
+                if img_url is None:
+                    continue
                 thumbnail_url = album["cover_small"]
                 results.append(
                     DeezerCoverSourceResult(
