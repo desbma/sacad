@@ -46,10 +46,6 @@ SACAD is designed to be robust and be executed in batch of thousands of queries:
 
 SACAD requires [Python](https://www.python.org/downloads/) >= 3.8.
 
-### Standalone Windows executable
-
-Windows users can download a [standalone binary](https://github.com/desbma/sacad/releases/latest) which does not require Python.
-
 ### Arch Linux
 
 Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/sacad/) AUR package.
