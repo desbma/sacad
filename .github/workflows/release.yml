@@ -1,0 +1,50 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "*.*.**"
+      - "*.*.*.**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  changelog-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+      - run: git cliff -o CHANGELOG_${{ github.ref_name }}.md $(git tag -l | sort -V | tail -n -2 | head -n -1)..HEAD
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: CHANGELOG_${{ github.ref_name }}.md
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  bin-amd64-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+      - run: cargo build --release --target x86_64-unknown-linux-gnu
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+      - run: |
+          cd target/x86_64-unknown-linux-gnu/release/
+          tar -cJvf sacad_${{ github.ref_name }}_amd64.tar.xz sacad sacad_r
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: target/x86_64-unknown-linux-gnu/release/sacad*.tar.xz
+          token: ${{ secrets.GITHUB_TOKEN }}

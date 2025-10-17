@@ -1,0 +1,57 @@
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# template for the changelog header
+header = "# Changelog"
+# template for the changelog body
+# https://keats.github.io/tera/docs/#introduction
+body = """
+
+{% if version %}\
+    ## {{ version }} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## Unreleased
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}{{ commit.scope }}: {% endif %}\
+          {{ commit.message | split(pat="\n") | first | upper_first | trim }} \
+          ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/desbma/sacad/commit/{{ commit.id }}) by {{ commit.author.name }})\
+    {% endfor %}
+{% endfor %}
+______________________________________________________________________
+
+"""
+# template for the changelog footer
+footer = ""
+# remove the leading and trailing whitespace from the templates
+trim = true
+
+[git]
+# parse the commits based on https://www.conventionalcommits.org
+conventional_commits = true
+# filter out the commits that are not conventional
+filter_unconventional = false
+# regex for parsing and grouping commits
+commit_parsers = [
+    { message = "^feat", group = "<!-- 01 -->💡 Features" },
+    { message = "^fix", group = "<!-- 02 -->🐛 Bug fixes" },
+    { message = "^perf", group = "<!-- 03 -->🏃 Performance" },
+    { message = "^doc", group = "<!-- 04 -->📗 Documentation" },
+    { message = "^test", group = "<!-- 05 -->🧪 Testing" },
+    { message = "^refactor", group = "<!-- 06 -->🚜 Refactor" },
+    { message = "^style", group = "<!-- 07 -->🎨 Styling" },
+    { message = "^build", group = "<!-- 08 -->🏗 Build" },
+    { message = "^ci", group = "<!-- 09 -->🤖 Continuous integration" },
+    { message = "^chore: version ", skip = true },
+    { message = "^chore", group = "<!-- 10 -->🧰 Miscellaneous tasks" },
+    { message = "^revert", group = "<!-- 10 -->🧰 Miscellaneous tasks", default_scope = "revert" },
+    { body = ".*security", group = "<!-- 00 -->🛡️ Security" },
+]
+# filter out the commits that are not matched by commit parsers
+filter_commits = false
+# sort the tags topologically
+topo_order = false
+# sort the commits inside sections by oldest/newest order
+sort_commits = "oldest"

@@ -2,15 +2,31 @@
 
 set -o pipefail
 
-readonly VERSION=${1:?}
+readonly VERSION="${1:?}"
 
+cd "$(jj root)"
 
-cd "$(git rev-parse --show-toplevel)"
+if jj show --stat | tail -n -1 | grep -q '^0 files changed'
+then
+  jj describe -m "chore: version ${VERSION}"
+else
+  jj new -m "chore: version ${VERSION}"
+fi
 
-sed -i "s/^\(__version__ = \"\).*\(\"\)/\1$VERSION\2/w /dev/stdout" sacad/__init__.py
+cargo set-version "${VERSION//.b/-beta.}"
 
-git add sacad/__init__.py
+cargo upgrade
+cargo update
 
-git commit -m "Version ${VERSION}"
+cargo check
+cargo test
 
-git tag -m "Version ${VERSION}" "${VERSION}"
+jj new
+
+git tag -f -m "Version ${VERSION}" "v${VERSION}"
+git cliff 3.0.0.b1..HEAD | head -n -3 > CHANGELOG.md
+git tag -d "v${VERSION}"
+
+jj squash -u
+
+git tag -f -m "Version ${VERSION}" "v${VERSION}"
