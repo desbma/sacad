@@ -1,0 +1,27 @@
+- [x] sacad CLI
+- cache
+  - [x] dir
+  - [x] KV store
+  - [ ] expiration
+  - [ ] update lock
+- HTTP
+  - [ ] get
+  - [ ] rate limit
+- sources
+  - [ ] iTunes
+  - [ ] Deezer
+  - [ ] Lastfm
+  - [ ] Discogs
+- [ ] cover sort
+- image processing
+  - [ ] conversion/resize lib
+  - [ ] oxipng
+  - [ ] jpeg strip
+  - [ ] ahash
+- sacad_r
+  - [ ] CLI
+  - [ ] tag lib
+- [ ] CI
+  - [ ] linux/windows/mac binaries
+- [ ] crates.io
+- [ ] README

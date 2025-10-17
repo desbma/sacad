@@ -2,15 +2,26 @@
 
 set -o pipefail
 
-readonly VERSION=${1:?}
-
+readonly VERSION="${1:?}"
 
 cd "$(git rev-parse --show-toplevel)"
 
-sed -i "s/^\(__version__ = \"\).*\(\"\)/\1$VERSION\2/w /dev/stdout" sacad/__init__.py
+cargo set-version "${VERSION}"
 
-git add sacad/__init__.py
+cargo upgrade
+cargo update
 
-git commit -m "Version ${VERSION}"
+cargo check
+cargo test
 
-git tag -m "Version ${VERSION}" "${VERSION}"
+git add Cargo.{toml,lock}
+
+git commit -m "chore: version ${VERSION}"
+git tag -f -m "Version ${VERSION}" "${VERSION}"
+
+git cliff 3.0.0.b0..HEAD | head -n -3 > CHANGELOG.m
+git add CHANGELOG.md
+git commit --amend --no-edit
+
+git tag -d "${VERSION}"
+git tag -f -m "Version ${VERSION}" "${VERSION}"

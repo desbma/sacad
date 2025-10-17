@@ -18,26 +18,13 @@ repos:
       - id: mixed-line-ending
         args:
           - --fix=no
-      - id: requirements-txt-fixer
-      - id: trailing-whitespace
-        args:
-          - --markdown-linebreak-ext=md
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.1
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
     hooks:
-      - id: mypy
-        args:
-          - --ignore-missing-imports
-        additional_dependencies:
-          - types-requests
-
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.0
-    hooks:
-      - id: ruff-check
-        args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
+      - id: cargo-check
+      - id: clippy
+      - id: fmt
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1

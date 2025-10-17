@@ -1,0 +1,102 @@
+[package]
+name = "sacad"
+authors = ["desbma"]
+description = "Smart Automatic Cover Art Downloader"
+readme = "README.md"
+version = "3.0.0"
+rust-version = "1.85"
+edition = "2024"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[dependencies]
+anyhow = { version = "1.0.100", default-features = false, features = ["std", "backtrace"] }
+async-trait = { version = "0.1.89", default-features = false }
+bitcode = { version = "0.6.7", default-features = false, features = ["std", "derive"] }
+clap = { version = "4.5.49", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
+directories = { version = "6.0.0", default-features = false }
+futures = { version = "0.3.31", default-features = false, features = ["std"] }
+log = { version = "0.4.28", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
+lz4_flex = { version = "0.11.5", default-features = false, features = ["std"] }
+redb = { version = "2.6.3", default-features = false }
+reqwest = { version = "0.12.24", default-features = false, features = ["http2", "native-tls", "gzip", "system-proxy", "socks"] }
+serde = { version = "1.0.228", default-features = false, features = ["std"] }
+serde_json = { version = "1.0.145", default-features = false, features = ["std"] }
+simple_logger = { version = "5.1.0", default-features = false, features = ["colors", "stderr"] }
+strum = { version = "0.27.2", default-features = false, features = ["derive", "std"] }
+thiserror = { version = "2.0.17", default-features = false, features = ["std"] }
+tokio = { version = "1.48.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
+
+[lints.rust]
+# https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html
+explicit_outlives_requirements = "warn"
+missing_docs = "warn"
+non_ascii_idents = "deny"
+redundant-lifetimes = "warn"
+single-use-lifetimes = "warn"
+unit-bindings = "warn"
+unreachable_pub = "warn"
+unsafe_code = "forbid"
+unused-lifetimes = "warn"
+unused-qualifications = "warn"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+unnecessary_debug_formatting = "allow"
+# below lints are from clippy::restriction
+# https://rust-lang.github.io/rust-clippy/master/index.html#/?levels=allow&groups=restriction
+allow_attributes = "warn"
+as_pointer_underscore = "warn"
+clone_on_ref_ptr = "warn"
+dbg_macro = "warn"
+empty_enum_variants_with_brackets = "warn"
+expect_used = "warn"
+field_scoped_visibility_modifiers = "warn"
+fn_to_numeric_cast_any = "warn"
+if_then_some_else_none = "warn"
+impl_trait_in_params = "warn"
+indexing_slicing = "warn"
+infinite_loop = "warn"
+lossy_float_literal = "warn"
+map_with_unused_argument_over_ranges = "warn"
+missing_docs_in_private_items = "warn"
+mixed_read_write_in_expression = "warn"
+module_name_repetitions = "warn"
+multiple_inherent_impl = "warn"
+mutex_integer = "warn"
+needless_raw_strings = "warn"
+non_zero_suggestions = "warn"
+panic = "warn"
+pathbuf_init_then_push = "warn"
+precedence_bits = "warn"
+pub_without_shorthand = "warn"
+redundant_test_prefix = "warn"
+redundant_type_annotations = "warn"
+ref_patterns = "warn"
+renamed_function_params = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+return_and_then = "warn"
+same_name_method = "warn"
+self_named_module_files = "warn"
+semicolon_inside_block = "warn"
+shadow_unrelated = "warn"
+str_to_string = "warn"
+string_slice = "warn"
+string_to_string = "warn"
+tests_outside_test_module = "warn"
+try_err = "warn"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unneeded_field_pattern = "warn"
+unseparated_literal_suffix = "warn"
+unused_result_ok = "warn"
+unused_trait_names = "warn"
+unwrap_used = "warn"
+verbose_file_reads = "warn"
+
+[dev-dependencies]
+tempfile = { version = "3.23.0", default-features = false }
