@@ -368,7 +368,7 @@ def get_covers(work, args):
 
             # wait for end of work
             root_future = asyncio.gather(*futures.keys())
-            asyncio.get_event_loop().run_until_complete(root_future)
+            asyncio.run(root_future)
 
 
 def cl_main():

@@ -220,8 +220,7 @@ def cl_main() -> None:
         preserve_format=args.preserve_format,
         convert_progressive_jpeg=args.convert_progressive_jpeg,
     )
-    future = asyncio.ensure_future(coroutine)
-    asyncio.get_event_loop().run_until_complete(future)
+    asyncio.run(coroutine)
 
 
 if __name__ == "__main__":
