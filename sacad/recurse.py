@@ -285,6 +285,48 @@ def ichunk(iterable, n):
         yield chunk
 
 
+async def download(args, cover_filepath, work, stats, progress):
+    try:
+        status = await sacad.search_and_download(
+            work.metadata.album,
+            work.metadata.artist,
+            args.format,
+            args.size,
+            cover_filepath,
+            size_tolerance_prct=args.size_tolerance_prct,
+            source_classes=args.cover_sources,
+            preserve_format=args.preserve_format,
+            convert_progressive_jpeg=args.convert_progressive_jpeg,
+        )
+    except Exception as exception:
+        stats["errors"] += 1
+        logging.getLogger("sacad_r").error(
+            f"Error occured while searching {work}: {exception.__class__.__qualname__} {exception}"
+        )
+    else:
+        if status:
+            if work.cover_filepath == EMBEDDED_ALBUM_ART_SYMBOL:
+                try:
+                    embed_album_art(work.tmp_cover_filepath, work.audio_filepaths)
+                except Exception as exception:
+                    stats["errors"] += 1
+                    logging.getLogger("sacad_r").error(
+                        f"Error occured while embedding {work}: {exception.__class__.__qualname__} {exception}"
+                    )
+                else:
+                    stats["ok"] += 1
+                finally:
+                    os.remove(work.tmp_cover_filepath)
+            else:
+                stats["ok"] += 1
+        else:
+            stats["no result found"] += 1
+            logging.getLogger("sacad_r").warning(f"Unable to find {work}")
+
+    progress.set_postfix(stats, refresh=False)
+    progress.update(1)
+
+
 def get_covers(work, args):
     """Get missing covers."""
     with contextlib.ExitStack() as cm:
@@ -298,38 +340,6 @@ def get_covers(work, args):
             tqdm.tqdm(total=len(work), miniters=1, desc="Searching covers", unit="cover", postfix=stats)
         )
         cm.enter_context(tqdm_logging.redirect_logging(progress))
-
-        def post_download(future):
-            work = futures[future]
-            try:
-                status = future.result()
-            except Exception as exception:
-                stats["errors"] += 1
-                logging.getLogger("sacad_r").error(
-                    f"Error occured while searching {work}: {exception.__class__.__qualname__} {exception}"
-                )
-            else:
-                if status:
-                    if work.cover_filepath == EMBEDDED_ALBUM_ART_SYMBOL:
-                        try:
-                            embed_album_art(work.tmp_cover_filepath, work.audio_filepaths)
-                        except Exception as exception:
-                            stats["errors"] += 1
-                            logging.getLogger("sacad_r").error(
-                                f"Error occured while embedding {work}: {exception.__class__.__qualname__} {exception}"
-                            )
-                        else:
-                            stats["ok"] += 1
-                        finally:
-                            os.remove(work.tmp_cover_filepath)
-                    else:
-                        stats["ok"] += 1
-                else:
-                    stats["no result found"] += 1
-                    logging.getLogger("sacad_r").warning(f"Unable to find {work}")
-
-            progress.set_postfix(stats, refresh=False)
-            progress.update(1)
 
         # post work
         i = 0
@@ -349,26 +359,14 @@ def get_covers(work, args):
                 else:
                     cover_filepath = cur_work.cover_filepath
                     os.makedirs(os.path.dirname(cover_filepath), exist_ok=True)
-                coroutine = sacad.search_and_download(
-                    cur_work.metadata.album,
-                    cur_work.metadata.artist,
-                    args.format,
-                    args.size,
-                    cover_filepath,
-                    size_tolerance_prct=args.size_tolerance_prct,
-                    source_classes=args.cover_sources,
-                    preserve_format=args.preserve_format,
-                    convert_progressive_jpeg=args.convert_progressive_jpeg,
-                )
-                future = asyncio.ensure_future(coroutine)
-                futures[future] = cur_work
-
-            for future in futures:
-                future.add_done_callback(post_download)
+                coroutine = download(args, cover_filepath, cur_work, stats, progress)
+                futures[coroutine] = cur_work
 
             # wait for end of work
-            root_future = asyncio.gather(*futures.keys())
-            asyncio.run(root_future)
+            async def c():
+                await asyncio.gather(*futures.keys())
+
+            asyncio.run(c())
 
 
 def cl_main():
