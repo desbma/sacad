@@ -56,7 +56,7 @@ Arch Linux users can install the [sacad](https://aur.archlinux.org/packages/saca
 
 1. If you don't already have it, [install setuptools](https://pypi.python.org/pypi/setuptools#installation-instructions) for Python 3
 2. Clone this repository: `git clone https://github.com/desbma/sacad`
-3. Install SACAD: `python3 setup.py install`
+3. Install SACAD: `pip3 install -e .`
 
 #### Optional
 

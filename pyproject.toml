@@ -1,2 +1,58 @@
+[project]
+name = "sacad"
+description = "Search and download music album covers"
+keywords = ["download", "album", "cover", "art", "albumart", "music"]
+readme = "README.md"
+authors = [{ name = "desbma" }]
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.6",
+    "appdirs>=1.4.0",
+    "bitarray>=2.0.0",
+    "cssselect>=1.1.0",
+    "lxml>=4.0.0",
+    "mutagen>=1.31",
+    "pillow>=8.0.0",
+    "tqdm>=4.28.1",
+    "unidecode>=1.1.1",
+    "web_cache>=1.1.0",
+    "idna==2.6; sys_platform == 'win32'",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Utilities",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/desbma/sacad"
+Downloads = "https://github.com/desbma/sacad/releases"
+
+[project.scripts]
+sacad = "sacad:cl_main"
+sacad_r = "sacad.recurse:cl_main"
+
+[dependency-groups]
+dev = ["requests>=2.6.0"]
+
 [tool.ruff]
 line-length = 120
+
+[build-system]
+requires = ["flit_core>=3.2,<4"]
+build-backend = "flit_core.buildapi"
