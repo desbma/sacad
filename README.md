@@ -8,6 +8,14 @@
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/sacad.svg?style=flat)](https://pypi.python.org/pypi/sacad/)
 [![License](https://img.shields.io/github/license/desbma/sacad.svg?style=flat)](https://github.com/desbma/sacad/blob/master/LICENSE)
 
+---
+
+This tool is currently being rewritten in Rust.
+
+This branch holds the Python version, which is in maintenance-only mode, and will only receive changes to fix major bugs.
+
+---
+
 SACAD is a multi platform command line tool to download album covers without manual intervention, ideal for integration in scripts, audio players, etc.
 
 SACAD also provides a second command line tool, `sacad_r`, to scan a music library, read metadata from audio tags, and download missing covers automatically, optionally embedding the image into audio audio files.
