@@ -10,9 +10,9 @@
 
 ---
 
-This tool is currently being rewritten in Rust.
+**This tool has been completely rewritten as of version 3.0.**
 
-This branch holds the Python version, which is in maintenance-only mode, and will only receive changes to fix major bugs.
+**This is the old 2.x version. The most recent version is in the [master](https://github.com/desbma/sacad) branch.**
 
 ---
 
