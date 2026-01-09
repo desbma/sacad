@@ -23,10 +23,10 @@ cargo test
 
 jj new
 
-git tag -f -m "Version ${VERSION}" "v${VERSION}"
-git cliff 3.0.0.b1..HEAD | head -n -3 > CHANGELOG.md
-git tag -d "v${VERSION}"
+git tag -f -m "Version ${VERSION}" "${VERSION}"
+git cliff 3.0.0.b3..HEAD | head -n -3 > CHANGELOG.md
+git tag -d "${VERSION}"
 
 jj squash -u
 
-git tag -f -m "Version ${VERSION}" "v${VERSION}"
+git tag -f -m "Version ${VERSION}" "${VERSION}"
