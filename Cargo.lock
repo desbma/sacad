@@ -1573,7 +1573,7 @@ checksum = "a50f4cf475b65d88e057964e0e9bb1f0aa9bbb2036dc65c64596b42932536984"
 
 [[package]]
 name = "sacad"
-version = "3.0.0-b1"
+version = "3.0.0-beta.1"
 dependencies = [
  "anyhow",
  "async-channel",

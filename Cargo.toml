@@ -3,7 +3,7 @@ name = "sacad"
 authors = ["desbma"]
 description = "Smart Automatic Cover Art Downloader"
 readme = "README.md"
-version = "3.0.0-b1"
+version = "3.0.0-beta.1"
 rust-version = "1.91"
 edition = "2024"
 
@@ -17,7 +17,7 @@ async-channel = { version = "2.5.0", default-features = false, features = ["std"
 async-trait = { version = "0.1.89", default-features = false }
 # forked to remove bloated image dependency tree
 blockhash = { git = "https://github.com/desbma/blockhash", branch = "sacad", default-features = false, optional = true, features = ["std", "image"] }
-clap = { version = "4.5.49", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
+clap = { version = "4.5.54", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
 const_format = { version = "0.2.35", default-features = false }
 directories = { version = "6.0.0", default-features = false }
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
@@ -28,22 +28,22 @@ image = { version = "0.25.9", default-features = false, features = ["jpeg", "png
 indicatif = { version = "0.18.3", default-features = false, features = ["improved_unicode", "unicode-width"] }
 itertools = { version = "0.14.0", default-features = false, features = ["use_alloc", "use_std"] }
 lofty = { version = "0.22.4", default-features = false }
-log = { version = "0.4.28", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
+log = { version = "0.4.29", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
 lz4_flex = { version = "0.11.5", default-features = false, features = ["std"] }
 oxipng = { version = "10.0.0", default-features = false, features = ["parallel"] }
 parking_lot = { version = "0.12.5", default-features = false }
-quick-xml = { version = "0.38.3", default-features = false, features = ["serialize"] }
+quick-xml = { version = "0.38.4", default-features = false, features = ["serialize"] }
 redb = { version = "3.1.0", default-features = false }
-reqwest = { version = "0.12.24", default-features = false, features = ["http2", "native-tls", "gzip", "system-proxy", "socks", "stream"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["http2", "native-tls", "gzip", "system-proxy", "socks", "stream"] }
 serde = { version = "1.0.228", default-features = false, features = ["std", "derive"] }
-serde_json = { version = "1.0.145", default-features = false, features = ["std"] }
+serde_json = { version = "1.0.149", default-features = false, features = ["std"] }
 simple_logger = { version = "5.1.0", default-features = false, features = ["colors", "stderr"] }
 strum = { version = "0.27.2", default-features = false, features = ["derive", "std"] }
-tempfile = { version = "3.23.0", default-features = false }
+tempfile = { version = "3.24.0", default-features = false }
 thiserror = { version = "2.0.17", default-features = false, features = ["std"] }
-tokio = { version = "1.48.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
+tokio = { version = "1.49.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
 typed_floats = { version = "1.0.7", default-features = false, features = ["compiler_hints", "ensure_no_undefined_behavior", "std"] }
-unicode-normalization = { version = "0.1.24", default-features = false, features = ["std"] }
+unicode-normalization = { version = "0.1.25", default-features = false, features = ["std"] }
 
 [features]
 default = ["blockhash"]
