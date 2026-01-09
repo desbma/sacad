@@ -3,9 +3,13 @@ name = "sacad"
 authors = ["desbma"]
 description = "Smart Automatic Cover Art Downloader"
 readme = "README.md"
+repository = "https://github.com/desbma/sacad"
+keywords = ["cover", "art", "download", "image", "album"]
+categories = ["command-line-utilities", "multimedia::images"]
+license = "GPL-3.0-only"
 version = "3.0.0-beta.1"
-rust-version = "1.91"
 edition = "2024"
+rust-version = "1.91"
 
 [profile.release]
 lto = true
