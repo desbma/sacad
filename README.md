@@ -2,8 +2,9 @@
 
 ## Smart Automatic Cover Art Downloader
 
-[![AUR version](https://img.shields.io/aur/version/sacad.svg?style=flat)](https://aur.archlinux.org/packages/sacad/)
 [![CI status](https://img.shields.io/github/actions/workflow/status/desbma/sacad/ci.yml)](https://github.com/desbma/sacad/actions)
+[![crates.io version](https://img.shields.io/crates/v/sacad)](https://crates.io/crates/sacad)
+[![AUR version](https://img.shields.io/aur/version/sacad.svg?style=flat)](https://aur.archlinux.org/packages/sacad/)
 [![License](https://img.shields.io/github/license/desbma/sacad.svg?style=flat)](https://github.com/desbma/sacad/blob/master/LICENSE)
 
 ---
@@ -50,7 +51,7 @@ cargo install --path .
 ### From [`crates.io`](https://crates.io/)
 
 ```bash
-cargo install sacad
+cargo install sacad --version '>=3.0.0-b.1'
 ```
 
 ## Command line usage
