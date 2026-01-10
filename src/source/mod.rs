@@ -70,6 +70,24 @@ impl Relevance {
     pub(crate) fn is_reference(&self) -> bool {
         !self.fuzzy && self.only_front_covers && !self.unrelated_risk
     }
+
+    #[cfg(test)]
+    pub(crate) fn best() -> Self {
+        Self {
+            fuzzy: false,
+            only_front_covers: true,
+            unrelated_risk: false,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn worst() -> Self {
+        Self {
+            fuzzy: true,
+            only_front_covers: false,
+            unrelated_risk: true,
+        }
+    }
 }
 
 /// Source error witht he source name for display

@@ -96,4 +96,28 @@ impl PerceptualHash {
         const MAX_HAMMING_DELTA: u32 = 2;
         self.0.distance(&other.0).count_ones() < MAX_HAMMING_DELTA
     }
+
+    #[cfg(test)]
+    #[cfg(any(feature = "ahash", feature = "dhash"))]
+    pub(crate) fn test_similar() -> Self {
+        Self(0)
+    }
+
+    #[cfg(test)]
+    #[cfg(feature = "blockhash")]
+    pub(crate) fn test_value1() -> Self {
+        Self(blockhash::Blockhash64::from([0; 8]))
+    }
+
+    #[cfg(test)]
+    #[cfg(any(feature = "ahash", feature = "dhash"))]
+    pub(crate) fn test_dissimilar() -> Self {
+        Self(u64::MAX)
+    }
+
+    #[cfg(test)]
+    #[cfg(feature = "blockhash")]
+    pub(crate) fn test_value2() -> Self {
+        Self(blockhash::Blockhash64::from([0xFF; 8]))
+    }
 }

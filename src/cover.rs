@@ -448,4 +448,559 @@ mod tests {
         assert!(!hashes[2].is_similar(&hashes[0]));
         assert!(!hashes[2].is_similar(&hashes[1]));
     }
+
+    mod compare {
+        use super::*;
+
+        fn make_cover(
+            size_px: Metadata<(u32, u32)>,
+            format: Metadata<Format>,
+            relevance: Relevance,
+            rank: usize,
+        ) -> Cover {
+            Cover {
+                url: reqwest::Url::parse("https://example.com/cover.jpg").unwrap(),
+                thumbnail_url: reqwest::Url::parse("https://example.com/thumb.jpg").unwrap(),
+                size_px,
+                format,
+                source_name: SourceName::Deezer,
+                source_http: Arc::new(
+                    http::SourceHttpClient::new(
+                        SourceName::Deezer,
+                        http::USER_AGENT,
+                        Duration::from_secs(10),
+                        reqwest::header::HeaderMap::new(),
+                        None,
+                    )
+                    .unwrap(),
+                ),
+                relevance,
+                rank,
+            }
+        }
+
+        fn default_relevance() -> Relevance {
+            Relevance::best()
+        }
+
+        fn make_search_opts(size: u32) -> SearchOptions {
+            SearchOptions {
+                size,
+                size_tolerance_prct: 25,
+                cover_sources: vec![SourceName::Deezer],
+            }
+        }
+
+        #[test]
+        fn prefer_square_covers() {
+            let square = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let wide = make_cover(
+                Metadata::known((800, 400)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&square, &wide, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&wide, &square, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn nearly_square_proceeds_to_next_comparison() {
+            let a = make_cover(
+                Metadata::known((600, 590)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 595)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&a, &b, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+        }
+
+        #[test]
+        fn search_mode_prefer_similar_to_reference() {
+            let a = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                2,
+            );
+
+            let mut hashes = HashMap::new();
+            hashes.insert(a.key(), PerceptualHash::test_value1());
+            hashes.insert(b.key(), PerceptualHash::test_value2());
+
+            let reference = Some(SearchReference {
+                reference: PerceptualHash::test_value1(),
+                hashes,
+            });
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &reference,
+            };
+
+            assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+            assert_eq!(compare(&b, &a, &mode), cmp::Ordering::Less);
+        }
+
+        #[test]
+        fn search_mode_no_reference_continues() {
+            let a = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn search_mode_both_similar_to_reference_continues() {
+            let a = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+
+            let mut hashes = HashMap::new();
+            hashes.insert(a.key(), PerceptualHash::test_value1());
+            hashes.insert(b.key(), PerceptualHash::test_value1());
+
+            let reference = Some(SearchReference {
+                reference: PerceptualHash::test_value1(),
+                hashes,
+            });
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &reference,
+            };
+            assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn search_mode_prefer_size_above_target() {
+            let below = make_cover(
+                Metadata::known((400, 400)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let above = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&below, &above, &mode), cmp::Ordering::Less);
+            assert_eq!(compare(&above, &below, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn search_mode_prefer_equal_to_target_over_below() {
+            let below = make_cover(
+                Metadata::known((400, 400)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let equal = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&below, &equal, &mode), cmp::Ordering::Less);
+            assert_eq!(compare(&equal, &below, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn search_mode_both_above_target_continues() {
+            let above1 = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let above2 = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&above1, &above2, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn search_mode_both_below_prefer_closest() {
+            let smaller = make_cover(
+                Metadata::known((300, 300)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let larger = make_cover(
+                Metadata::known((500, 500)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&smaller, &larger, &mode), cmp::Ordering::Less);
+            assert_eq!(compare(&larger, &smaller, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn prefer_better_relevance() {
+            let high_relevance = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                Relevance::best(),
+                1,
+            );
+            let low_relevance = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                Relevance::worst(),
+                1,
+            );
+            assert_eq!(
+                compare(&high_relevance, &low_relevance, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&low_relevance, &high_relevance, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn prefer_better_rank() {
+            let rank1 = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let rank2 = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                2,
+            );
+            assert_eq!(
+                compare(&rank1, &rank2, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&rank2, &rank1, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn prefer_known_size_metadata() {
+            let known = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let uncertain = make_cover(
+                Metadata::uncertain((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&known, &uncertain, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&uncertain, &known, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn prefer_known_format_metadata() {
+            let known = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let uncertain = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::uncertain(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&known, &uncertain, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&uncertain, &known, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn search_mode_prefer_closest_to_target_size() {
+            let close = make_cover(
+                Metadata::known((650, 650)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let far = make_cover(
+                Metadata::known((900, 900)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&close, &far, &mode), cmp::Ordering::Greater);
+            assert_eq!(compare(&far, &close, &mode), cmp::Ordering::Less);
+        }
+
+        #[test]
+        fn prefer_png_over_jpeg() {
+            let png = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let jpeg = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&png, &jpeg, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&jpeg, &png, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn final_tiebreaker_prefer_more_square() {
+            let a = make_cover(
+                Metadata::known((600, 602)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 605)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&a, &b, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+            assert_eq!(
+                compare(&b, &a, &CompareMode::Reference),
+                cmp::Ordering::Less
+            );
+        }
+
+        #[test]
+        fn equal() {
+            let a = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&a, &b, &CompareMode::Reference),
+                cmp::Ordering::Equal
+            );
+        }
+
+        #[test]
+        fn both_sizes_known_or_both_uncertain_continues() {
+            let both_known = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let both_known2 = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&both_known, &both_known2, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+        }
+
+        #[test]
+        fn both_formats_known_or_both_uncertain_continues() {
+            let both_uncertain = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::uncertain(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let both_uncertain2 = make_cover(
+                Metadata::known((600, 600)),
+                Metadata::uncertain(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&both_uncertain, &both_uncertain2, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+        }
+
+        #[test]
+        fn search_mode_both_below_same_size_continues() {
+            let a = make_cover(
+                Metadata::known((400, 400)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((400, 400)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn reference_mode_skips_size_comparison() {
+            let below = make_cover(
+                Metadata::known((400, 400)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let above = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&below, &above, &CompareMode::Reference),
+                cmp::Ordering::Greater
+            );
+        }
+
+        #[test]
+        fn search_mode_same_size_above_target_continues() {
+            let a = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Png),
+                default_relevance(),
+                1,
+            );
+            let b = make_cover(
+                Metadata::known((700, 700)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let opts = make_search_opts(600);
+            let mode = CompareMode::Search {
+                search_opts: &opts,
+                reference: &None,
+            };
+            assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+        }
+    }
 }
