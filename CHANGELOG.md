@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0.b5 - 2026-01-12
+
+### <!-- 02 -->🐛 Bug fixes
+
+- ci: Add missing mingw package ([a105431](https://github.com/desbma/sacad/commit/a10543121ac2c0dee7e46ad30ca7b994dcc2df70) by desbma)
+- build: Use debloated forked blockhash ([cefe636](https://github.com/desbma/sacad/commit/cefe63602891a5fe479131466223825de6fbd548) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b4 - 2026-01-12
 
 ### <!-- 05 -->🧪 Testing
