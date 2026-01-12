@@ -24,7 +24,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - run: sudo apt-get install ffmpeg
+      - run: sudo apt install ffmpeg
       - run: cargo test --verbose --features tests-ffmpeg
 
   clippy:
