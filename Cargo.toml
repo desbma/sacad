@@ -20,7 +20,7 @@ anyhow = { version = "1.0.100", default-features = false, features = ["std", "ba
 async-channel = { version = "2.5.0", default-features = false, features = ["std"] }
 async-trait = { version = "0.1.89", default-features = false }
 # forked to remove bloated image dependency tree
-blockhash = { version = "1.0.0", git = "https://github.com/desbma/blockhash", default-features = false, features = ["std", "image"] }
+blockhash = { version = "1.0.0", git = "https://github.com/desbma/blockhash", branch = "sacad", default-features = false, features = ["std", "image"] }
 clap = { version = "4.5.54", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
 const_format = { version = "0.2.35", default-features = false }
 directories = { version = "6.0.0", default-features = false }
