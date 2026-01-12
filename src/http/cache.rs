@@ -267,9 +267,9 @@ impl<C: Compressor> Cache<C> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
 
     #[test]
     fn set_get() {

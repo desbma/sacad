@@ -51,6 +51,7 @@ unicode-normalization = { version = "0.1.25", default-features = false, features
 
 [features]
 default = ["blockhash"]
+tests-ffmpeg = []
 ahash = []
 dhash = []
 blockhash = ["dep:blockhash"]
