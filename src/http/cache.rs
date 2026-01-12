@@ -269,6 +269,8 @@ impl<C: Compressor> Cache<C> {
 mod tests {
     use super::*;
 
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
     #[test]
     fn set_get() {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
@@ -296,5 +298,88 @@ mod tests {
             Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap();
         assert_eq!(cache.get("key1").unwrap().unwrap(), "value1".as_bytes());
         assert_eq!(cache.get("key2").unwrap().unwrap(), "value2".as_bytes());
+    }
+
+    #[tokio::test]
+    async fn get_or_set_basic() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let cache =
+            Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap();
+
+        let result1 = cache
+            .get_or_set("key1", async { Ok(b"value1".to_vec()) })
+            .await
+            .unwrap();
+        assert_eq!(result1, b"value1");
+
+        let result2 = cache
+            .get_or_set("key1", async { Ok(b"value2".to_vec()) })
+            .await
+            .unwrap();
+        assert_eq!(result2, b"value1");
+    }
+
+    #[tokio::test]
+    async fn get_or_set_no_race_condition() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let cache = Arc::new(
+            Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap(),
+        );
+        let call_count = Arc::new(AtomicUsize::new(0));
+
+        let mut handles = Vec::new();
+        for _ in 0..10 {
+            let cache = Arc::clone(&cache);
+            let call_count = Arc::clone(&call_count);
+            handles.push(tokio::spawn(async move {
+                cache
+                    .get_or_set("key1", async {
+                        call_count.fetch_add(1, Ordering::SeqCst);
+                        tokio::time::sleep(Duration::from_millis(500)).await;
+                        Ok(b"value1".to_vec())
+                    })
+                    .await
+                    .unwrap()
+            }));
+        }
+
+        let results: Vec<_> = futures::future::join_all(handles)
+            .await
+            .into_iter()
+            .map(Result::unwrap)
+            .collect();
+
+        assert!(results.iter().all(|r| r == b"value1"));
+        assert_eq!(call_count.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn get_or_set_different_keys_parallel() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let cache = Arc::new(
+            Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap(),
+        );
+        let call_count = Arc::new(AtomicUsize::new(0));
+
+        let mut handles = Vec::new();
+        for i in 0..5 {
+            let cache = Arc::clone(&cache);
+            let call_count = Arc::clone(&call_count);
+            let key = format!("key{i}");
+            let value = format!("value{i}").into_bytes();
+            handles.push(tokio::spawn(async move {
+                cache
+                    .get_or_set(key, async {
+                        call_count.fetch_add(1, Ordering::SeqCst);
+                        Ok(value)
+                    })
+                    .await
+                    .unwrap()
+            }));
+        }
+
+        futures::future::join_all(handles).await;
+
+        assert_eq!(call_count.load(Ordering::SeqCst), 5);
     }
 }
