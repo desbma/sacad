@@ -38,7 +38,6 @@ jobs:
           profile: minimal
           toolchain: stable
           target: x86_64-unknown-linux-gnu
-      - run: sudo apt install mingw-w64
       - run: cargo build --release --target x86_64-unknown-linux-gnu
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
@@ -59,6 +58,7 @@ jobs:
           profile: minimal
           toolchain: stable
           target: x86_64-pc-windows-gnu
+      - run: sudo apt install mingw-w64
       - run: cargo build --release --target x86_64-pc-windows-gnu
         env:
           RUSTFLAGS: "-C target-feature=+crt-static"
