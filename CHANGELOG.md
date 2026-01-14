@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0.b6 - 2026-01-14
+
+### <!-- 02 -->🐛 Bug fixes
+
+- ci: Add missing mingw package, again ([a71bed0](https://github.com/desbma/sacad/commit/a71bed00d44039f6154ceb98ba1479d0f64a18e5) by desbma)
+- sacad_r: Fix relative path handling ([0c889e6](https://github.com/desbma/sacad/commit/0c889e62dcbcf089ebc4d607d10dd5044e41d9e7) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b5 - 2026-01-12
 
 ### <!-- 02 -->🐛 Bug fixes
