@@ -64,7 +64,7 @@ jobs:
           RUSTFLAGS: "-C target-feature=+crt-static"
       - run: |
           cd target/x86_64-pc-windows-gnu/release/
-          zip sacad_${{ github.ref_name }}_windows_amd64.zip sacad sacad_r
+          zip sacad_${{ github.ref_name }}_windows_amd64.zip sacad.exe sacad_r.exe
       - uses: softprops/action-gh-release@v1
         with:
           files: target/x86_64-pc-windows-gnu/release/sacad*.zip
