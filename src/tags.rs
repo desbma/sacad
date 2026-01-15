@@ -398,4 +398,116 @@ mod tests {
             assert_eq!(tags.artist, "Track Artist");
         }
     }
+
+    fn write_test_cover_to_file() -> tempfile::NamedTempFile {
+        let mut cover_file = tempfile::Builder::new().suffix(".png").tempfile().unwrap();
+        cover_file.write_all(&TEST_COVER_PNG).unwrap();
+        cover_file.flush().unwrap();
+        cover_file
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_mp3() {
+            let audio_file = generate_audio_file("mp3", Some("Artist"), None, Some("Album"), None);
+            let audio_path = audio_file.path().to_path_buf();
+
+            let tags_before = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_before.has_embedded_cover, Some(false));
+
+            let cover_file = write_test_cover_to_file();
+            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+
+            let tags_after = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_after.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_flac() {
+            let audio_file = generate_audio_file("flac", Some("Artist"), None, Some("Album"), None);
+            let audio_path = audio_file.path().to_path_buf();
+
+            let tags_before = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_before.has_embedded_cover, Some(false));
+
+            let cover_file = write_test_cover_to_file();
+            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+
+            let tags_after = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_after.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_ogg() {
+            let audio_file = generate_audio_file("ogg", Some("Artist"), None, Some("Album"), None);
+            let audio_path = audio_file.path().to_path_buf();
+
+            let tags_before = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_before.has_embedded_cover, Some(false));
+
+            let cover_file = write_test_cover_to_file();
+            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+
+            let tags_after = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_after.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_multiple_files() {
+            let audio_file1 = generate_audio_file("mp3", Some("Artist"), None, Some("Album"), None);
+            let audio_file2 = generate_audio_file("flac", Some("Artist"), None, Some("Album"), None);
+            let audio_path1 = audio_file1.path().to_path_buf();
+            let audio_path2 = audio_file2.path().to_path_buf();
+
+            let cover_file = write_test_cover_to_file();
+            embed_cover(cover_file.path(), vec![audio_path1.clone(), audio_path2.clone()]).unwrap();
+
+            let tags1 = read_metadata(&[&audio_path1], true).unwrap();
+            let tags2 = read_metadata(&[&audio_path2], true).unwrap();
+            assert_eq!(tags1.has_embedded_cover, Some(true));
+            assert_eq!(tags2.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_replaces_existing() {
+            let audio_file = generate_audio_file(
+                "mp3",
+                Some("Artist"),
+                None,
+                Some("Album"),
+                Some(&TEST_COVER_PNG),
+            );
+            let audio_path = audio_file.path().to_path_buf();
+
+            let tags_before = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_before.has_embedded_cover, Some(true));
+
+            let cover_file = write_test_cover_to_file();
+            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+
+            let tags_after = read_metadata(&[&audio_path], true).unwrap();
+            assert_eq!(tags_after.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_nonexistent_image() {
+            let audio_file = generate_audio_file("mp3", Some("Artist"), None, Some("Album"), None);
+            let audio_path = audio_file.path().to_path_buf();
+
+            let result = embed_cover(Path::new("/nonexistent/cover.png"), vec![audio_path]);
+            assert!(result.is_err());
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_empty_file_list() {
+            let cover_file = write_test_cover_to_file();
+            let result = embed_cover(cover_file.path(), vec![]);
+            assert!(result.is_ok());
+        }
+    }
 }

@@ -42,14 +42,16 @@ cargo run --bin sacad_r -- /path/to/library 600 cover.jpg
 ```
 src/
 ├── bin/
-│   ├── sacad.rs      # Single cover download binary
-│   └── sacad_r.rs    # Recursive library scanner binary
-├── source/           # Cover source implementations (Deezer, Discogs, Last.fm, iTunes)
-├── http/             # HTTP client and caching
-├── cl.rs             # CLI argument definitions
-├── cover.rs          # Cover struct and comparison logic
-├── lib.rs            # Main library API
-└── perceptual_hash.rs # Image hashing for similarity
+│   ├── sacad.rs       # Single cover download binary
+│   └── sacad_r.rs     # Recursive library scanner binary
+├── source/            # Cover source implementations
+├── http/              # HTTP client and caching
+├── cl.rs              # CLI argument definitions
+├── cover.rs           # Cover struct and comparison logic
+├── lib.rs             # Main library API, used by sacad and sacad_r binaries
+├── perceptual_hash.rs # Image hashing for similarity
+├── tags.rs            # Audio file tags handling
+└── walk.rs            # Library tree walking and stat counters for sacad_r
 ```
 
 ## Code Style & Conventions
