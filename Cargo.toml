@@ -19,6 +19,7 @@ codegen-units = 1
 anyhow = { version = "1.0.100", default-features = false, features = ["std", "backtrace"] }
 async-channel = { version = "2.5.0", default-features = false, features = ["std"] }
 async-trait = { version = "0.1.89", default-features = false }
+backon = { version = "1.6.0", default-features = false, features = ["std", "tokio-sleep"] }
 # forked to remove bloated image dependency tree
 blockhash = { version = "1.0.0", git = "https://github.com/desbma/blockhash", branch = "sacad", default-features = false, features = ["std", "image"] }
 clap = { version = "4.5.54", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }

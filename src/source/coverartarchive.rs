@@ -6,6 +6,7 @@
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Context as _;
+use backon::Retryable as _;
 use reqwest::Url;
 
 use crate::{
@@ -140,7 +141,7 @@ impl CoverArtArchive {
         let search_url =
             Url::parse_with_params("https://musicbrainz.org/ws/2/release", url_params).unwrap();
 
-        let resp: MusicBrainzReleaseSearchResponse = http.get_json(search_url).await?;
+        let resp: MusicBrainzReleaseSearchResponse = self.get_json(http, search_url).await?;
         Ok(resp.releases)
     }
 
@@ -155,7 +156,7 @@ impl CoverArtArchive {
         #[expect(clippy::unwrap_used)]
         let caa_url = Url::parse(&format!("https://coverartarchive.org/release/{mbid}")).unwrap();
 
-        let resp: CoverArtResponse = http.get_json(caa_url).await?;
+        let resp: CoverArtResponse = self.get_json(http, caa_url).await?;
 
         let mut covers = Vec::new();
         for image in resp.images.into_iter().filter(|img| img.front) {
@@ -206,6 +207,43 @@ impl CoverArtArchive {
         }
 
         Ok(covers)
+    }
+
+    /// Fetch JSON from URL, with retries
+    async fn get_json<R>(&self, http: &mut Arc<SourceHttpClient>, url: Url) -> anyhow::Result<R>
+    where
+        R: serde::de::DeserializeOwned + Send,
+    {
+        let fetch = || async { http.get_json(url.clone()).await };
+        // Sometimes the server can return 503 or connect error, even if we respect rate limit
+        // so add retry logic with exponential backoff
+        fetch
+            .retry(
+                backon::ExponentialBuilder::default()
+                    .with_jitter()
+                    .with_factor(1.5)
+                    .with_min_delay(Duration::from_secs(1))
+                    .with_max_delay(Duration::from_secs(10))
+                    .with_max_times(10),
+            )
+            .when(|err| {
+                if let Some(err) = err.downcast_ref::<reqwest::Error>() {
+                    err.is_connect()
+                        || err.status().is_some_and(|status| {
+                            status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                        })
+                } else {
+                    false
+                }
+            })
+            .notify(|err, dur: Duration| {
+                log::warn!(
+                    "Cover Art archive request failed: {}\nretrying in {}ms",
+                    err,
+                    dur.as_millis()
+                );
+            })
+            .await
     }
 }
 
