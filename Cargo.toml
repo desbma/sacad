@@ -7,7 +7,7 @@ repository = "https://github.com/desbma/sacad"
 keywords = ["cover", "art", "download", "image", "album"]
 categories = ["command-line-utilities", "multimedia::images"]
 license = "MPL-2.0"
-version = "3.0.0-beta.6"
+version = "3.0.0-beta.7"
 edition = "2024"
 rust-version = "1.91"
 
@@ -35,7 +35,7 @@ itertools = { version = "0.14.0", default-features = false, features = ["use_all
 lofty = { version = "0.22.4", default-features = false }
 log = { version = "0.4.29", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
 lz4_flex = { version = "0.12.0", default-features = false, features = ["std"] }
-oxipng = { version = "10.0.0", default-features = false, features = ["parallel"] }
+oxipng = { version = "10.1.0", default-features = false, features = ["parallel"] }
 parking_lot = { version = "0.12.5", default-features = false }
 quick-xml = { version = "0.38.4", default-features = false, features = ["serialize"] }
 redb = { version = "3.1.0", default-features = false }
@@ -45,7 +45,7 @@ serde_json = { version = "1.0.149", default-features = false, features = ["std"]
 simple_logger = { version = "5.1.0", default-features = false, features = ["colors", "stderr"] }
 strum = { version = "0.27.2", default-features = false, features = ["derive", "std"] }
 tempfile = { version = "3.24.0", default-features = false }
-thiserror = { version = "2.0.17", default-features = false, features = ["std"] }
+thiserror = { version = "2.0.18", default-features = false, features = ["std"] }
 tokio = { version = "1.49.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
 typed_floats = { version = "1.0.7", default-features = false, features = ["compiler_hints", "ensure_no_undefined_behavior", "std"] }
 unicode-normalization = { version = "0.1.25", default-features = false, features = ["std"] }

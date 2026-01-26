@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.0.0.b7 - 2026-01-26
+
+### <!-- 01 -->💡 Features
+
+- Support _album tag key ([8246e85](https://github.com/desbma/sacad/commit/8246e8595c6b1e02092dae3be72c17f434da1216) by desbma)
+- Add retries for coverartarchive source ([8a61606](https://github.com/desbma/sacad/commit/8a61606d42d3f49d3ed37c8672a6635b04ed5ea6) by desbma)
+
+### <!-- 02 -->🐛 Bug fixes
+
+- ci: Windows zip generation ([f76b930](https://github.com/desbma/sacad/commit/f76b9301e27371e41e1c5ec772df77da386f0ee1) by desbma)
+
+### <!-- 05 -->🧪 Testing
+
+- Add tests for cover embedding ([5479b9e](https://github.com/desbma/sacad/commit/5479b9e6e1dd02fde3609566368245a127b58818) by desbma)
+- Add tests for file walker ([0618fcc](https://github.com/desbma/sacad/commit/0618fcc1cbc41fa090b413f01a122cad07dbba9a) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b6 - 2026-01-14
 
 ### <!-- 02 -->🐛 Bug fixes
