@@ -3,6 +3,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
 use anyhow::Context as _;
@@ -22,8 +23,14 @@ pub struct Tags {
     pub has_embedded_cover: Option<bool>,
 }
 
-const ARTIST_KEYS: [tag::ItemKey; 2] = [tag::ItemKey::TrackArtist, tag::ItemKey::AlbumArtist];
-const ALBUM_KEYS: [tag::ItemKey; 1] = [tag::ItemKey::AlbumTitle];
+static ARTIST_KEYS: LazyLock<Vec<tag::ItemKey>> =
+    LazyLock::new(|| vec![tag::ItemKey::TrackArtist, tag::ItemKey::AlbumArtist]);
+static ALBUM_KEYS: LazyLock<Vec<tag::ItemKey>> = LazyLock::new(|| {
+    vec![
+        tag::ItemKey::Unknown("_ALBUM".to_owned()),
+        tag::ItemKey::AlbumTitle,
+    ]
+});
 
 fn extract_tag<'a>(tags: &'a tag::Tag, keys: &'_ [tag::ItemKey]) -> Option<&'a str> {
     let mut value = None;
