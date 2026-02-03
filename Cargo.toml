@@ -39,7 +39,7 @@ oxipng = { version = "10.1.0", default-features = false, features = ["parallel"]
 parking_lot = { version = "0.12.5", default-features = false }
 quick-xml = { version = "0.38.4", default-features = false, features = ["serialize"] }
 redb = { version = "3.1.0", default-features = false }
-reqwest = { version = "0.13.1", default-features = false, features = ["http2", "native-tls", "gzip", "system-proxy", "socks", "stream"] }
+reqwest = { version = "0.13.1", default-features = false, features = ["http2", "rustls", "gzip", "system-proxy", "socks", "stream"] }
 serde = { version = "1.0.228", default-features = false, features = ["std", "derive"] }
 serde_json = { version = "1.0.149", default-features = false, features = ["std"] }
 simple_logger = { version = "5.1.0", default-features = false, features = ["colors", "stderr"] }
