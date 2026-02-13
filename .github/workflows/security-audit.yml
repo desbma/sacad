@@ -1,8 +1,5 @@
 name: Security Audit
 
-permissions:
-  contents: write
-
 on:
   push:
     paths:
