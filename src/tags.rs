@@ -161,7 +161,15 @@ mod tests {
 
         let mut cmd = Command::new("ffmpeg");
 
-        cmd.args(["-f", "lavfi", "-i", "sine=frequency=440:duration=2"]);
+        cmd.args([
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "sine=frequency=440:duration=2",
+        ]);
 
         if let Some(cover_file) = &cover_file {
             cmd.arg("-i");
@@ -202,8 +210,8 @@ mod tests {
 
         let status = cmd
             .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .status()
             .unwrap();
         assert!(status.success());
