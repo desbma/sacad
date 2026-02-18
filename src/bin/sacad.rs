@@ -12,7 +12,11 @@ async fn main() -> anyhow::Result<SearchStatus> {
     let cl_args = cl::SacadArgs::parse();
 
     // Init logger
-    simple_logger::init_with_level(cl_args.verbosity.into()).context("Failed to setup logger")?;
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Error)
+        .with_module_level(env!("CARGO_PKG_NAME"), cl_args.verbosity.into())
+        .init()
+        .context("Failed to setup logger")?;
 
     // Run
     search_and_download(

@@ -75,6 +75,12 @@ impl From<Verbosity> for log::Level {
     }
 }
 
+impl From<Verbosity> for log::LevelFilter {
+    fn from(v: Verbosity) -> Self {
+        log::Level::from(v).to_level_filter()
+    }
+}
+
 /// Cover output destination
 #[derive(Clone, Debug)]
 pub enum CoverOutput {
