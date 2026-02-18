@@ -30,7 +30,7 @@ cargo clippy --all-targets
 cargo +nightly fmt -- --config imports_granularity=Crate --config group_imports=StdExternalCrate
 
 # Run tests
-cargo test --feature tests-ffmpeg
+cargo test --all-features
 
 # Run single binary
 cargo run --bin sacad -- "artist" "album" 600 cover.jpg

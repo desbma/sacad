@@ -17,7 +17,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - run: cargo build --verbose
+      - run: cargo build --verbose --all-features
 
   test:
     runs-on: ${{ matrix.os }}
@@ -41,7 +41,7 @@ jobs:
       - name: Install ffmpeg (Windows)
         if: runner.os == 'Windows'
         run: choco install ffmpeg
-      - run: cargo test --verbose --features tests-ffmpeg
+      - run: cargo test --verbose --all-features
 
   clippy:
     runs-on: ubuntu-latest

@@ -23,6 +23,8 @@ backon = { version = "1.6.0", default-features = false, features = ["std", "toki
 # forked to remove bloated image dependency tree
 blockhash = { version = "1.0.0", git = "https://github.com/desbma/blockhash", branch = "sacad", default-features = false, features = ["std", "image"] }
 clap = { version = "4.5.57", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
+clap_complete = { version = "4.5.65", default-features = false, optional = true }
+clap_mangen = { version = "0.2.31", default-features = false, optional = true }
 const_format = { version = "0.2.35", default-features = false }
 directories = { version = "6.0.0", default-features = false }
 futures = { version = "0.3.31", default-features = false, features = ["std"] }
@@ -50,8 +52,13 @@ tokio = { version = "1.49.0", default-features = false, features = ["rt-multi-th
 typed_floats = { version = "1.0.7", default-features = false, features = ["compiler_hints", "ensure_no_undefined_behavior", "std"] }
 unicode-normalization = { version = "0.1.25", default-features = false, features = ["std"] }
 
+[[bin]]
+name = "sacad_gen_extras"
+required-features = ["generate-extras"]
+
 [features]
 default = []
+generate-extras = ["dep:clap_complete", "dep:clap_mangen"]
 tests-ffmpeg = []
 
 [lints.rust]

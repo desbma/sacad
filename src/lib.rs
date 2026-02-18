@@ -20,6 +20,8 @@ use crate::{
 
 pub mod cl;
 mod cover;
+#[cfg(all(unix, feature = "generate-extras"))]
+pub mod extras;
 mod http;
 mod perceptual_hash;
 mod source;
