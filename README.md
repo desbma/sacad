@@ -38,6 +38,16 @@ SACAD also provides a second command line tool, `sacad_r`, to scan a music libra
 
 ## Installation
 
+### Binaries
+
+Pre-compiled binaries for tagged releases [are available](https://github.com/desbma/sacad/releases).
+
+### From [`crates.io`](https://crates.io/)
+
+```bash
+cargo install sacad --version '>=3.0.0-b.1'
+```
+
 ### From source
 
 You need a Rust build environment for example from [rustup](https://rustup.rs/).
@@ -46,12 +56,6 @@ Run in the current repository:
 
 ```bash
 cargo install --path .
-```
-
-### From [`crates.io`](https://crates.io/)
-
-```bash
-cargo install sacad --version '>=3.0.0-b.1'
 ```
 
 ## Command line usage
