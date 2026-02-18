@@ -40,9 +40,10 @@ jobs:
           target: x86_64-unknown-linux-musl
       - run: sudo apt install musl-tools
       - run: cargo build --release --target x86_64-unknown-linux-musl
+      - run: sudo apt install xz-utils
       - run: |
           cd target/x86_64-unknown-linux-musl/release/
-          tar -cJvf sacad_${{ github.ref_name }}_linux_amd64.tar.xz sacad sacad_r
+          tar -cvf sacad sacad_r | xz -9 > sacad_${{ github.ref_name }}_linux_amd64.tar.xz
       - uses: softprops/action-gh-release@v2
         with:
           files: target/x86_64-unknown-linux-musl/release/sacad*.tar.xz
@@ -64,8 +65,11 @@ jobs:
       - run: sudo apt install 7zip
       - run: |
           cd target/x86_64-pc-windows-gnu/release/
-          7z a sacad_${{ github.ref_name }}_windows_amd64.7z sacad.exe sacad_r.exe
+          zip -9 sacad_${{ github.ref_name }}_windows_amd64.zip sacad.exe sacad_r.exe
+          7z a -mx9 sacad_${{ github.ref_name }}_windows_amd64.7z sacad.exe sacad_r.exe
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/x86_64-pc-windows-gnu/release/sacad*.7z
+          files: |
+            target/x86_64-pc-windows-gnu/release/sacad*.zip
+            target/x86_64-pc-windows-gnu/release/sacad*.7z
           token: ${{ secrets.GITHUB_TOKEN }}
