@@ -171,7 +171,7 @@ async fn main() -> anyhow::Result<()> {
     let cl_args = cl::SacadRecursiveArgs::parse();
 
     // Init logger
-    simple_logger::init_with_level(cl_args.verbosity).context("Failed to setup logger")?;
+    simple_logger::init_with_level(cl_args.verbosity.into()).context("Failed to setup logger")?;
 
     // Create progress bar
     let stats = Arc::default();

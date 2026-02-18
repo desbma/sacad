@@ -21,8 +21,8 @@ pub struct SacadArgs {
     #[clap(flatten)]
     pub image_proc: ImageProcessingArgs,
     /// Level of logging output
-    #[clap(short, long, default_value_t = log::Level::Info)]
-    pub verbosity: log::Level,
+    #[clap(short, long, value_enum, ignore_case = true, default_value_t = Verbosity::Info)]
+    pub verbosity: Verbosity,
 }
 
 /// Command line arguments for `sacad_r` binary
@@ -48,8 +48,31 @@ pub struct SacadRecursiveArgs {
     #[clap(flatten)]
     pub image_proc: ImageProcessingArgs,
     /// Level of logging output
-    #[clap(short, long, default_value_t = log::Level::Info)]
-    pub verbosity: log::Level,
+    #[clap(short, long, value_enum, ignore_case = true, default_value_t = Verbosity::Info)]
+    pub verbosity: Verbosity,
+}
+
+/// Level of logging output
+#[derive(Debug, Copy, Clone, clap::ValueEnum)]
+#[expect(missing_docs)]
+pub enum Verbosity {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl From<Verbosity> for log::Level {
+    fn from(v: Verbosity) -> Self {
+        match v {
+            Verbosity::Error => Self::Error,
+            Verbosity::Warn => Self::Warn,
+            Verbosity::Info => Self::Info,
+            Verbosity::Debug => Self::Debug,
+            Verbosity::Trace => Self::Trace,
+        }
+    }
 }
 
 /// Cover output destination
@@ -144,4 +167,47 @@ pub enum SourceName {
     Discogs,
     Itunes,
     LastFm,
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory as _;
+
+    use super::*;
+
+    #[test]
+    fn parse_log_level() {
+        let args =
+            SacadArgs::parse_from(["sacad", "-v", "debug", "artist", "album", "600", "c.jpg"]);
+        assert!(matches!(args.verbosity, Verbosity::Debug));
+        assert_eq!(log::Level::from(args.verbosity), log::Level::Debug);
+    }
+
+    #[test]
+    fn parse_log_level_case_insensitive() {
+        for value in ["debug", "DEBUG", "Debug", "dEbUg"] {
+            let args =
+                SacadArgs::parse_from(["sacad", "-v", value, "artist", "album", "600", "c.jpg"]);
+            assert!(
+                matches!(args.verbosity, Verbosity::Debug),
+                "failed for {value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn default_log_level() {
+        let args = SacadArgs::parse_from(["sacad", "artist", "album", "600", "c.jpg"]);
+        assert!(matches!(args.verbosity, Verbosity::Info));
+    }
+
+    #[test]
+    fn help_lists_verbosity_values() {
+        let mut help = Vec::new();
+        SacadArgs::command().write_long_help(&mut help).unwrap();
+        let help = String::from_utf8(help).unwrap();
+        for level in ["error", "warn", "info", "debug", "trace"] {
+            assert!(help.contains(level));
+        }
+    }
 }
