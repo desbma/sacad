@@ -48,6 +48,7 @@ src/
 ├── http/              # HTTP client and caching
 ├── cl.rs              # CLI argument definitions
 ├── cover.rs           # Cover struct and comparison logic
+├── extras.rs          # Man page and shell completion generation (feature-gated: generate-extras, unix only)
 ├── lib.rs             # Main library API, used by sacad and sacad_r binaries
 ├── perceptual_hash.rs # Image hashing for similarity
 ├── tags.rs            # Audio file tags handling
@@ -58,10 +59,17 @@ src/
 
 - **No unsafe code**: `unsafe_code = "forbid"` enforced
 - **Strict clippy**: pedantic + many restriction lints enabled (see `Cargo.toml` `[lints.clippy]`)
-- **Documentation required**: `missing_docs` warnings
+- **Documentation required**: every module and item must have a doc comment (`//!` or `///`); `missing_docs` is warned
+- **Doc comments**: do not end with a dot, unless it separates sentences
 - **Error handling**: Use `anyhow` for errors, avoid `.unwrap()` and `.expect()` outside tests
 - **Indexing**: Avoid direct indexing (`[]`), use `.get()` instead (outside tests)
+- **Imports**: group std, then external crates, then local modules. Use `_` suffix for unused trait imports
+- **Dependencies**: prefer `default-features = false`
+- **Comments**: when moving or refactoring code, never remove comment lines — preserve all comments and move them along with the code they document
 - **Tests**: `expect`, `unwrap`, `panic`, indexing are allowed in tests (see `clippy.toml`)
+- **Tests**: use `use super::*;` to import from the parent module
+- **Tests**: prefer `unwrap()` over `expect()` for conciseness
+- **Tests**: do not add custom messages to `assert!`/`assert_eq!`/`assert_ne!` — the test name is sufficient
 
 ## Pre-commit Hooks
 
