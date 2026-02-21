@@ -74,14 +74,18 @@ async fn search_all_sources(query: &Arc<SearchQuery>, search: &Arc<SearchOptions
                 log::error!("{err:#}");
             })
             .map(|(res, source_name)| {
-                log::debug!(
-                    "Source {} results:\n{}",
-                    source_name,
-                    res.iter()
-                        .map(ToString::to_string)
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                );
+                if res.is_empty() {
+                    log::debug!("Source {source_name} has no results");
+                } else {
+                    log::debug!(
+                        "Source {} results:\n{}",
+                        source_name,
+                        res.iter()
+                            .map(ToString::to_string)
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    );
+                }
                 res
             })
             .ok()
@@ -194,7 +198,11 @@ pub async fn search_and_download(
         )
     });
 
-    log::debug!("Sorted results:\n{}", results.iter().join("\n"));
+    if results.is_empty() {
+        log::debug!("No results");
+    } else {
+        log::debug!("Sorted results:\n{}", results.iter().join("\n"));
+    }
 
     // Download
     for result in results {
