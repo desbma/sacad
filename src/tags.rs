@@ -1,6 +1,7 @@
 //! Audio metadata handling
 
 use std::{
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
     sync::LazyLock,
@@ -15,8 +16,8 @@ use lofty::{
 /// File tags
 #[derive(Debug)]
 pub struct Tags {
-    /// Artist tag
-    pub artist: String,
+    /// Artist tag, None if various artists detected
+    pub artist: Option<String>,
     /// Album tag
     pub album: String,
     /// If requested, whether file has embedded cover or not
@@ -24,7 +25,7 @@ pub struct Tags {
 }
 
 static ARTIST_KEYS: LazyLock<Vec<tag::ItemKey>> =
-    LazyLock::new(|| vec![tag::ItemKey::TrackArtist, tag::ItemKey::AlbumArtist]);
+    LazyLock::new(|| vec![tag::ItemKey::AlbumArtist, tag::ItemKey::TrackArtist]);
 static ALBUM_KEYS: LazyLock<Vec<tag::ItemKey>> = LazyLock::new(|| {
     vec![
         tag::ItemKey::Unknown("_ALBUM".to_owned()),
@@ -32,12 +33,16 @@ static ALBUM_KEYS: LazyLock<Vec<tag::ItemKey>> = LazyLock::new(|| {
     ]
 });
 
-fn extract_tag<'a>(tags: &'a tag::Tag, keys: &'_ [tag::ItemKey]) -> Option<&'a str> {
-    let mut value = None;
+fn extract_tag<'a>(
+    tags: &'a tag::Tag,
+    keys: &'a [tag::ItemKey],
+) -> Option<(&'a str, &'a tag::ItemKey)> {
     for key in keys {
-        value = value.or_else(|| tags.get_string(key));
+        if let Some(value) = tags.get_string(key) {
+            return Some((value, key));
+        }
     }
-    value
+    None
 }
 
 // Return the first file tag type that already has artist and album set
@@ -68,14 +73,29 @@ where
                     .iter()
                     .any(|p| p.pic_type() == picture::PictureType::CoverFront)
             });
+            let (tag_artist, artist_key) = extract_tag(tags, &ARTIST_KEYS)?;
             return Some(Tags {
-                artist: extract_tag(tags, &ARTIST_KEYS)?.to_owned(),
-                album: extract_tag(tags, &ALBUM_KEYS)?.to_owned(),
+                artist: ((artist_key != &tag::ItemKey::AlbumArtist)
+                    || !is_various_artist(tag_artist))
+                .then(|| tag_artist.to_owned()),
+                album: extract_tag(tags, &ALBUM_KEYS)?.0.to_owned(),
                 has_embedded_cover,
             });
         }
     }
     None
+}
+
+/// Default value for various artists
+pub const DEFAULT_VARIOUS_ARTISTS_VALUE: &str = "Various Artists";
+
+/// Values for the artist tag, which make sacad assume it is various artists
+static VARIOUS_ARTISTS: LazyLock<HashSet<&str>> =
+    LazyLock::new(|| ["various", "various artists"].into_iter().collect());
+
+/// Return true if artist string indicates "various artists" album
+fn is_various_artist(artist: &str) -> bool {
+    VARIOUS_ARTISTS.contains(artist.to_lowercase().as_str())
 }
 
 /// Embed front cover into all given files
@@ -234,7 +254,7 @@ mod tests {
         fn ogg_vorbis_with_vorbis_comments() {
             let file = generate_audio_file("ogg", Some("Test Artist"), None, Some("Test Album"), None);
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "Test Artist");
+            assert_eq!(tags.artist.unwrap(), "Test Artist");
             assert_eq!(tags.album, "Test Album");
             assert!(tags.has_embedded_cover.is_none());
         }
@@ -244,7 +264,7 @@ mod tests {
         fn mp3_with_id3v2() {
             let file = generate_audio_file("mp3", Some("MP3 Artist"), None, Some("MP3 Album"), None);
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "MP3 Artist");
+            assert_eq!(tags.artist.unwrap(), "MP3 Artist");
             assert_eq!(tags.album, "MP3 Album");
         }
     }
@@ -267,7 +287,7 @@ mod tests {
         fn flac_with_vorbis_comments() {
             let file = generate_audio_file("flac", Some("FLAC Artist"), None, Some("FLAC Album"), None);
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "FLAC Artist");
+            assert_eq!(tags.artist.unwrap(), "FLAC Artist");
             assert_eq!(tags.album, "FLAC Album");
         }
     }
@@ -290,7 +310,7 @@ mod tests {
         fn wav_with_riff_info() {
             let file = generate_audio_file("wav", Some("WAV Artist"), None, Some("WAV Album"), None);
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "WAV Artist");
+            assert_eq!(tags.artist.unwrap(), "WAV Artist");
             assert_eq!(tags.album, "WAV Album");
         }
     }
@@ -331,7 +351,7 @@ mod tests {
                 None,
             );
             let tags = read_metadata(&[file1, file2], false).unwrap();
-            assert_eq!(tags.artist, "First Artist");
+            assert_eq!(tags.artist.unwrap(), "First Artist");
             assert_eq!(tags.album, "First Album");
         }
     }
@@ -347,7 +367,7 @@ mod tests {
                 None,
             );
             let tags = read_metadata(&[file1, file2], false).unwrap();
-            assert_eq!(tags.artist, "Second Artist");
+            assert_eq!(tags.artist.unwrap(), "Second Artist");
             assert_eq!(tags.album, "Second Album");
         }
     }
@@ -395,13 +415,13 @@ mod tests {
         fn album_artist_fallback() {
             let file = generate_audio_file("ogg", None, Some("Album Artist"), Some("Test Album"), None);
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "Album Artist");
+            assert_eq!(tags.artist.unwrap(), "Album Artist");
             assert_eq!(tags.album, "Test Album");
         }
     }
 
     ffmpeg_test! {
-        fn track_artist_preferred_over_album_artist() {
+        fn track_album_artist_preferred_over_track_artist() {
             let file = generate_audio_file(
                 "ogg",
                 Some("Track Artist"),
@@ -410,8 +430,97 @@ mod tests {
                 None,
             );
             let tags = read_metadata(&[file], false).unwrap();
-            assert_eq!(tags.artist, "Track Artist");
+            assert_eq!(tags.artist.unwrap(), "Album Artist");
         }
+    }
+
+    ffmpeg_test! {
+        fn various_artists_album_artist_returns_none() {
+            let file = generate_audio_file(
+                "ogg",
+                Some("Track Artist"),
+                Some("Various Artists"),
+                Some("Compilation Album"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert!(tags.artist.is_none());
+            assert_eq!(tags.album, "Compilation Album");
+        }
+    }
+
+    ffmpeg_test! {
+        fn various_artists_case_insensitive() {
+            let file = generate_audio_file(
+                "ogg",
+                Some("Track Artist"),
+                Some("VARIOUS ARTISTS"),
+                Some("Compilation"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert!(tags.artist.is_none());
+        }
+    }
+
+    ffmpeg_test! {
+        fn various_album_artist_returns_none() {
+            let file = generate_audio_file(
+                "ogg",
+                Some("Track Artist"),
+                Some("Various"),
+                Some("Compilation"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert!(tags.artist.is_none());
+        }
+    }
+
+    ffmpeg_test! {
+        fn various_artists_track_artist_only_kept() {
+            let file = generate_audio_file(
+                "ogg",
+                Some("Various Artists"),
+                None,
+                Some("Album"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert_eq!(tags.artist.unwrap(), "Various Artists");
+        }
+    }
+
+    ffmpeg_test! {
+        fn non_various_album_artist_kept() {
+            let file = generate_audio_file(
+                "ogg",
+                Some("Track Artist"),
+                Some("Real Album Artist"),
+                Some("Album"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert_eq!(tags.artist.unwrap(), "Real Album Artist");
+        }
+    }
+
+    #[test]
+    fn is_various_artist_matches() {
+        assert!(is_various_artist("Various Artists"));
+        assert!(is_various_artist("various artists"));
+        assert!(is_various_artist("VARIOUS ARTISTS"));
+        assert!(is_various_artist("Various"));
+        assert!(is_various_artist("various"));
+        assert!(is_various_artist("VARIOUS"));
+    }
+
+    #[test]
+    fn is_various_artist_rejects() {
+        assert!(!is_various_artist("Pink Floyd"));
+        assert!(!is_various_artist("The Various"));
+        assert!(!is_various_artist("Various Artists United"));
+        assert!(!is_various_artist(""));
     }
 
     fn write_test_cover_to_file() -> tempfile::NamedTempFile {

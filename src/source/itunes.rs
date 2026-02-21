@@ -41,17 +41,23 @@ const ITUNES_RELEVANCE: source::Relevance = source::Relevance {
 impl Source for Itunes {
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = remove_chars(normalize(artist), |c| {
-            c.is_ascii() && !c.is_ascii_control() && !c.is_ascii_punctuation()
+        let nartist = artist.map(|artist| {
+            remove_chars(normalize(artist), |c| {
+                c.is_ascii() && !c.is_ascii_control() && !c.is_ascii_punctuation()
+            })
         });
         let nalbum = remove_chars(normalize(album), |c| {
             c.is_ascii() && !c.is_ascii_control() && !c.is_ascii_punctuation()
         });
-        let url_term = format!("{nartist} {nalbum}");
+        let url_term = if let Some(nartist) = &nartist {
+            format!("{nartist} {nalbum}")
+        } else {
+            nalbum.clone()
+        };
         let url_params = [("media", "music"), ("entity", "album"), ("term", &url_term)];
         #[expect(clippy::unwrap_used)] // base URL is absolute
         let search_url =
@@ -63,7 +69,9 @@ impl Source for Itunes {
             .into_iter()
             .filter(|r| {
                 (normalize(&r.collection_name).starts_with(&nalbum))
-                    && (normalize(&r.artist_name) == nartist)
+                    && nartist
+                        .as_ref()
+                        .is_none_or(|nartist| &normalize(&r.artist_name) == nartist)
             })
             .enumerate()
         {
@@ -120,13 +128,22 @@ impl Source for Itunes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::source::tests::{source_has_results, source_no_results};
+    use crate::source::tests::{
+        source_has_results, source_has_results_compilation, source_no_results,
+    };
 
     #[tokio::test]
     async fn has_results() {
         let _ = simple_logger::init_with_env();
         let source = Itunes;
         source_has_results(source, SourceName::Itunes).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_compilation() {
+        let _ = simple_logger::init_with_env();
+        let source = Itunes;
+        source_has_results_compilation(source, SourceName::Itunes).await;
     }
 
     #[tokio::test]

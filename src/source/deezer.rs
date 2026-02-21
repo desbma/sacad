@@ -75,13 +75,17 @@ impl ResponseAlbum {
 impl Source for Deezer {
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = normalize(artist);
+        let nartist = artist.map(normalize);
         let nalbum = normalize(album);
-        let query = format!("artist:\"{nartist}\" album:\"{nalbum}\"");
+        let query = if let Some(nartist) = &nartist {
+            format!("artist:\"{nartist}\" album:\"{nalbum}\"")
+        } else {
+            format!("album:\"{nalbum}\"")
+        };
         let url_params = [("q", query.as_str()), ("order", "RANKING")];
 
         // Note: source has pagination but getting the first 25 seems enough
@@ -120,7 +124,9 @@ impl Source for Deezer {
                     source_name: SourceName::Deezer,
                     source_http: Arc::clone(http),
                     relevance: source::Relevance {
-                        fuzzy: (normalize(&result.artist.name) != nartist)
+                        fuzzy: nartist
+                            .as_ref()
+                            .is_some_and(|nartist| &normalize(&result.artist.name) != nartist)
                             || (normalize(&result.album.title) != nalbum),
                         ..DEEZER_RELEVANCE
                     },
@@ -137,13 +143,22 @@ impl Source for Deezer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::source::tests::{source_has_results, source_no_results};
+    use crate::source::tests::{
+        source_has_results, source_has_results_compilation, source_no_results,
+    };
 
     #[tokio::test]
     async fn has_results() {
         let _ = simple_logger::init_with_env();
         let source = Deezer;
         source_has_results(source, SourceName::Deezer).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_compilation() {
+        let _ = simple_logger::init_with_env();
+        let source = Deezer;
+        source_has_results_compilation(source, SourceName::Deezer).await;
     }
 
     #[tokio::test]

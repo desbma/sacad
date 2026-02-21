@@ -15,6 +15,7 @@ use crate::{
     cover::{Cover, Format, Metadata},
     http::SourceHttpClient,
     source::{self, Source, normalize},
+    tags::DEFAULT_VARIOUS_ARTISTS_VALUE,
 };
 
 /// Last.fm cover source
@@ -67,11 +68,11 @@ static SIZE: LazyLock<HashMap<&str, Metadata<(u32, u32)>>> = LazyLock::new(|| {
 impl Source for LastFm {
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = normalize(artist);
+        let nartist = normalize(artist.unwrap_or(DEFAULT_VARIOUS_ARTISTS_VALUE));
         let nalbum = normalize(album);
         let url_params = [
             ("method", "album.getinfo"),
@@ -158,13 +159,22 @@ impl Source for LastFm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::source::tests::{source_has_results, source_no_results};
+    use crate::source::tests::{
+        source_has_results, source_has_results_compilation, source_no_results,
+    };
 
     #[tokio::test]
     async fn has_results() {
         let _ = simple_logger::init_with_env();
         let source = LastFm;
         source_has_results(source, SourceName::LastFm).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_compilation() {
+        let _ = simple_logger::init_with_env();
+        let source = LastFm;
+        source_has_results_compilation(source, SourceName::LastFm).await;
     }
 
     #[tokio::test]

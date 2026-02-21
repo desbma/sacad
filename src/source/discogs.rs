@@ -78,19 +78,19 @@ fn parse_image_dimensions(url: &str) -> Option<(u32, u32)> {
 impl Source for Discogs {
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = normalize(artist);
+        let nartist = artist.map(normalize);
         let nalbum = normalize(album);
 
         // Note: source has pagination but getting the first 50 results is more than enough
-        let url_params = [
-            ("artist", nartist.as_str()),
-            ("release_title", nalbum.as_str()),
-            ("type", "release"),
-        ];
+        let mut url_params = Vec::new();
+        if let Some(nartist) = nartist {
+            url_params.push(("artist", nartist));
+        }
+        url_params.extend([("release_title", nalbum), ("type", "release".to_owned())]);
         #[expect(clippy::unwrap_used)]
         let search_url =
             Url::parse_with_params("https://api.discogs.com/database/search", url_params).unwrap();
@@ -154,7 +154,9 @@ impl Source for Discogs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::source::tests::{source_has_results, source_no_results};
+    use crate::source::tests::{
+        source_has_results, source_has_results_compilation, source_no_results,
+    };
 
     #[test]
     fn parse_dimensions() {
@@ -167,6 +169,13 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = Discogs;
         source_has_results(source, SourceName::Discogs).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_compilation() {
+        let _ = simple_logger::init_with_env();
+        let source = Discogs;
+        source_has_results_compilation(source, SourceName::Discogs).await;
     }
 
     #[tokio::test]

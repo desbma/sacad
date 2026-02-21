@@ -35,14 +35,16 @@ struct MusicBrainzRelease {
 
 impl MusicBrainzRelease {
     /// Check if the release is a fuzzy match (artist/album don't match exactly)
-    fn is_fuzzy_match(&self, nartist: &str, nalbum: &str) -> bool {
+    fn is_fuzzy_match(&self, nartist: Option<&str>, nalbum: &str) -> bool {
         let release_album = normalize(&self.title);
         (release_album != nalbum)
-            || !self
-                .artist_credit
-                .iter()
-                .map(|c| normalize(&c.name))
-                .any(|ac| ac == nartist)
+            || nartist.is_some_and(|nartist| {
+                !self
+                    .artist_credit
+                    .iter()
+                    .map(|c| normalize(&c.name))
+                    .any(|ac| ac == nartist)
+            })
     }
 }
 
@@ -94,18 +96,20 @@ const COVERARTARCHIVE_RELEVANCE: source::Relevance = source::Relevance {
 impl Source for CoverArtArchive {
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = normalize(artist);
+        let nartist = artist.map(normalize);
         let nalbum = normalize(album);
 
-        let releases = self.musicbrainz_releases(&nartist, &nalbum, http).await?;
+        let releases = self
+            .musicbrainz_releases(nartist.as_deref(), &nalbum, http)
+            .await?;
 
         let mut results = Vec::new();
         for (rank, release) in releases.into_iter().enumerate() {
-            let is_fuzzy = release.is_fuzzy_match(&nartist, &nalbum);
+            let is_fuzzy = release.is_fuzzy_match(nartist.as_deref(), &nalbum);
             if let Ok(covers) = self.release_covers(&release.id, rank, is_fuzzy, http).await {
                 results.extend(covers);
             }
@@ -127,12 +131,16 @@ impl CoverArtArchive {
     /// Search for MB releases matching artist and album
     async fn musicbrainz_releases(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<MusicBrainzRelease>> {
         // https://musicbrainz.org/doc/MusicBrainz_API/Search#Release
-        let query = format!("artist:\"{artist}\" AND release:\"{album}\"");
+        let query = if let Some(artist) = artist {
+            format!("artist:\"{artist}\" AND release:\"{album}\"")
+        } else {
+            format!("release:\"{album}\"")
+        };
         // Note: set a low result limit because following requests are slow due to rate limit
         // Note: pagination is also available
         let url_params = [("query", query.as_str()), ("limit", "8"), ("fmt", "json")];
@@ -250,13 +258,22 @@ impl CoverArtArchive {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::source::tests::{source_has_results, source_no_results};
+    use crate::source::tests::{
+        source_has_results, source_has_results_compilation, source_no_results,
+    };
 
     #[tokio::test]
     async fn has_results() {
         let _ = simple_logger::init_with_env();
         let source = CoverArtArchive;
         source_has_results(source, SourceName::CoverArtArchive).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_compilation() {
+        let _ = simple_logger::init_with_env();
+        let source = CoverArtArchive;
+        source_has_results_compilation(source, SourceName::CoverArtArchive).await;
     }
 
     #[tokio::test]

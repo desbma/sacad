@@ -49,7 +49,7 @@ async fn search_all_sources(query: &Arc<SearchQuery>, search: &Arc<SearchOptions
         let query = Arc::clone(query);
         let source_task = tokio::spawn(async move {
             let results = source
-                .search(&query.artist, &query.album, &mut http)
+                .search(query.artist.as_deref(), &query.album, &mut http)
                 .await
                 .map_err(|err| SourceError {
                     err,

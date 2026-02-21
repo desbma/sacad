@@ -115,7 +115,7 @@ pub(crate) trait Source: Sync + Send {
     /// Search for a cover and return results
     async fn search(
         &self,
-        artist: &str,
+        artist: Option<&str>,
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>>;
@@ -207,14 +207,37 @@ pub(crate) mod tests {
         );
         assert!(
             !source
-                .search("Michael Jackson", "Thriller", &mut http)
+                .search(Some("Michael Jackson"), "Thriller", &mut http)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             !source
-                .search("Björk", "Vespertine", &mut http)
+                .search(Some("Björk"), "Vespertine", &mut http)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+    }
+
+    pub(crate) async fn source_has_results_compilation<S>(source: S, source_name: SourceName)
+    where
+        S: Source,
+    {
+        let mut http = Arc::new(
+            SourceHttpClient::new(
+                source_name,
+                source.user_agent(),
+                source.timeout(),
+                source.common_headers(),
+                source.rate_limit().as_ref(),
+            )
+            .unwrap(),
+        );
+        assert!(
+            !source
+                .search(None, "Pulp Fiction", &mut http)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -237,7 +260,7 @@ pub(crate) mod tests {
         );
         assert!(
             source
-                .search("mlkjjkhjklhlkjhlk", "mlkjjkhjklhlkjhlk", &mut http)
+                .search(Some("mlkjjkhjklhlkjhlk"), "mlkjjkhjklhlkjhlk", &mut http)
                 .await
                 .unwrap()
                 .is_empty(),
