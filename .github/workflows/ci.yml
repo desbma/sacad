@@ -32,7 +32,9 @@ jobs:
           toolchain: stable
       - name: Install ffmpeg (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt install ffmpeg
+        run: |
+          sudo apt update
+          sudo apt install ffmpeg
       - name: Install ffmpeg (macOS)
         if: runner.os == 'macOS'
         run: |
