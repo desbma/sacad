@@ -40,7 +40,7 @@ SACAD also provides a second command line tool, `sacad_r`, to scan a music libra
 
 ### Binaries
 
-Pre-compiled binaries for tagged releases [are available](https://github.com/desbma/sacad/releases).
+Windows, Mac OS, and Linux binaries are available [on GitHub](https://github.com/desbma/sacad/releases).
 
 ### From [`crates.io`](https://crates.io/)
 
