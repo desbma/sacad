@@ -42,13 +42,12 @@ jobs:
           sudo apt update
           sudo apt install musl-tools
       - run: cargo build --release --target x86_64-unknown-linux-musl
-      - run: sudo apt install xz-utils
       - run: |
           cd target/x86_64-unknown-linux-musl/release/
-          tar -cvf sacad sacad_r | xz -9 > sacad_${{ github.ref_name }}_linux_x86_64.tar.xz
+          tar -cv sacad sacad_r | gzip -9 > sacad_${{ github.ref_name }}_linux_x86_64.tar.gz
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/x86_64-unknown-linux-musl/release/sacad*.tar.xz
+          files: target/x86_64-unknown-linux-musl/release/sacad*.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
 
   bin-macos-x86_64-release:
@@ -63,13 +62,13 @@ jobs:
       - run: cargo build --release --target x86_64-apple-darwin
       - run: |
           cd target/x86_64-apple-darwin/release/
-          zip -9 sacad_${{ github.ref_name }}_macos_x86_64.zip sacad sacad_r
+          tar -cv sacad sacad_r | gzip -9 > sacad_${{ github.ref_name }}_macos_x86_64.tar.gz
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/x86_64-apple-darwin/release/sacad*.zip
+          files: target/x86_64-apple-darwin/release/sacad*.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  bin-macos-arm64-release:
+  bin-macos-aarch64-release:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
@@ -80,10 +79,10 @@ jobs:
       - run: cargo build --release
       - run: |
           cd target/release/
-          zip -9 sacad_${{ github.ref_name }}_macos_arm64.zip sacad sacad_r
+          tar -cv sacad sacad_r | gzip -9 > sacad_${{ github.ref_name }}_macos_aarch64.tar.gz
       - uses: softprops/action-gh-release@v2
         with:
-          files: target/release/sacad*.zip
+          files: target/release/sacad*.tar.gz
           token: ${{ secrets.GITHUB_TOKEN }}
 
   bin-windows-x86_64-release:
@@ -99,16 +98,10 @@ jobs:
           sudo apt update
           sudo apt install mingw-w64
       - run: cargo build --release --target x86_64-pc-windows-gnu
-        env:
-          RUSTFLAGS: "-C target-feature=+crt-static"
-      - run: sudo apt install 7zip
       - run: |
           cd target/x86_64-pc-windows-gnu/release/
           zip -9 sacad_${{ github.ref_name }}_windows_x86_64.zip sacad.exe sacad_r.exe
-          7z a -mx9 sacad_${{ github.ref_name }}_windows_x86_64.7z sacad.exe sacad_r.exe
       - uses: softprops/action-gh-release@v2
         with:
-          files: |
-            target/x86_64-pc-windows-gnu/release/sacad*.zip
-            target/x86_64-pc-windows-gnu/release/sacad*.7z
+          files: target/x86_64-pc-windows-gnu/release/sacad*.zip
           token: ${{ secrets.GITHUB_TOKEN }}
