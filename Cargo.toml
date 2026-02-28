@@ -7,7 +7,7 @@ repository = "https://github.com/desbma/sacad"
 keywords = ["cover", "art", "download", "image", "album"]
 categories = ["command-line-utilities", "multimedia::images"]
 license = "MPL-2.0"
-version = "3.0.0-beta.7"
+version = "3.0.0-beta.8"
 edition = "2024"
 rust-version = "1.91"
 
@@ -16,37 +16,37 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-anyhow = { version = "1.0.100", default-features = false, features = ["std", "backtrace"] }
+anyhow = { version = "1.0.102", default-features = false, features = ["std", "backtrace"] }
 async-channel = { version = "2.5.0", default-features = false, features = ["std"] }
 async-trait = { version = "0.1.89", default-features = false }
 backon = { version = "1.6.0", default-features = false, features = ["std", "tokio-sleep"] }
 # forked to remove bloated image dependency tree
 blockhash = { version = "1.0.0", git = "https://github.com/desbma/blockhash", branch = "sacad", default-features = false, features = ["std", "image"] }
-clap = { version = "4.5.57", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
-clap_complete = { version = "4.5.65", default-features = false, optional = true }
+clap = { version = "4.5.60", default-features = false, features = ["std", "color", "help", "usage", "error-context", "suggestions", "derive"] }
+clap_complete = { version = "4.5.66", default-features = false, optional = true }
 clap_mangen = { version = "0.2.31", default-features = false, optional = true }
 const_format = { version = "0.2.35", default-features = false }
 directories = { version = "6.0.0", default-features = false }
-futures = { version = "0.3.31", default-features = false, features = ["std"] }
-futures-util = { version = "0.3.31", default-features = false }
+futures = { version = "0.3.32", default-features = false, features = ["std"] }
+futures-util = { version = "0.3.32", default-features = false }
 heck = { version = "0.5.0", default-features = false }
 human_bytes = { version = "0.4.3", default-features = false }
 image = { version = "0.25.9", default-features = false, features = ["jpeg", "png"] }
-indicatif = { version = "0.18.3", default-features = false, features = ["improved_unicode", "unicode-width"] }
+indicatif = { version = "0.18.4", default-features = false, features = ["improved_unicode", "unicode-width"] }
 itertools = { version = "0.14.0", default-features = false, features = ["use_alloc", "use_std"] }
 lofty = { version = "0.22.4", default-features = false }
 log = { version = "0.4.29", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
 lz4_flex = { version = "0.12.0", default-features = false, features = ["std"] }
 oxipng = { version = "10.1.0", default-features = false, features = ["parallel"] }
 parking_lot = { version = "0.12.5", default-features = false }
-quick-xml = { version = "0.39.0", default-features = false, features = ["serialize"] }
+quick-xml = { version = "0.39.2", default-features = false, features = ["serialize"] }
 redb = { version = "3.1.0", default-features = false }
-reqwest = { version = "0.13.1", default-features = false, features = ["http2", "rustls", "gzip", "system-proxy", "socks", "stream"] }
+reqwest = { version = "0.13.2", default-features = false, features = ["http2", "rustls", "gzip", "system-proxy", "socks", "stream"] }
 serde = { version = "1.0.228", default-features = false, features = ["std", "derive"] }
 serde_json = { version = "1.0.149", default-features = false, features = ["std"] }
-simple_logger = { version = "5.1.0", default-features = false, features = ["colors", "stderr"] }
+simple_logger = { version = "5.2.0", default-features = false, features = ["colors", "stderr"] }
 strum = { version = "0.27.2", default-features = false, features = ["derive", "std"] }
-tempfile = { version = "3.24.0", default-features = false }
+tempfile = { version = "3.26.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false, features = ["std"] }
 tokio = { version = "1.49.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
 typed_floats = { version = "1.0.7", default-features = false, features = ["compiler_hints", "ensure_no_undefined_behavior", "std"] }

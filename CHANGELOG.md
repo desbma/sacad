@@ -1,5 +1,42 @@
 # Changelog
 
+## 3.0.0.b8 - 2026-02-28
+
+### <!-- 01 -->💡 Features
+
+- Improve command line help about verbosity ([c6f1ab1](https://github.com/desbma/sacad/commit/c6f1ab1b4e02e1bd429019e298850f57ec805972) by desbma)
+- Set default log level for third party sources to error ([f5b143d](https://github.com/desbma/sacad/commit/f5b143daf7880013408cd1971cc8f6d5daaf0c44) by desbma)
+- Man page & shell completion generation ([1937d6b](https://github.com/desbma/sacad/commit/1937d6becd7119cee60f7bab3d046fa1f3385a9f) by desbma)
+- Generate mac binaries on release + use x86_64 instead of amd64 in naming ([1b9cbcc](https://github.com/desbma/sacad/commit/1b9cbcc30374d0dbb8730d3dfde5cf81668dcfd8) by desbma)
+- Better support for various artists albums ([424d256](https://github.com/desbma/sacad/commit/424d256b5e4e9afbda2e78162e21b7192183e0fb) by desbma)
+- Improve debug logging when having no results ([f523f45](https://github.com/desbma/sacad/commit/f523f453d6d264c2e6f62bd6bc726dd945a4ded0) by desbma)
+
+### <!-- 02 -->🐛 Bug fixes
+
+- Switch to musl toolchain for Linux binaries ([a579e5d](https://github.com/desbma/sacad/commit/a579e5dfe8aa9b114881a4eef41b45749a8b7d70) by desbma)
+
+### <!-- 04 -->📗 Documentation
+
+- README: Mention release binaries ([ce4f398](https://github.com/desbma/sacad/commit/ce4f3982611abb9d9187dbf0bf95188999fe5698) by desbma)
+
+### <!-- 09 -->🤖 Continuous integration
+
+- Remove unneeded permission for cargo audit ([66a29bd](https://github.com/desbma/sacad/commit/66a29bd09bba1ae98db832aedfb9287937569508) by desbma)
+- Add msrv check ([6656bdc](https://github.com/desbma/sacad/commit/6656bdc4eafc273afdb932e58abcf62146ebfddc) by desbma)
+- Compress windows binaries with 7zip ([e7bee9a](https://github.com/desbma/sacad/commit/e7bee9a10f357ca3bdce78259cfa4221439f27a9) by desbma)
+- Update actions versions ([1e30962](https://github.com/desbma/sacad/commit/1e3096261fbc40cd762aaddcc3007da56521b3af) by desbma)
+- Build & test on Windows & MacOS ([238d688](https://github.com/desbma/sacad/commit/238d688656f7e925d42d8393bd7764f8f3cf69fd) by desbma)
+- Increase release binary compression + add zip in addition to 7zip for Windows ([81529b2](https://github.com/desbma/sacad/commit/81529b2fcc42faa39ef9162c2a738b96e8a5f0df) by desbma)
+- Run apt update before any apt install ([fbe2ec9](https://github.com/desbma/sacad/commit/fbe2ec94d270a3a9a8f09100c0a14508ee59e827) by desbma)
+- More coherent release archive names and formats ([eda802f](https://github.com/desbma/sacad/commit/eda802f180b93173f3e70baadbb2e2801f922161) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Update dependencies ([dd4c883](https://github.com/desbma/sacad/commit/dd4c8837a052c882b6304f2f5c0cf5ac431f6d13) by desbma)
+- Update AGENTS.md ([211f72f](https://github.com/desbma/sacad/commit/211f72fde5267340c1d9cc2d05a280a9d57f0a3e) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b7 - 2026-01-26
 
 ### <!-- 01 -->💡 Features
