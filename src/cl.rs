@@ -108,7 +108,7 @@ pub struct CoverOutputPattern<S>(pub S);
 /// Command line arguments related to the search query
 #[derive(Parser, Debug)]
 pub struct SearchQuery {
-    /// Artist to search for, None for various artists
+    /// Artist to search for
     #[clap(required = true)]
     pub artist: Option<String>,
     /// Album to search for
