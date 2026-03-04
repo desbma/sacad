@@ -5,6 +5,7 @@ use std::{
     fmt,
     io::Write,
     num::NonZeroUsize,
+    path::{Path, PathBuf},
     sync::{Arc, LazyLock},
     time::{Duration, Instant},
 };
@@ -54,14 +55,22 @@ pub(crate) struct SourceHttpClient {
 static SOURCE_CACHES: LazyLock<RwLock<HashMap<SourceName, (Arc<ApiCache>, Arc<ThumbnailCache>)>>> =
     LazyLock::new(RwLock::default);
 
+/// Compute the default cache directory from XDG base directories
+pub(crate) fn default_cache_dir() -> anyhow::Result<PathBuf> {
+    let dirs = directories::ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
+        .context("Unable to compute cache directory")?;
+    Ok(dirs.cache_dir().to_owned())
+}
+
 impl SourceHttpClient {
-    /// Create a new HTTP client
+    /// Create a new HTTP client with caches stored in a given base directory
     pub(crate) fn new(
         source_name: SourceName,
         ua: &str,
         timeout: Duration,
         headers: HeaderMap,
         rate_limit: Option<&RateLimit>,
+        cache_dir: &Path,
     ) -> anyhow::Result<Self> {
         let client = reqwest::Client::builder()
             .user_agent(ua)
@@ -70,36 +79,38 @@ impl SourceHttpClient {
             .build()
             .context("Failed to create HTTP client")?;
 
-        let (api_cache, thumbnail_cache) =
-            if let Some(caches) = SOURCE_CACHES.read().get(&source_name).cloned() {
-                caches
-            } else {
-                match SOURCE_CACHES.write().entry(source_name) {
-                    hash_map::Entry::Occupied(entry) => {
-                        // Another thread added the cache after our check with the read lock
-                        let (api_cache, thumbnail_cache) = entry.get();
-                        (Arc::clone(api_cache), Arc::clone(thumbnail_cache))
-                    }
-                    hash_map::Entry::Vacant(entry) => {
-                        let api_cache = Arc::new(
-                            Cache::new(source_name, source::RESPONSE_MAX_AGE).with_context(
-                                || format!("Failed to initialize {source_name} api cache"),
-                            )?,
-                        );
-                        let thumbnail_cache = Arc::new(
-                            ThumbnailCache::new(
-                                format!("{source_name}_thumbs"),
-                                cover::THUMBNAIL_MAX_AGE,
-                            )
-                            .with_context(|| {
-                                format!("Failed to initialize {source_name} thumbnail cache")
-                            })?,
-                        );
-                        entry.insert((Arc::clone(&api_cache), Arc::clone(&thumbnail_cache)));
-                        (api_cache, thumbnail_cache)
-                    }
+        let (api_cache, thumbnail_cache) = if let Some(caches) =
+            SOURCE_CACHES.read().get(&source_name).cloned()
+        {
+            caches
+        } else {
+            match SOURCE_CACHES.write().entry(source_name) {
+                hash_map::Entry::Occupied(entry) => {
+                    // Another thread added the cache after our check with the read lock
+                    let (api_cache, thumbnail_cache) = entry.get();
+                    (Arc::clone(api_cache), Arc::clone(thumbnail_cache))
                 }
-            };
+                hash_map::Entry::Vacant(entry) => {
+                    let api_cache = Arc::new(
+                        Cache::new(source_name, source::RESPONSE_MAX_AGE, cache_dir).with_context(
+                            || format!("Failed to initialize {source_name} api cache"),
+                        )?,
+                    );
+                    let thumbnail_cache = Arc::new(
+                        ThumbnailCache::new(
+                            format!("{source_name}_thumbs"),
+                            cover::THUMBNAIL_MAX_AGE,
+                            cache_dir,
+                        )
+                        .with_context(|| {
+                            format!("Failed to initialize {source_name} thumbnail cache")
+                        })?,
+                    );
+                    entry.insert((Arc::clone(&api_cache), Arc::clone(&thumbnail_cache)));
+                    (api_cache, thumbnail_cache)
+                }
+            }
+        };
 
         let rate_limit_state = match rate_limit {
             Some(RateLimit { time, max_count }) => {

@@ -124,16 +124,13 @@ const REDB_TABLE: redb::TableDefinition<&str, CacheEntryInner> =
     redb::TableDefinition::new(formatcp!("cache_v{}", INTERNAL_FORMAT_VERSION));
 
 impl<C: Compressor> Cache<C> {
-    /// Create a new cache instance in XDG cache directory
-    pub(crate) fn new<N>(name: N, max_age: Duration) -> Result<Self, CacheError>
+    /// Create a new cache instance in a given base directory
+    pub(crate) fn new<N, P>(name: N, max_age: Duration, base_dir: P) -> Result<Self, CacheError>
     where
         N: AsRef<str>,
+        P: AsRef<Path>,
     {
-        let dirs =
-            directories::ProjectDirs::from("", "", env!("CARGO_PKG_NAME")).ok_or_else(|| {
-                CacheError::File(anyhow::anyhow!("Unable to compute cache directory"))
-            })?;
-        let cache_dir = dirs.cache_dir();
+        let cache_dir = base_dir.as_ref();
         fs::create_dir_all(cache_dir)
             .with_context(|| format!("Failed to create dir {cache_dir:?}"))
             .map_err(CacheError::File)?;

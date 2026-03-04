@@ -30,6 +30,13 @@ pub mod walk;
 
 /// Search for covers from all sources
 async fn search_all_sources(query: &Arc<SearchQuery>, search: &Arc<SearchOptions>) -> Vec<Cover> {
+    let cache_dir = match http::default_cache_dir() {
+        Ok(d) => d,
+        Err(err) => {
+            log::error!("Failed to compute cache directory: {err:#}");
+            return Vec::new();
+        }
+    };
     let mut sources_searches = Vec::with_capacity(search.cover_sources.len());
     for source_name in search.cover_sources.iter().copied() {
         let source: Box<dyn Source> = (&source_name).into();
@@ -39,6 +46,7 @@ async fn search_all_sources(query: &Arc<SearchQuery>, search: &Arc<SearchOptions
             source.timeout(),
             source.common_headers(),
             source.rate_limit().as_ref(),
+            &cache_dir,
         ) {
             Ok(h) => Arc::new(h),
             Err(err) => {

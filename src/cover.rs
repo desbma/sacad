@@ -450,7 +450,17 @@ mod tests {
     }
 
     mod compare {
+        use std::sync::OnceLock;
+
         use super::*;
+
+        /// Shared transient cache directory for cover tests
+        fn test_cache_dir() -> &'static Path {
+            static TEST_CACHE_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
+            TEST_CACHE_DIR
+                .get_or_init(|| tempfile::TempDir::new().unwrap())
+                .path()
+        }
 
         fn make_cover(
             size_px: Metadata<(u32, u32)>,
@@ -471,6 +481,7 @@ mod tests {
                         Duration::from_secs(10),
                         reqwest::header::HeaderMap::new(),
                         None,
+                        test_cache_dir(),
                     )
                     .unwrap(),
                 ),
