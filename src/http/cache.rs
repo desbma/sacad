@@ -10,6 +10,7 @@ use std::{
 };
 
 use anyhow::Context as _;
+use backon::BlockingRetryable as _;
 use const_format::formatcp;
 use parking_lot::Mutex;
 use redb::ReadableDatabase as _;
@@ -148,8 +149,28 @@ impl<C: Compressor> Cache<C> {
     where
         P: AsRef<Path> + fmt::Debug,
     {
+        let open = || redb::Database::create(path.as_ref()).map_err(CacheError::from);
+        let db = open
+            .retry(
+                backon::ExponentialBuilder::default()
+                    .with_factor(2.0)
+                    .with_min_delay(Duration::from_millis(50))
+                    .with_max_delay(Duration::from_secs(1))
+                    .without_max_times()
+                    .with_total_delay(Some(Duration::from_secs(5))),
+            )
+            .when(|e| {
+                matches!(
+                    e,
+                    CacheError::Database(redb::DatabaseError::DatabaseAlreadyOpen)
+                )
+            })
+            .notify(|_, dur| {
+                log::warn!("Database locked, retrying in {}ms", dur.as_millis());
+            })
+            .call()?;
         let mut cache = Self {
-            db: redb::Database::create(path.as_ref())?,
+            db,
             compression: PhantomData::<C>,
             busy: Mutex::default(),
         };
@@ -348,6 +369,34 @@ mod tests {
 
         assert!(results.iter().all(|r| r == b"value1"));
         assert_eq!(call_count.load(Ordering::SeqCst), 1);
+    }
+
+    #[test]
+    fn concurrent_open_retry() {
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let cache1 =
+            Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap();
+
+        // Confirm that a concurrent open without retry fails with DatabaseAlreadyOpen
+        let err = redb::Database::create(temp_file.path()).unwrap_err();
+        assert!(
+            matches!(err, redb::DatabaseError::DatabaseAlreadyOpen),
+            "Expected DatabaseAlreadyOpen, got: {err:?}"
+        );
+
+        // Spawn a thread that drops the first cache after a short delay
+        let handle = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_secs(1));
+            drop(cache1);
+        });
+
+        // This should succeed thanks to retry logic
+        let cache2 =
+            Cache::<Lz4Compressor>::with_path(temp_file.path(), Duration::from_hours(1)).unwrap();
+        cache2.set("key", b"value").unwrap();
+        assert_eq!(cache2.get("key").unwrap().unwrap(), b"value");
+
+        handle.join().unwrap();
     }
 
     #[tokio::test]
