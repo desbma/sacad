@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.0.0.b9 - 2026-03-12
+
+### <!-- 01 -->💡 Features
+
+- Use separate transient caches for unit tests ([86ec086](https://github.com/desbma/sacad/commit/86ec086a7986bb03cb4452c2a8bc8d2a0b98a17f) by desbma)
+- Transparently retry if cache is locked ([a36238e](https://github.com/desbma/sacad/commit/a36238e63477b69d847d8b37732867e2b8666899) by desbma)
+
+### <!-- 04 -->📗 Documentation
+
+- README: Minor rewording ([f72bc5a](https://github.com/desbma/sacad/commit/f72bc5a633381287120cfb2cc749ca9f87c96dd1) by desbma)
+- Change misleading comment surfacing to command line help and man pages ([c1d3097](https://github.com/desbma/sacad/commit/c1d309749f4fc803cc493c9041eee8a94af4f437) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Update AGENTS.md ([66b160e](https://github.com/desbma/sacad/commit/66b160e7edefd5dbfa123d3b337063feb9130ae5) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b8 - 2026-02-28
 
 ### <!-- 01 -->💡 Features
