@@ -263,7 +263,7 @@ impl Cover {
                 ) {
                     #[expect(clippy::cast_precision_loss)]
                     Ok((size_before, size_after)) => {
-                        let size_delta = size_before.checked_sub(size_after).unwrap_or_default();
+                        let size_delta = size_before.saturating_sub(size_after);
                         log::debug!(
                             "PNG crunching saved {} bytes ({:.02}%%)",
                             size_delta,
