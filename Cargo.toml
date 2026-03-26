@@ -36,7 +36,7 @@ indicatif = { version = "0.18.4", default-features = false, features = ["improve
 itertools = { version = "0.14.0", default-features = false, features = ["use_alloc", "use_std"] }
 lofty = { version = "0.22.4", default-features = false }
 log = { version = "0.4.29", default-features = false, features = ["max_level_trace", "release_max_level_debug", "std"] }
-lz4_flex = { version = "0.12.0", default-features = false, features = ["std"] }
+lz4_flex = { version = "0.13.0", default-features = false, features = ["std"] }
 oxipng = { version = "10.1.0", default-features = false, features = ["parallel"] }
 parking_lot = { version = "0.12.5", default-features = false }
 quick-xml = { version = "0.39.2", default-features = false, features = ["serialize"] }
@@ -45,7 +45,7 @@ reqwest = { version = "0.13.2", default-features = false, features = ["http2", "
 serde = { version = "1.0.228", default-features = false, features = ["std", "derive"] }
 serde_json = { version = "1.0.149", default-features = false, features = ["std"] }
 simple_logger = { version = "5.2.0", default-features = false, features = ["colors", "stderr"] }
-strum = { version = "0.27.2", default-features = false, features = ["derive", "std"] }
+strum = { version = "0.28.0", default-features = false, features = ["derive", "std"] }
 tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false, features = ["std"] }
 tokio = { version = "1.50.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
