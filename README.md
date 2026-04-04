@@ -45,7 +45,7 @@ Windows, Mac OS, and Linux binaries are available [on GitHub](https://github.com
 ### From [`crates.io`](https://crates.io/)
 
 ```bash
-cargo install sacad --version '>=3.0.0-b.1'
+cargo install sacad
 ```
 
 ### From source

@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.0 - 2026-04-04
+
+### <!-- 09 -->🤖 Continuous integration
+
+- Update audit action ([ea361fc](https://github.com/desbma/sacad/commit/ea361fc5028e754b97d0db019a7b833be8d2fc1b) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Fix lint ([b401811](https://github.com/desbma/sacad/commit/b401811bd997c70e8b86ed81548b5232d7a4c60e) by desbma)
+- Update dependencies ([f386f53](https://github.com/desbma/sacad/commit/f386f5371fdf60750f3ff5fbd7fb874a60e21642) by desbma)
+- Bug report template ([d593e26](https://github.com/desbma/sacad/commit/d593e26c720628577fad70a8025747a8019b166f) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0.b9 - 2026-03-12
 
 ### <!-- 01 -->💡 Features
