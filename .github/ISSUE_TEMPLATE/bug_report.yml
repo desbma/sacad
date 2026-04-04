@@ -1,0 +1,81 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS Version
+      description: e.g. Ubuntu 24.04, macOS 15.2, Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: sacad-version
+    attributes:
+      label: SACAD Version
+      description: Output of `sacad --version`
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Installation Method
+      options:
+        - cargo install
+        - Pre-built binary from GitHub releases
+        - AUR package
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command Line Invocation
+      description: The exact command that exhibits the issue
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: debug-output
+    attributes:
+      label: Debug Output
+      description: Output of the same command with `-v debug` appended
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-cover
+    attributes:
+      label: Expected Cover
+      description: >
+        If the issue is about a suboptimal cover being downloaded, please provide
+        the cover you expected (as a URL or attached image) and explain why it
+        would be a better match.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might help diagnose the issue
+    validations:
+      required: false
