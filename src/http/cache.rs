@@ -150,6 +150,7 @@ impl<C: Compressor> Cache<C> {
         P: AsRef<Path> + fmt::Debug,
     {
         let open = || redb::Database::create(path.as_ref()).map_err(CacheError::from);
+        let mut total_waited = Duration::ZERO;
         let db = open
             .retry(
                 backon::ExponentialBuilder::default()
@@ -157,7 +158,7 @@ impl<C: Compressor> Cache<C> {
                     .with_min_delay(Duration::from_millis(50))
                     .with_max_delay(Duration::from_secs(1))
                     .without_max_times()
-                    .with_total_delay(Some(Duration::from_secs(5))),
+                    .with_total_delay(Some(Duration::from_secs(30))),
             )
             .when(|e| {
                 matches!(
@@ -166,7 +167,11 @@ impl<C: Compressor> Cache<C> {
                 )
             })
             .notify(|_, dur| {
-                log::warn!("Database locked, retrying in {}ms", dur.as_millis());
+                const TOTAL_WAIT_WARN_THRESHOLD: Duration = Duration::from_secs(2);
+                if total_waited >= TOTAL_WAIT_WARN_THRESHOLD {
+                    log::warn!("Database locked, retrying in {}ms", dur.as_millis());
+                }
+                total_waited += dur;
             })
             .call()?;
         let mut cache = Self {
