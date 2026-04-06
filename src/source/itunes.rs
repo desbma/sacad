@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
+use futures::future;
 use reqwest::Url;
 use strum::IntoEnumIterator as _;
 
@@ -63,7 +64,8 @@ impl Source for Itunes {
         let search_url =
             Url::parse_with_params("https://itunes.apple.com/search", url_params).unwrap();
         let resp: Response = http.get_json(search_url).await?;
-        let mut results = Vec::new();
+        // Build all candidate URLs for all matching results
+        let mut candidates = Vec::new();
         for (rank, result) in resp
             .results
             .into_iter()
@@ -79,15 +81,17 @@ impl Source for Itunes {
                 .artwork_url_60
                 .parse()
                 .with_context(|| format!("Failed to parse URL {:?}", result.artwork_url_60))?;
+            let base_url = result
+                .artwork_url_60
+                .rsplit_once('/')
+                .ok_or_else(|| anyhow::anyhow!("Unable to build cover URL"))?
+                .0;
+            let is_fuzzy = normalize(&result.collection_name) != nalbum;
             for candidate_size in [5000, 1200, 600] {
                 for candidate_format in cover::Format::iter() {
                     let candidate_url = format!(
                         "{}/{}x{}{}",
-                        result
-                            .artwork_url_60
-                            .rsplit_once('/')
-                            .ok_or_else(|| anyhow::anyhow!("Unable to build cover URL"))?
-                            .0,
+                        base_url,
                         candidate_size,
                         candidate_size,
                         match candidate_format {
@@ -97,28 +101,43 @@ impl Source for Itunes {
                     )
                     .parse::<Url>()
                     .context("Unable to build cover URL")?;
-                    log::trace!("Probing URL {candidate_url}");
-                    if http
-                        .head(candidate_url.clone())
-                        .await
-                        .with_context(|| format!("Unable to probe URL {candidate_url:?}"))?
-                    {
-                        let cover = Cover {
-                            url: candidate_url,
-                            thumbnail_url: thumbnail_url.clone(),
-                            size_px: cover::Metadata::known((candidate_size, candidate_size)),
-                            format: cover::Metadata::known(candidate_format),
-                            source_name: SourceName::Itunes,
-                            source_http: Arc::clone(http),
-                            relevance: source::Relevance {
-                                fuzzy: normalize(&result.collection_name) != nalbum,
-                                ..ITUNES_RELEVANCE
-                            },
-                            rank,
-                        };
-                        results.push(cover);
-                    }
+                    candidates.push((
+                        candidate_url,
+                        thumbnail_url.clone(),
+                        candidate_size,
+                        candidate_format,
+                        is_fuzzy,
+                        rank,
+                    ));
                 }
+            }
+        }
+
+        // Probe all candidate URLs in parallel
+        let probe_results = future::join_all(candidates.iter().map(|(url, ..)| {
+            log::trace!("Probing URL {url}");
+            http.head(url.clone())
+        }))
+        .await;
+
+        let mut results = Vec::new();
+        for (probe_result, (url, thumbnail_url, size, format, is_fuzzy, rank)) in
+            probe_results.into_iter().zip(candidates)
+        {
+            if probe_result.with_context(|| format!("Unable to probe URL {url:?}"))? {
+                results.push(Cover {
+                    url,
+                    thumbnail_url,
+                    size_px: cover::Metadata::known((size, size)),
+                    format: cover::Metadata::known(format),
+                    source_name: SourceName::Itunes,
+                    source_http: Arc::clone(http),
+                    relevance: source::Relevance {
+                        fuzzy: is_fuzzy,
+                        ..ITUNES_RELEVANCE
+                    },
+                    rank,
+                });
             }
         }
         Ok(results)
