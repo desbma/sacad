@@ -48,7 +48,7 @@ simple_logger = { version = "5.2.0", default-features = false, features = ["colo
 strum = { version = "0.28.0", default-features = false, features = ["derive", "std"] }
 tempfile = { version = "3.27.0", default-features = false }
 thiserror = { version = "2.0.18", default-features = false, features = ["std"] }
-tokio = { version = "1.51.0", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
+tokio = { version = "1.51.1", default-features = false, features = ["rt-multi-thread", "macros", "sync", "parking_lot"] }
 typed_floats = { version = "1.0.7", default-features = false, features = ["compiler_hints", "ensure_no_undefined_behavior", "std"] }
 unicode-normalization = { version = "0.1.25", default-features = false, features = ["std"] }
 
