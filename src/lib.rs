@@ -127,7 +127,6 @@ async fn find_reference_hash(results: &[Cover]) -> Option<PerceptualHash> {
 
 /// Compute perceptual hashes for all covers
 async fn compute_perceptual_hashes(results: &[Cover]) -> HashMap<CoverKey, PerceptualHash> {
-    #[expect(clippy::redundant_iter_cloned)]
     futures::future::join_all(results.iter().cloned().map(|cover| {
         tokio::spawn(async move {
             let hash = cover

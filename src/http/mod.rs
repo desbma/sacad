@@ -170,7 +170,7 @@ impl SourceHttpClient {
         let response = self
             .client
             .get(url)
-            .timeout(Duration::from_secs(60))
+            .timeout(Duration::from_mins(1))
             .send()
             .await?;
 
