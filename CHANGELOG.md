@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.1 - 2026-04-30
+
+### <!-- 01 -->💡 Features
+
+- Increase cache lock retry timeout and silence initial log warnings ([15e483a](https://github.com/desbma/sacad/commit/15e483aaf744bfa572eebca57c29e1ce85dd0552) by desbma)
+- itunes: Probe candidate URLs in parallel ([ac5b8b6](https://github.com/desbma/sacad/commit/ac5b8b675d9e259f4d0f73e3830cabae683e3555) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Update dependencies ([7184f00](https://github.com/desbma/sacad/commit/7184f00ac3e3e2779dfbae90f5a10ad4a5f46010) by desbma)
+- Lint ([9fb96aa](https://github.com/desbma/sacad/commit/9fb96aadd9f221954eb5bcfa45a3c929bb5635ac) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.0 - 2026-04-04
 
 ### <!-- 09 -->🤖 Continuous integration
