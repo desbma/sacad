@@ -168,6 +168,24 @@ mod tests {
         album: Option<&str>,
         png_cover: Option<&[u8]>,
     ) -> tempfile::NamedTempFile {
+        generate_audio_file_with_album_key(
+            extension,
+            artist,
+            album_artist,
+            "album",
+            album,
+            png_cover,
+        )
+    }
+
+    fn generate_audio_file_with_album_key(
+        extension: &str,
+        artist: Option<&str>,
+        album_artist: Option<&str>,
+        album_key: &str,
+        album: Option<&str>,
+        png_cover: Option<&[u8]>,
+    ) -> tempfile::NamedTempFile {
         let audio_file = tempfile::Builder::new()
             .suffix(&format!(".{extension}"))
             .tempfile()
@@ -222,7 +240,7 @@ mod tests {
 
         if let Some(album) = album {
             cmd.arg("-metadata");
-            cmd.arg(format!("album={album}"));
+            cmd.arg(format!("{album_key}={album}"));
         }
 
         cmd.arg("-y");
@@ -289,6 +307,21 @@ mod tests {
             let tags = read_metadata(&[file], false).unwrap();
             assert_eq!(tags.artist.unwrap(), "FLAC Artist");
             assert_eq!(tags.album, "FLAC Album");
+        }
+    }
+
+    ffmpeg_test! {
+        fn ogg_vorbis_with_underscore_album_tag() {
+            let file = generate_audio_file_with_album_key(
+                "ogg",
+                Some("Test Artist"),
+                None,
+                "_ALBUM",
+                Some("Test Album"),
+                None,
+            );
+            let tags = read_metadata(&[file], false).unwrap();
+            assert_eq!(tags.album, "Test Album");
         }
     }
 
