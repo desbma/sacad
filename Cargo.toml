@@ -16,7 +16,7 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-anyhow = { version = "1.0.102", default-features = false, features = ["std", "backtrace"] }
+anyhow = { version = "1.0.103", default-features = false, features = ["std", "backtrace"] }
 async-channel = { version = "2.5.0", default-features = false, features = ["std"] }
 async-trait = { version = "0.1.89", default-features = false }
 backon = { version = "1.6.0", default-features = false, features = ["std", "std-blocking-sleep", "tokio-sleep"] }
@@ -39,7 +39,7 @@ log = { version = "0.4.33", default-features = false, features = ["max_level_tra
 lz4_flex = { version = "0.13.1", default-features = false, features = ["std"] }
 oxipng = { version = "10.1.1", default-features = false, features = ["parallel"] }
 parking_lot = { version = "0.12.5", default-features = false }
-quick-xml = { version = "0.40.1", default-features = false, features = ["serialize"] }
+quick-xml = { version = "0.41.0", default-features = false, features = ["serialize"] }
 redb = { version = "4.1.0", default-features = false }
 reqwest = { version = "0.13.4", default-features = false, features = ["http2", "rustls", "gzip", "system-proxy", "socks", "stream"] }
 serde = { version = "1.0.228", default-features = false, features = ["std", "derive"] }
