@@ -6,17 +6,20 @@ use clap::{CommandFactory, ValueEnum as _};
 use clap_complete::Shell;
 
 /// Generate man pages into the target directory
-pub fn generate_man_pages<C: CommandFactory>(name: &'static str, dir: &Path) -> anyhow::Result<()> {
+pub fn generate_man_pages<C>(name: &'static str, dir: &Path) -> anyhow::Result<()>
+where
+    C: CommandFactory,
+{
     let cmd = C::command().name(name);
     clap_mangen::generate_to(cmd, dir)?;
     Ok(())
 }
 
 /// Generate all shell completions into the target directory
-pub fn generate_shell_completions<C: CommandFactory>(
-    name: &'static str,
-    dir: &Path,
-) -> anyhow::Result<()> {
+pub fn generate_shell_completions<C>(name: &'static str, dir: &Path) -> anyhow::Result<()>
+where
+    C: CommandFactory,
+{
     let mut cmd = C::command().name(name);
     for shell in Shell::value_variants() {
         clap_complete::generate_to(*shell, &mut cmd, name, dir)?;
