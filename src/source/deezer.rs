@@ -82,7 +82,8 @@ impl Source for Deezer {
         let nartist = artist.map(normalize);
         let nalbum = normalize(album);
         let query = if let Some(nartist) = &nartist {
-            format!("artist:\"{nartist}\" album:\"{nalbum}\"")
+            // Deezer returns no results when the artist field is combined with any other field
+            format!("{nartist} album:\"{nalbum}\"")
         } else {
             format!("album:\"{nalbum}\"")
         };
