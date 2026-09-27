@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.0.2 - 2026-09-27
+
+### <!-- 02 -->🐛 Bug fixes
+
+- Deezer source returning no results ([259beba](https://github.com/desbma/sacad/commit/259bebae3d86ecc28019f99ae3d2c5b2573b148e) by desbma)
+
+### <!-- 09 -->🤖 Continuous integration
+
+- Pin gh actions versions with hash ([5af28b6](https://github.com/desbma/sacad/commit/5af28b6d7a7552e9184f43558981795f40c214db) by desbma)
+- Update actions ([2117283](https://github.com/desbma/sacad/commit/211728381efa9132a32cbbf66c642be831524999) by desbma)
+- Update action versions ([efd8994](https://github.com/desbma/sacad/commit/efd8994573030b70c92f927b079756fd0cf4c232) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Remove pre-commit hooks ([5ec567e](https://github.com/desbma/sacad/commit/5ec567e206bd7159c576be7d1c8b968a24416dc7) by desbma)
+- Update AGENTS.md ([7b91ebc](https://github.com/desbma/sacad/commit/7b91ebcd65692ff3953b5c897f037a1fe551d403) by desbma)
+- Update dependencies ([cda884b](https://github.com/desbma/sacad/commit/cda884bf7be5c12d34935cbc729b621772f9a580) by desbma)
+- Update lints ([e3f0512](https://github.com/desbma/sacad/commit/e3f0512aa4a9afa0e3e8ee66a1d2dc95e606f54e) by desbma)
+- Update dependencies ([3a1da62](https://github.com/desbma/sacad/commit/3a1da622e0aa53ca11575b4b4f1a76e9a11f08a0) by desbma)
+- Update lints ([008fcb8](https://github.com/desbma/sacad/commit/008fcb881ccce47bb6501b65471733b589f07763) by desbma)
+- Bump crossbeam-epoch version ([1a12c28](https://github.com/desbma/sacad/commit/1a12c2865f08643ebf2283efbf029975a765d21f) by desbma)
+- Update dependencies ([a2a64dc](https://github.com/desbma/sacad/commit/a2a64dc80e7c4c9e6575e9967a1f089984f646ce) by desbma)
+- Update dependencies ([640b6af](https://github.com/desbma/sacad/commit/640b6af837f087ec808b7603cfb1940fe8241ed5) by desbma)
+- Update dependencies ([af9a21b](https://github.com/desbma/sacad/commit/af9a21b70845c96b532f0de5ddc0b709d2d48c6f) by desbma)
+- Update dependencies ([5f08311](https://github.com/desbma/sacad/commit/5f0831117b79583dd77c6f0cf34ef4e17f040d5e) by desbma)
+- Update AGENTS.md ([5aa4a59](https://github.com/desbma/sacad/commit/5aa4a5960e29b990af13d74b6556a1325edbea0f) by desbma)
+- Update lints ([a64fe00](https://github.com/desbma/sacad/commit/a64fe00feef02b7885898f4d2f171ed9ce82cf93) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.1 - 2026-04-30
 
 ### <!-- 01 -->💡 Features
