@@ -79,7 +79,7 @@ src/
   - Do not add custom messages to `assert!`/`assert_eq!`/`assert_ne!` — the test name is sufficient
   - Prefer full type comparisons with `assert_eq!` over selectively checking nested attributes or unpacking; tag types with `#[cfg_attr(test, derive(Eq, PartialEq))]` if needed
   - Do not add section-separator comments (e.g., `// --- Some Section ---`) in test modules — test names are descriptive enough
-- Comments:
+- Comments (including doc comments):
   - Documentation required: every module and item must have a doc comment (`//!` or `///`); `missing_docs` is warned
   - Keep comments concise: prefer a short summary over restating implementation details, only mention exceptional cases when they affect behavior, and are not already conveyed by the types used, function signature, or code just below
   - Comments do not end with a dot, unless it separates sentences
