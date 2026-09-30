@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use clap::Parser;
+use clap::{Parser, value_parser};
 use strum::VariantArray as _;
 
 /// Command line arguments for `sacad` binary
@@ -122,7 +122,12 @@ pub struct SearchOptions {
     pub size: u32,
     /// Tolerate this percentage of size difference with the target size.
     /// Note that covers with size above or close to the target size will still be preferred if available
-    #[clap(short = 't', long = "size-tolerance", default_value_t = 25)]
+    #[clap(
+        short = 't',
+        long = "size-tolerance",
+        default_value_t = 25,
+        value_parser = value_parser!(u32).range(..=100)
+    )]
     pub size_tolerance_prct: u32,
     /// Cover sources to use, if not set use all of them.
     /// Use multiple times to search from several sources.
@@ -178,7 +183,7 @@ pub enum SourceName {
 
 #[cfg(test)]
 mod tests {
-    use clap::CommandFactory as _;
+    use clap::{CommandFactory as _, error::ErrorKind};
 
     use super::*;
 
@@ -206,6 +211,15 @@ mod tests {
     fn default_log_level() {
         let args = SacadArgs::parse_from(["sacad", "artist", "album", "600", "c.jpg"]);
         assert!(matches!(args.verbosity, Verbosity::Info));
+    }
+
+    #[test]
+    fn size_tolerance_max_100() {
+        let parse = |tolerance| {
+            SacadArgs::try_parse_from(["sacad", "-t", tolerance, "artist", "album", "600", "c.jpg"])
+        };
+        assert_eq!(parse("100").unwrap().search_opts.size_tolerance_prct, 100);
+        assert_eq!(parse("101").unwrap_err().kind(), ErrorKind::ValueValidation);
     }
 
     #[test]
