@@ -1,7 +1,7 @@
 //! Cover
 
 use std::{
-    cmp::{self, Ord as _, max},
+    cmp::{self, Ord as _, max, min},
     collections::HashMap,
     fmt,
     fs::File,
@@ -320,21 +320,28 @@ pub(crate) enum CompareMode<'a> {
     },
 }
 
+/// Width of the aspect ratio deviation bands in which covers rank as equally square
+const RATIO_DEVIATION_BAND_WIDTH: f64 = 0.15;
+
+/// Compute how far an image size is from square, as its long side divided by its short side minus one
+#[expect(clippy::unwrap_used)]
+fn aspect_ratio_deviation((width, height): (u32, u32)) -> PositiveFinite<f64> {
+    PositiveFinite::<f64>::try_from(
+        f64::from(max(width, height)) / f64::from(min(width, height)) - 1.0,
+    )
+    .unwrap()
+}
+
 /// Compare two covers
 pub(crate) fn compare(a: &Cover, b: &Cover, mode: &CompareMode) -> cmp::Ordering {
-    // Prefer square covers
-    #[expect(clippy::unwrap_used)]
-    let ratio_a = PositiveFinite::<f64>::try_from(
-        (f64::from(a.size_px.value_hint().0) / f64::from(a.size_px.value_hint().1) - 1.0).abs(),
-    )
-    .unwrap();
-    #[expect(clippy::unwrap_used)]
-    let ratio_b = PositiveFinite::<f64>::try_from(
-        (f64::from(b.size_px.value_hint().0) / f64::from(b.size_px.value_hint().1) - 1.0).abs(),
-    )
-    .unwrap();
-    if (ratio_a - ratio_b).abs() > 0.15 {
-        return ratio_b.cmp(&ratio_a);
+    // Prefer square covers, unless both are in the same aspect ratio deviation band
+    let deviation_a = aspect_ratio_deviation(*a.size_px.value_hint());
+    let deviation_b = aspect_ratio_deviation(*b.size_px.value_hint());
+    let band =
+        |deviation: PositiveFinite<f64>| (deviation.get() / RATIO_DEVIATION_BAND_WIDTH).floor();
+    let band_ordering = band(deviation_b).total_cmp(&band(deviation_a));
+    if band_ordering.is_ne() {
+        return band_ordering;
     }
 
     let avg_size_a = u32::midpoint(a.size_px.value_hint().0, a.size_px.value_hint().1);
@@ -413,7 +420,7 @@ pub(crate) fn compare(a: &Cover, b: &Cover, mode: &CompareMode) -> cmp::Ordering
     }
 
     // Prefer exactly square covers
-    ratio_b.cmp(&ratio_a)
+    deviation_b.cmp(&deviation_a)
 }
 
 #[cfg(test)]
@@ -451,6 +458,8 @@ mod tests {
 
     mod compare {
         use std::sync::OnceLock;
+
+        use itertools::iproduct;
 
         use super::*;
 
@@ -543,6 +552,26 @@ mod tests {
             assert_eq!(
                 compare(&a, &b, &CompareMode::Reference),
                 cmp::Ordering::Greater
+            );
+        }
+
+        #[test]
+        fn squareness_ignores_orientation() {
+            let portrait = make_cover(
+                Metadata::known((400, 800)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            let landscape = make_cover(
+                Metadata::known((800, 400)),
+                Metadata::known(Format::Jpeg),
+                default_relevance(),
+                1,
+            );
+            assert_eq!(
+                compare(&portrait, &landscape, &CompareMode::Reference),
+                cmp::Ordering::Equal
             );
         }
 
@@ -1012,6 +1041,46 @@ mod tests {
                 reference: &None,
             };
             assert_eq!(compare(&a, &b, &mode), cmp::Ordering::Greater);
+        }
+
+        #[test]
+        fn transitive() {
+            let sizes = [
+                (300, 300),
+                (330, 300),
+                (600, 600),
+                (630, 600),
+                (660, 600),
+                (690, 600),
+                (720, 600),
+                (900, 600),
+                (1200, 600),
+                (600, 720),
+            ];
+            let covers: Vec<Cover> = iproduct!(sizes, 1..=3, [Format::Jpeg, Format::Png])
+                .map(|(size, rank, format)| {
+                    make_cover(
+                        Metadata::known(size),
+                        Metadata::known(format),
+                        default_relevance(),
+                        rank,
+                    )
+                })
+                .collect();
+            let opts = make_search_opts(600);
+            for mode in [
+                CompareMode::Reference,
+                CompareMode::Search {
+                    search_opts: &opts,
+                    reference: &None,
+                },
+            ] {
+                for (a, b, c) in iproduct!(&covers, &covers, &covers) {
+                    if compare(a, b, &mode).is_le() && compare(b, c, &mode).is_le() {
+                        assert!(compare(a, c, &mode).is_le());
+                    }
+                }
+            }
         }
     }
 }
