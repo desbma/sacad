@@ -171,7 +171,7 @@ impl Cover {
         self,
         output: &Path,
         image_proc: &ImageProcessingArgs,
-        seach_opts: &SearchOptions,
+        search_opts: &SearchOptions,
     ) -> anyhow::Result<()> {
         log::debug!("Downloading {self}");
 
@@ -189,26 +189,27 @@ impl Cover {
         let cover_format = match self.format {
             Metadata::Known(f) => f,
             Metadata::Uncertain(uf) => {
-                let mut reader = BufReader::new(tmp_file);
-                let f = Format::from_reader(&mut reader).unwrap_or(uf);
-                tmp_file = reader.into_inner();
+                let f = Format::from_reader(BufReader::new(&mut tmp_file)).unwrap_or(uf);
                 tmp_file.rewind()?;
                 f
             }
         };
 
         // Get size if unsure
-        let size_px = match self.size_px {
+        let (width, height) = match self.size_px {
             Metadata::Known(f) => f,
             Metadata::Uncertain(_) => {
-                let mut reader = BufReader::new(tmp_file);
-                let img = image::load(&mut reader, cover_format.to_image_format())?;
-                tmp_file = reader.into_inner();
+                let reader = BufReader::new(&mut tmp_file);
+                let img = image::load(reader, cover_format.to_image_format())?;
                 tmp_file.rewind()?;
                 img.dimensions()
             }
         };
-        let max_size = max(size_px.0, size_px.1);
+        anyhow::ensure!(
+            search_opts.matches_min_size(min(width, height)),
+            "Cover {url} is smaller than expected ({width}x{height})",
+            url = self.url
+        );
 
         let output_format = output
             .extension()
@@ -222,7 +223,7 @@ impl Cover {
             });
 
         let need_format_change = (cover_format != output_format) && !image_proc.preserve_format;
-        let need_resize = !seach_opts.matches_max_size(max_size);
+        let need_resize = !search_opts.matches_max_size(max(width, height));
 
         let output_filepath =
             if !need_resize && (cover_format != output_format) && image_proc.preserve_format {
@@ -238,8 +239,8 @@ impl Cover {
             let mut img = image::load(reader, cover_format.to_image_format())?;
             if need_resize {
                 img = img.resize(
-                    seach_opts.size,
-                    seach_opts.size,
+                    search_opts.size,
+                    search_opts.size,
                     image::imageops::FilterType::Lanczos3,
                 );
                 // TODO unsharp?
@@ -426,6 +427,38 @@ pub(crate) fn compare(a: &Cover, b: &Cover, mode: &CompareMode) -> cmp::Ordering
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::source::tests::TEST_CACHE_DIR;
+
+    fn make_cover(size_px: (u32, u32), format: Format) -> Cover {
+        Cover {
+            url: reqwest::Url::parse("https://example.com/cover.jpg").unwrap(),
+            thumbnail_url: reqwest::Url::parse("https://example.com/thumb.jpg").unwrap(),
+            size_px: Metadata::known(size_px),
+            format: Metadata::known(format),
+            source_name: SourceName::Deezer,
+            source_http: Arc::new(
+                http::SourceHttpClient::new(
+                    SourceName::Deezer,
+                    http::USER_AGENT,
+                    Duration::from_secs(10),
+                    reqwest::header::HeaderMap::new(),
+                    None,
+                    TEST_CACHE_DIR.path(),
+                )
+                .unwrap(),
+            ),
+            relevance: Relevance::best(),
+            rank: 1,
+        }
+    }
+
+    fn make_search_opts(size: u32) -> SearchOptions {
+        SearchOptions {
+            size,
+            size_tolerance_prct: 25,
+            cover_sources: vec![SourceName::Deezer],
+        }
+    }
 
     #[tokio::test]
     async fn perceptual_hash() {
@@ -457,50 +490,9 @@ mod tests {
     }
 
     mod compare {
-        use std::sync::OnceLock;
-
         use itertools::iproduct;
 
         use super::*;
-
-        /// Shared transient cache directory for cover tests
-        fn test_cache_dir() -> &'static Path {
-            static TEST_CACHE_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
-            TEST_CACHE_DIR
-                .get_or_init(|| tempfile::TempDir::new().unwrap())
-                .path()
-        }
-
-        fn make_cover(size_px: (u32, u32), format: Format) -> Cover {
-            Cover {
-                url: reqwest::Url::parse("https://example.com/cover.jpg").unwrap(),
-                thumbnail_url: reqwest::Url::parse("https://example.com/thumb.jpg").unwrap(),
-                size_px: Metadata::known(size_px),
-                format: Metadata::known(format),
-                source_name: SourceName::Deezer,
-                source_http: Arc::new(
-                    http::SourceHttpClient::new(
-                        SourceName::Deezer,
-                        http::USER_AGENT,
-                        Duration::from_secs(10),
-                        reqwest::header::HeaderMap::new(),
-                        None,
-                        test_cache_dir(),
-                    )
-                    .unwrap(),
-                ),
-                relevance: Relevance::best(),
-                rank: 1,
-            }
-        }
-
-        fn make_search_opts(size: u32) -> SearchOptions {
-            SearchOptions {
-                size,
-                size_tolerance_prct: 25,
-                cover_sources: vec![SourceName::Deezer],
-            }
-        }
 
         /// Assert that `compare` prefers the first cover over the second, in both argument orders
         #[track_caller]
@@ -812,6 +804,56 @@ mod tests {
                     }
                 }
             }
+        }
+    }
+
+    mod download {
+        use std::{io::Write as _, net::TcpListener, thread};
+
+        use super::*;
+
+        /// Serve `body` to a single HTTP request, and return its URL
+        fn serve(body: Vec<u8>) -> reqwest::Url {
+            let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+            let address = listener.local_addr().unwrap();
+            thread::spawn(move || {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut reader = BufReader::new(&stream);
+                while reader.skip_until(b'\n').unwrap() > 2 {}
+                let len = body.len();
+                write!(stream, "HTTP/1.1 200 OK\r\nContent-Length: {len}\r\n\r\n").unwrap();
+                stream.write_all(&body).unwrap();
+            });
+            format!("http://{address}/cover.jpg").parse().unwrap()
+        }
+
+        #[tokio::test]
+        async fn reject_below_min_size() {
+            let mut jpeg = io::Cursor::new(Vec::new());
+            image::RgbImage::new(800, 300)
+                .write_to(&mut jpeg, image::ImageFormat::Jpeg)
+                .unwrap();
+            let url = serve(jpeg.into_inner());
+            let expected = format!("Cover {url} is smaller than expected (800x300)");
+            let cover = Cover {
+                url,
+                size_px: Metadata::uncertain((600, 600)),
+                ..make_cover((600, 600), Format::Jpeg)
+            };
+            let output_dir = tempfile::tempdir().unwrap();
+
+            let err = cover
+                .download(
+                    &output_dir.path().join("cover.jpg"),
+                    &ImageProcessingArgs {
+                        preserve_format: false,
+                    },
+                    &make_search_opts(600),
+                )
+                .await
+                .unwrap_err();
+
+            assert_eq!(err.to_string(), expected);
         }
     }
 }

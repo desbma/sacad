@@ -184,17 +184,13 @@ where
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::{path::Path, sync::OnceLock};
+    use std::sync::LazyLock;
 
     use super::*;
 
-    /// Shared transient cache directory for all source tests
-    fn test_cache_dir() -> &'static Path {
-        static TEST_CACHE_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
-        TEST_CACHE_DIR
-            .get_or_init(|| tempfile::TempDir::new().unwrap())
-            .path()
-    }
+    /// Shared transient cache directory for tests
+    pub(crate) static TEST_CACHE_DIR: LazyLock<tempfile::TempDir> =
+        LazyLock::new(|| tempfile::tempdir().unwrap());
 
     #[test]
     fn normalize() {
@@ -212,7 +208,7 @@ pub(crate) mod tests {
                 source.timeout(),
                 source.common_headers(),
                 source.rate_limit().as_ref(),
-                test_cache_dir(),
+                TEST_CACHE_DIR.path(),
             )
             .unwrap(),
         );
@@ -243,7 +239,7 @@ pub(crate) mod tests {
                 source.timeout(),
                 source.common_headers(),
                 source.rate_limit().as_ref(),
-                test_cache_dir(),
+                TEST_CACHE_DIR.path(),
             )
             .unwrap(),
         );
@@ -267,7 +263,7 @@ pub(crate) mod tests {
                 source.timeout(),
                 source.common_headers(),
                 source.rate_limit().as_ref(),
-                test_cache_dir(),
+                TEST_CACHE_DIR.path(),
             )
             .unwrap(),
         );
