@@ -13,7 +13,7 @@ use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
     http::SourceHttpClient,
-    source::{self, RateLimit, Source, normalize},
+    source::{self, RateLimit, Source, normalize, query_phrase},
 };
 
 /// Cover Art Archive cover source
@@ -134,10 +134,14 @@ impl CoverArtArchive {
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<MusicBrainzRelease>> {
         // https://musicbrainz.org/doc/MusicBrainz_API/Search#Release
+        let album_phrase = query_phrase(album);
         let query = if let Some(artist) = artist {
-            format!("artist:\"{artist}\" AND release:\"{album}\"")
+            format!(
+                "artist:{artist_phrase} AND release:{album_phrase}",
+                artist_phrase = query_phrase(artist)
+            )
         } else {
-            format!("release:\"{album}\"")
+            format!("release:{album_phrase}")
         };
         // Note: set a low result limit because following requests are slow due to rate limit
         // Note: pagination is also available
@@ -258,7 +262,7 @@ mod tests {
     use super::*;
     use crate::source::tests::{
         source_has_results, source_has_results_compilation, source_has_results_korean,
-        source_no_results,
+        source_no_results, test_http,
     };
 
     #[tokio::test]
@@ -280,6 +284,23 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = CoverArtArchive;
         source_has_results_korean(source, SourceName::CoverArtArchive).await;
+    }
+
+    #[tokio::test]
+    async fn releases_quoted_album() {
+        let _ = simple_logger::init_with_env();
+        let source = CoverArtArchive;
+        let mut http = test_http(&source, SourceName::CoverArtArchive);
+        let releases = source
+            .musicbrainz_releases(
+                Some("Buddy Holly & The Crickets"),
+                "The \"Chirping\" Crickets",
+                &mut http,
+            )
+            .await
+            .unwrap();
+        assert!(!releases.is_empty());
+        assert!(releases.iter().all(|r| r.title.contains("Chirping")));
     }
 
     #[tokio::test]

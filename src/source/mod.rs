@@ -170,6 +170,12 @@ where
         .collect()
 }
 
+/// Quote string as a search query phrase, escaping quotes and backslashes
+fn query_phrase(s: &str) -> String {
+    let escaped = s.replace('\\', r"\\").replace('"', r#"\""#);
+    format!("\"{escaped}\"")
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use std::sync::LazyLock;
@@ -187,6 +193,14 @@ pub(crate) mod tests {
         assert_ne!(super::normalize("कला"), super::normalize("कल"));
         assert_ne!(super::normalize("が"), super::normalize("か"));
         assert_eq!(super::normalize("JE\u{301}"), "je");
+    }
+
+    #[test]
+    fn query_phrase() {
+        assert_eq!(
+            super::query_phrase(r#"The 12" \o/\"#),
+            r#""The 12\" \\o/\\""#
+        );
     }
 
     /// Build an HTTP client with the source settings and the shared test cache

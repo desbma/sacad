@@ -10,7 +10,7 @@ use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
     http::SourceHttpClient,
-    source::{self, Source, normalize},
+    source::{self, Source, normalize, query_phrase},
 };
 
 /// Deezer cover source
@@ -81,11 +81,12 @@ impl Source for Deezer {
     ) -> anyhow::Result<Vec<Cover>> {
         let nartist = artist.map(normalize);
         let nalbum = normalize(album);
+        let album_phrase = query_phrase(album);
         let query = if let Some(artist) = artist {
             // Deezer returns no results when the artist field is combined with any other field
-            format!("{artist} album:\"{album}\"")
+            format!("{artist} album:{album_phrase}")
         } else {
-            format!("album:\"{album}\"")
+            format!("album:{album_phrase}")
         };
         let url_params = [("q", query.as_str()), ("order", "RANKING")];
 
@@ -146,7 +147,7 @@ mod tests {
     use super::*;
     use crate::source::tests::{
         source_has_results, source_has_results_compilation, source_has_results_korean,
-        source_no_results,
+        source_no_results, test_http,
     };
 
     #[tokio::test]
@@ -168,6 +169,25 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = Deezer;
         source_has_results_korean(source, SourceName::Deezer).await;
+    }
+
+    #[tokio::test]
+    async fn has_exact_result_quoted_album() {
+        let _ = simple_logger::init_with_env();
+        let source = Deezer;
+        let mut http = test_http(&source, SourceName::Deezer);
+        assert!(
+            source
+                .search(
+                    Some("B.B. King"),
+                    "Live \"Now Appearing\" At Ole Miss",
+                    &mut http
+                )
+                .await
+                .unwrap()
+                .iter()
+                .any(|c| c.relevance.is_reference()),
+        );
     }
 
     #[tokio::test]
