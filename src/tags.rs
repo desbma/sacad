@@ -69,8 +69,9 @@ where
         if let Some(tag_type) = usable_tag_type(&file) {
             let tags = file.tag(tag_type)?;
             let has_embedded_cover = probe_embedded_cover.then(|| {
-                tags.pictures()
+                file.tags()
                     .iter()
+                    .flat_map(tag::Tag::pictures)
                     .any(|p| p.pic_type() == picture::PictureType::CoverFront)
             });
             let (tag_artist, artist_key) = extract_tag(tags, &ARTIST_KEYS)?;
@@ -98,7 +99,7 @@ fn is_various_artist(artist: &str) -> bool {
     VARIOUS_ARTISTS.contains(artist.to_lowercase().as_str())
 }
 
-/// Embed front cover into all given files
+/// Embed front cover into the primary tag of all given files, creating the tag if missing
 pub fn embed_cover(img_path: &Path, audio_filepaths: Vec<PathBuf>) -> anyhow::Result<()> {
     let mut img_file = fs::File::open(img_path)
         .with_context(|| format!("Failed to read image from {img_path:?}"))?;
@@ -109,15 +110,16 @@ pub fn embed_cover(img_path: &Path, audio_filepaths: Vec<PathBuf>) -> anyhow::Re
     for audio_filepath in audio_filepaths {
         let mut file = lofty::read_from_path(&audio_filepath)
             .with_context(|| format!("Failed to load tags from {audio_filepath:?}"))?;
-        if let Some(tag_type) = usable_tag_type(&file) {
-            let tags = file
-                .tag_mut(tag_type)
-                .ok_or_else(|| anyhow::anyhow!("Tags have disappeared from {audio_filepath:?}"))?;
-            tags.remove_picture_type(picture::PictureType::CoverFront);
-            tags.push_picture(picture.clone());
-            file.save_to_path(&audio_filepath, lofty::config::WriteOptions::default())
-                .with_context(|| format!("Failed to write tags to {audio_filepath:?}"))?;
+        if file.primary_tag().is_none() {
+            file.insert_tag(tag::Tag::new(file.primary_tag_type()));
         }
+        let tags = file
+            .primary_tag_mut()
+            .ok_or_else(|| anyhow::anyhow!("Unable to add tags to {audio_filepath:?}"))?;
+        tags.remove_picture_type(picture::PictureType::CoverFront);
+        tags.push_picture(picture.clone());
+        file.save_to_path(&audio_filepath, lofty::config::WriteOptions::default())
+            .with_context(|| format!("Failed to write tags to {audio_filepath:?}"))?;
     }
 
     Ok(())
@@ -131,6 +133,8 @@ mod tests {
         process::{Command, Stdio},
         sync::LazyLock,
     };
+
+    use lofty::tag::TagExt as _;
 
     use super::*;
 
@@ -431,6 +435,26 @@ mod tests {
     }
 
     ffmpeg_test! {
+        fn embedded_cover_in_secondary_tag() {
+            let audio_file = generate_audio_file("flac", Some("Artist"), None, Some("Album"), None);
+            let mut cover = picture::Picture::from_reader(&mut TEST_COVER_PNG.as_slice()).unwrap();
+            cover.set_pic_type(picture::PictureType::CoverFront);
+            let mut id3v2_tags = tag::Tag::new(tag::TagType::Id3v2);
+            id3v2_tags.push_picture(cover);
+            // lofty does not write ID3v2 tags into FLAC files, so prepend it manually
+            let mut data = Vec::new();
+            id3v2_tags
+                .dump_to(&mut data, lofty::config::WriteOptions::default())
+                .unwrap();
+            data.extend(fs::read(audio_file.path()).unwrap());
+            fs::write(audio_file.path(), data).unwrap();
+
+            let tags = read_metadata(&[audio_file], true).unwrap();
+            assert_eq!(tags.has_embedded_cover, Some(true));
+        }
+    }
+
+    ffmpeg_test! {
         fn no_embedded_cover_probe() {
             let file = generate_audio_file(
                 "mp3",
@@ -563,51 +587,59 @@ mod tests {
         cover_file
     }
 
+    fn assert_embed_cover_round_trip(extension: &str) {
+        let audio_file = generate_audio_file(extension, Some("Artist"), None, Some("Album"), None);
+        let audio_path = audio_file.path().to_path_buf();
+
+        let tags_before = read_metadata(&[&audio_path], true).unwrap();
+        assert_eq!(tags_before.has_embedded_cover, Some(false));
+
+        let cover_file = write_test_cover_to_file();
+        embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+
+        let tags_after = read_metadata(&[&audio_path], true).unwrap();
+        assert_eq!(tags_after.has_embedded_cover, Some(true));
+    }
+
     ffmpeg_test! {
         fn embed_cover_mp3() {
-            let audio_file = generate_audio_file("mp3", Some("Artist"), None, Some("Album"), None);
-            let audio_path = audio_file.path().to_path_buf();
-
-            let tags_before = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_before.has_embedded_cover, Some(false));
-
-            let cover_file = write_test_cover_to_file();
-            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
-
-            let tags_after = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_after.has_embedded_cover, Some(true));
+            assert_embed_cover_round_trip("mp3");
         }
     }
 
     ffmpeg_test! {
         fn embed_cover_flac() {
-            let audio_file = generate_audio_file("flac", Some("Artist"), None, Some("Album"), None);
-            let audio_path = audio_file.path().to_path_buf();
-
-            let tags_before = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_before.has_embedded_cover, Some(false));
-
-            let cover_file = write_test_cover_to_file();
-            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
-
-            let tags_after = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_after.has_embedded_cover, Some(true));
+            assert_embed_cover_round_trip("flac");
         }
     }
 
     ffmpeg_test! {
         fn embed_cover_ogg() {
-            let audio_file = generate_audio_file("ogg", Some("Artist"), None, Some("Album"), None);
-            let audio_path = audio_file.path().to_path_buf();
+            assert_embed_cover_round_trip("ogg");
+        }
+    }
 
-            let tags_before = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_before.has_embedded_cover, Some(false));
+    ffmpeg_test! {
+        fn embed_cover_file_without_artist() {
+            let audio_file = generate_audio_file("ogg", None, None, Some("Album"), None);
 
             let cover_file = write_test_cover_to_file();
-            embed_cover(cover_file.path(), vec![audio_path.clone()]).unwrap();
+            embed_cover(cover_file.path(), vec![audio_file.path().to_path_buf()]).unwrap();
 
-            let tags_after = read_metadata(&[&audio_path], true).unwrap();
-            assert_eq!(tags_after.has_embedded_cover, Some(true));
+            let file = lofty::read_from_path(audio_file.path()).unwrap();
+            assert!(
+                file.primary_tag()
+                    .unwrap()
+                    .pictures()
+                    .iter()
+                    .any(|p| p.pic_type() == picture::PictureType::CoverFront)
+            );
+        }
+    }
+
+    ffmpeg_test! {
+        fn embed_cover_wav_with_riff_info() {
+            assert_embed_cover_round_trip("wav");
         }
     }
 
