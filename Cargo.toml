@@ -77,6 +77,7 @@ unused-qualifications = "warn"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+assert_is_empty = "allow"
 missing_errors_doc = "allow"
 unnecessary_debug_formatting = "allow"
 # below lints are from clippy::restriction
