@@ -1,9 +1,8 @@
 //! Recursively search and download album covers for a music library
 
 use std::{
-    collections::HashSet,
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock, atomic::Ordering},
+    sync::{Arc, atomic::Ordering},
     time::Duration,
 };
 
@@ -55,42 +54,42 @@ impl<S: AsRef<str>> CoverOutputPattern<S> {
 
     /// Replace `{artist}` and `{album}` placeholders in pattern
     /// If the pattern is a relative path, it is joined with `base_dir`.
-    fn to_path_buf(&self, base_dir: &Path, artist: Option<&str>, album: &str) -> PathBuf {
-        let safe_artist = Self::sanitize_for_path(artist.unwrap_or(DEFAULT_VARIOUS_ARTISTS_VALUE));
-        let safe_album = Self::sanitize_for_path(album);
-        let path = self
-            .0
-            .0
-            .as_ref()
-            .replace("{artist}", &safe_artist)
-            .replace("{album}", &safe_album);
-        let path = PathBuf::from(path);
-        if path.is_absolute() {
-            path
-        } else {
-            base_dir.join(path)
+    /// Fails if a placeholder used by the pattern has a value left empty by sanitizing.
+    fn to_path_buf(
+        &self,
+        base_dir: &Path,
+        artist: Option<&str>,
+        album: &str,
+    ) -> anyhow::Result<PathBuf> {
+        let mut path = self.0.0.as_ref().to_owned();
+        for (placeholder, value) in [
+            ("{artist}", artist.unwrap_or(DEFAULT_VARIOUS_ARTISTS_VALUE)),
+            ("{album}", album),
+        ] {
+            if path.contains(placeholder) {
+                let safe_value = Self::sanitize_for_path(value);
+                anyhow::ensure!(
+                    !safe_value.is_empty(),
+                    "Tag value {value:?} has no character usable in a path"
+                );
+                path = path.replace(placeholder, &safe_value);
+            }
         }
+        Ok(base_dir.join(path))
     }
 
     fn sanitize_for_path(s: &str) -> String {
-        static VALID_ASCII_PUNCTUATION: LazyLock<HashSet<char>> =
-            LazyLock::new(|| "-_.()!#$%&'@^{}~".chars().collect());
-        s.chars()
+        deunicode::deunicode(s)
+            .chars()
             .filter_map(|c| match c {
                 '/' | '\\' => Some('-'),
                 '|' | '*' => Some('x'),
-                c if c.is_ascii_alphanumeric()
-                    || VALID_ASCII_PUNCTUATION.contains(&c)
-                    || (c == ' ') =>
-                {
-                    Some(c)
-                }
+                c if c.is_ascii_alphanumeric() || "-_.()!#$%&'@^{}~ ".contains(c) => Some(c),
                 _ => None,
             })
             .collect::<String>()
             .trim_matches([' ', '.'])
-            .chars()
-            .collect()
+            .to_owned()
     }
 }
 
@@ -246,11 +245,14 @@ async fn main() -> anyhow::Result<()> {
                     .first()
                     .and_then(|p| p.parent())
                     .unwrap_or(Path::new("."));
-                WorkOutput::File(pattern.to_path_buf(
-                    audio_dir,
-                    tags.artist.as_deref(),
-                    &tags.album,
-                ))
+                match pattern.to_path_buf(audio_dir, tags.artist.as_deref(), &tags.album) {
+                    Ok(path) => WorkOutput::File(path),
+                    Err(err) => {
+                        log::warn!("Unable to build cover path for files {audio_files:?}: {err}");
+                        stats.errors.fetch_add(1, Ordering::Relaxed);
+                        continue;
+                    }
+                }
             }
         };
 
@@ -312,11 +314,13 @@ mod tests {
     #[test]
     fn output_pattern_basic_replacement() {
         let pattern = CoverOutputPattern::new("covers/{artist}/{album}.jpg");
-        let result = pattern.to_path_buf(
-            Path::new("/music/album1"),
-            Some("The Beatles"),
-            "Abbey Road",
-        );
+        let result = pattern
+            .to_path_buf(
+                Path::new("/music/album1"),
+                Some("The Beatles"),
+                "Abbey Road",
+            )
+            .unwrap();
         assert_eq!(
             result,
             PathBuf::from("/music/album1/covers/The Beatles/Abbey Road.jpg")
@@ -326,19 +330,22 @@ mod tests {
     #[test]
     fn output_pattern_single_placeholder() {
         let pattern = CoverOutputPattern::new("{album}_cover.jpg");
-        let result = pattern.to_path_buf(
-            Path::new("/music/album1"),
-            Some("Artist Name"),
-            "Album Name",
-        );
+        let result = pattern
+            .to_path_buf(
+                Path::new("/music/album1"),
+                Some("Artist Name"),
+                "Album Name",
+            )
+            .unwrap();
         assert_eq!(result, PathBuf::from("/music/album1/Album Name_cover.jpg"));
     }
 
     #[test]
     fn output_pattern_multiple_occurrences() {
         let pattern = CoverOutputPattern::new("{artist}_{artist}_{album}.jpg");
-        let result =
-            pattern.to_path_buf(Path::new("/music/album1"), Some("Pink Floyd"), "Dark Side");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Pink Floyd"), "Dark Side")
+            .unwrap();
         assert_eq!(
             result,
             PathBuf::from("/music/album1/Pink Floyd_Pink Floyd_Dark Side.jpg")
@@ -348,18 +355,22 @@ mod tests {
     #[test]
     fn output_pattern_no_placeholders() {
         let pattern = CoverOutputPattern::new("cover.jpg");
-        let result = pattern.to_path_buf(Path::new("/music/album1"), Some("Artist"), "Album");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Artist"), "Album")
+            .unwrap();
         assert_eq!(result, PathBuf::from("/music/album1/cover.jpg"));
     }
 
     #[test]
     fn output_pattern_with_special_chars() {
         let pattern = CoverOutputPattern::new("{artist} - {album}/cover.jpg");
-        let result = pattern.to_path_buf(
-            Path::new("/music/album1"),
-            Some("Metallica"),
-            "Master of Puppets",
-        );
+        let result = pattern
+            .to_path_buf(
+                Path::new("/music/album1"),
+                Some("Metallica"),
+                "Master of Puppets",
+            )
+            .unwrap();
         assert_eq!(
             result,
             PathBuf::from("/music/album1/Metallica - Master of Puppets/cover.jpg")
@@ -369,8 +380,9 @@ mod tests {
     #[test]
     fn output_pattern_sanitizes_forward_slashes() {
         let pattern = CoverOutputPattern::new("covers/{artist}/{album}.jpg");
-        let result =
-            pattern.to_path_buf(Path::new("/music/album1"), Some("AC/DC"), "Back/in Black");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("AC/DC"), "Back/in Black")
+            .unwrap();
         // / becomes -
         assert_eq!(
             result,
@@ -381,8 +393,9 @@ mod tests {
     #[test]
     fn output_pattern_sanitizes_backslashes() {
         let pattern = CoverOutputPattern::new("{artist}_{album}.jpg");
-        let result =
-            pattern.to_path_buf(Path::new("/music/album1"), Some("Foo\\Bar"), "Album\\Name");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Foo\\Bar"), "Album\\Name")
+            .unwrap();
         // \ becomes -
         assert_eq!(
             result,
@@ -393,11 +406,13 @@ mod tests {
     #[test]
     fn output_pattern_sanitizes_pipes_and_asterisks() {
         let pattern = CoverOutputPattern::new("{artist}_{album}.jpg");
-        let result = pattern.to_path_buf(
-            Path::new("/music/album1"),
-            Some("Artist|Name"),
-            "Album*Name",
-        );
+        let result = pattern
+            .to_path_buf(
+                Path::new("/music/album1"),
+                Some("Artist|Name"),
+                "Album*Name",
+            )
+            .unwrap();
         // | and * become x
         assert_eq!(
             result,
@@ -408,32 +423,103 @@ mod tests {
     #[test]
     fn output_pattern_removes_trailing_dots() {
         let pattern = CoverOutputPattern::new("{artist}_{album}.jpg");
-        let result = pattern.to_path_buf(Path::new("/music/album1"), Some("Artist."), "Album...");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Artist."), "Album...")
+            .unwrap();
         assert_eq!(result, PathBuf::from("/music/album1/Artist_Album.jpg"));
     }
 
     #[test]
     fn output_pattern_trims_whitespace() {
         let pattern = CoverOutputPattern::new("{artist}_{album}.jpg");
-        let result =
-            pattern.to_path_buf(Path::new("/music/album1"), Some("  Artist  "), "  Album  ");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("  Artist  "), "  Album  ")
+            .unwrap();
         assert_eq!(result, PathBuf::from("/music/album1/Artist_Album.jpg"));
     }
 
     #[test]
     fn output_pattern_absolute_path_ignores_base_dir() {
         let pattern = CoverOutputPattern::new("/absolute/path/{album}.jpg");
-        let result = pattern.to_path_buf(Path::new("/music/album1"), Some("Artist"), "Album");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Artist"), "Album")
+            .unwrap();
         assert_eq!(result, PathBuf::from("/absolute/path/Album.jpg"));
     }
 
     #[test]
     fn output_pattern_none_artist_uses_default() {
         let pattern = CoverOutputPattern::new("{artist}/{album}.jpg");
-        let result = pattern.to_path_buf(Path::new("/music/album1"), None, "Compilation");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), None, "Compilation")
+            .unwrap();
         assert_eq!(
             result,
             PathBuf::from("/music/album1/Various Artists/Compilation.jpg")
         );
+    }
+
+    #[test]
+    fn output_pattern_transliterates_accents() {
+        let pattern = CoverOutputPattern::new("{artist}_{album}.jpg");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("Björk"), "Homogénic")
+            .unwrap();
+        assert_eq!(result, PathBuf::from("/music/album1/Bjork_Homogenic.jpg"));
+    }
+
+    #[test]
+    fn output_pattern_transliterates_non_latin_artist() {
+        let pattern = CoverOutputPattern::new("{artist}/{album}.jpg");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("坂本龍一"), "Album")
+            .unwrap();
+        assert_eq!(
+            result,
+            PathBuf::from("/music/album1/Ban Ben Long Yi/Album.jpg")
+        );
+    }
+
+    #[test]
+    fn output_pattern_non_latin_albums_distinct() {
+        let pattern = CoverOutputPattern::new("/covers/{artist} - {album}.jpg");
+        let a = pattern
+            .to_path_buf(Path::new("/music/a"), Some("坂本龍一"), "音楽図鑑")
+            .unwrap();
+        let b = pattern
+            .to_path_buf(Path::new("/music/b"), Some("坂本龍一"), "未来派野郎")
+            .unwrap();
+        assert_eq!(
+            a,
+            PathBuf::from("/covers/Ban Ben Long Yi - Yin Le Tu Jian.jpg")
+        );
+        assert_eq!(
+            b,
+            PathBuf::from("/covers/Ban Ben Long Yi - Wei Lai Pai Ye Lang.jpg")
+        );
+    }
+
+    #[test]
+    fn output_pattern_empty_sanitized_value_fails() {
+        let pattern = CoverOutputPattern::new("{artist}/{album}.jpg");
+        assert!(
+            pattern
+                .to_path_buf(Path::new("/music/album1"), Some("?"), "Album")
+                .is_err()
+        );
+        assert!(
+            pattern
+                .to_path_buf(Path::new("/music/album1"), Some("Artist"), "...")
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn output_pattern_empty_sanitized_value_unused() {
+        let pattern = CoverOutputPattern::new("cover.jpg");
+        let result = pattern
+            .to_path_buf(Path::new("/music/album1"), Some("?"), "...")
+            .unwrap();
+        assert_eq!(result, PathBuf::from("/music/album1/cover.jpg"));
     }
 }
