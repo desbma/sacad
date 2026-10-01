@@ -3,13 +3,14 @@
 use std::{
     cmp::min,
     collections::HashMap,
-    path::Path,
+    path::{Path, PathBuf},
     process::{ExitCode, Termination},
     sync::Arc,
 };
 
 use itertools::Itertools as _;
 
+pub use crate::cover::Format;
 use crate::{
     cl::{ImageProcessingArgs, SearchOptions, SearchQuery},
     cover::{Cover, CoverKey, SearchReference},
@@ -148,8 +149,8 @@ async fn compute_perceptual_hashes(results: &[Cover]) -> HashMap<CoverKey, Perce
 
 /// Status of successful search operation
 pub enum SearchStatus {
-    /// A result was found and downloaded
-    Found,
+    /// A result was found and downloaded to the given path
+    Found(PathBuf),
     /// No valid result was found for given query
     NotFound,
 }
@@ -157,7 +158,7 @@ pub enum SearchStatus {
 impl Termination for SearchStatus {
     fn report(self) -> ExitCode {
         match self {
-            SearchStatus::Found => ExitCode::SUCCESS,
+            SearchStatus::Found(_) => ExitCode::SUCCESS,
             SearchStatus::NotFound => ExitCode::FAILURE,
         }
     }
@@ -214,7 +215,7 @@ pub async fn search_and_download(
     // Download
     for result in results {
         match result.download(output, image_proc, &search_opts).await {
-            Ok(()) => return Ok(SearchStatus::Found),
+            Ok(filepath) => return Ok(SearchStatus::Found(filepath)),
             Err(err) => {
                 log::error!("Cover download failed: {err:#}");
             }

@@ -6,7 +6,7 @@ use std::{
     fmt,
     fs::File,
     io::{self, BufRead, BufReader, BufWriter, Seek},
-    path::Path,
+    path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
@@ -60,8 +60,8 @@ impl<T> Metadata<T> {
 }
 
 /// Image format
-#[derive(Clone, Debug, Eq, PartialEq, Hash, strum::EnumIter)]
-pub(crate) enum Format {
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, strum::EnumIter)]
+pub enum Format {
     /// JPEG
     Jpeg,
     /// PNG
@@ -95,7 +95,8 @@ impl Format {
     }
 
     /// Get canonical extension for format
-    fn extension(&self) -> &'static str {
+    #[must_use]
+    pub fn extension(self) -> &'static str {
         match self {
             Format::Jpeg => "jpg",
             Format::Png => "png",
@@ -103,7 +104,7 @@ impl Format {
     }
 
     /// Get image format as the image crate type
-    fn to_image_format(&self) -> image::ImageFormat {
+    fn to_image_format(self) -> image::ImageFormat {
         match self {
             Format::Jpeg => image::ImageFormat::Jpeg,
             Format::Png => image::ImageFormat::Png,
@@ -166,13 +167,13 @@ impl Cover {
         Ok(hash)
     }
 
-    /// Download cover to local file
+    /// Download cover to local file, and return the path written
     pub(crate) async fn download(
         self,
         output: &Path,
         image_proc: &ImageProcessingArgs,
         search_opts: &SearchOptions,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<PathBuf> {
         log::debug!("Downloading {self}");
 
         // Download to temporary file
@@ -222,18 +223,21 @@ impl Cover {
                 Format::Jpeg
             });
 
-        let need_format_change = (cover_format != output_format) && !image_proc.preserve_format;
         let need_resize = !search_opts.matches_max_size(max(width, height));
+        let write_format = if image_proc.preserve_format && !need_resize {
+            cover_format
+        } else {
+            output_format
+        };
 
-        let output_filepath =
-            if !need_resize && (cover_format != output_format) && image_proc.preserve_format {
-                // Change output extension
-                output.with_extension(cover_format.extension())
-            } else {
-                output.to_path_buf()
-            };
+        let output_filepath = if write_format == output_format {
+            output.to_path_buf()
+        } else {
+            // Change output extension
+            output.with_extension(write_format.extension())
+        };
 
-        if need_format_change || need_resize {
+        if need_resize || (write_format != cover_format) {
             // Convert
             let reader = BufReader::new(tmp_file);
             let mut img = image::load(reader, cover_format.to_image_format())?;
@@ -245,7 +249,7 @@ impl Cover {
                 );
                 // TODO unsharp?
             }
-            img.save_with_format(&output_filepath, output_format.to_image_format())?;
+            img.save_with_format(&output_filepath, write_format.to_image_format())?;
         } else {
             // Just copy
             let mut dest = File::create(&output_filepath)?;
@@ -253,13 +257,14 @@ impl Cover {
         }
 
         // Crunch
-        if let Format::Png = output_format {
+        if let Format::Png = write_format {
             log::info!("Crunching PNG file {output_filepath:?}...");
+            let crunch_filepath = output_filepath.clone();
             tokio::task::spawn_blocking(move || {
                 let options = oxipng::Options::from_preset(2);
                 match oxipng::optimize(
-                    &oxipng::InFile::Path(output_filepath.clone()),
-                    &oxipng::OutFile::from_path(output_filepath.clone()),
+                    &oxipng::InFile::Path(crunch_filepath.clone()),
+                    &oxipng::OutFile::from_path(crunch_filepath.clone()),
                     &options,
                 ) {
                     #[expect(clippy::cast_precision_loss)]
@@ -272,14 +277,14 @@ impl Cover {
                         );
                     }
                     Err(err) => {
-                        log::warn!("Failed to crunch PNG file {output_filepath:?}: {err}");
+                        log::warn!("Failed to crunch PNG file {crunch_filepath:?}: {err}");
                     }
                 }
             })
             .await?;
         }
 
-        Ok(())
+        Ok(output_filepath)
     }
 
     /// Get key to use type in hash tables
@@ -808,7 +813,7 @@ mod tests {
     }
 
     mod download {
-        use std::{io::Write as _, net::TcpListener, thread};
+        use std::{fs, io::Write as _, net::TcpListener, thread};
 
         use super::*;
 
@@ -827,13 +832,66 @@ mod tests {
             format!("http://{address}/cover.jpg").parse().unwrap()
         }
 
+        /// Encode a single color image
+        fn encode(width: u32, height: u32, format: image::ImageFormat) -> Vec<u8> {
+            let mut buf = io::Cursor::new(Vec::new());
+            image::RgbImage::from_pixel(width, height, image::Rgb([10, 20, 200]))
+                .write_to(&mut buf, format)
+                .unwrap();
+            buf.into_inner()
+        }
+
+        /// Read the format and dimensions of an image file
+        fn probe(path: &Path) -> (image::ImageFormat, (u32, u32)) {
+            let reader = image::ImageReader::open(path)
+                .unwrap()
+                .with_guessed_format()
+                .unwrap();
+            let format = reader.format().unwrap();
+            (format, reader.decode().unwrap().dimensions())
+        }
+
+        /// Download `cover` to `output` for target `size`, and return the path written
+        async fn download(
+            cover: Cover,
+            output: &Path,
+            preserve_format: bool,
+            size: u32,
+        ) -> anyhow::Result<PathBuf> {
+            cover
+                .download(
+                    output,
+                    &ImageProcessingArgs { preserve_format },
+                    &make_search_opts(size),
+                )
+                .await
+        }
+
+        /// Download a JPEG cover to `filename`, and check it is copied unchanged to `cover.jpg`
+        async fn assert_jpeg_copy(filename: &str, preserve_format: bool) {
+            let body = encode(200, 200, image::ImageFormat::Jpeg);
+            let cover = Cover {
+                url: serve(body.clone()),
+                ..make_cover((200, 200), Format::Jpeg)
+            };
+            let output_dir = tempfile::tempdir().unwrap();
+
+            let written = download(
+                cover,
+                &output_dir.path().join(filename),
+                preserve_format,
+                200,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(written, output_dir.path().join("cover.jpg"));
+            assert_eq!(fs::read(&written).unwrap(), body);
+        }
+
         #[tokio::test]
         async fn reject_below_min_size() {
-            let mut jpeg = io::Cursor::new(Vec::new());
-            image::RgbImage::new(800, 300)
-                .write_to(&mut jpeg, image::ImageFormat::Jpeg)
-                .unwrap();
-            let url = serve(jpeg.into_inner());
+            let url = serve(encode(800, 300, image::ImageFormat::Jpeg));
             let expected = format!("Cover {url} is smaller than expected (800x300)");
             let cover = Cover {
                 url,
@@ -842,18 +900,70 @@ mod tests {
             };
             let output_dir = tempfile::tempdir().unwrap();
 
-            let err = cover
-                .download(
-                    &output_dir.path().join("cover.jpg"),
-                    &ImageProcessingArgs {
-                        preserve_format: false,
-                    },
-                    &make_search_opts(600),
-                )
+            let err = download(cover, &output_dir.path().join("cover.jpg"), false, 600)
                 .await
                 .unwrap_err();
 
             assert_eq!(err.to_string(), expected);
+        }
+
+        #[tokio::test]
+        async fn copy() {
+            assert_jpeg_copy("cover.jpg", false).await;
+        }
+
+        #[tokio::test]
+        async fn convert_and_resize() {
+            let cover = Cover {
+                url: serve(encode(240, 180, image::ImageFormat::Jpeg)),
+                size_px: Metadata::uncertain((200, 200)),
+                format: Metadata::uncertain(Format::Png),
+                ..make_cover((200, 200), Format::Png)
+            };
+            let output_dir = tempfile::tempdir().unwrap();
+            let output = output_dir.path().join("cover.png");
+
+            let written = download(cover, &output, false, 100).await.unwrap();
+
+            assert_eq!(written, output);
+            assert_eq!(probe(&written), (image::ImageFormat::Png, (100, 75)));
+        }
+
+        #[tokio::test]
+        async fn preserve_format_crunches_png() {
+            let body = encode(200, 200, image::ImageFormat::Png);
+            let cover = Cover {
+                url: serve(body.clone()),
+                ..make_cover((200, 200), Format::Png)
+            };
+            let output_dir = tempfile::tempdir().unwrap();
+
+            let written = download(cover, &output_dir.path().join("cover.jpg"), true, 200)
+                .await
+                .unwrap();
+
+            assert_eq!(written, output_dir.path().join("cover.png"));
+            assert!(fs::read(&written).unwrap().len() < body.len());
+        }
+
+        #[tokio::test]
+        async fn preserve_format_copies_jpeg() {
+            assert_jpeg_copy("cover.png", true).await;
+        }
+
+        #[tokio::test]
+        async fn preserve_format_with_resize() {
+            let cover = Cover {
+                url: serve(encode(200, 200, image::ImageFormat::Png)),
+                ..make_cover((200, 200), Format::Png)
+            };
+            let output_dir = tempfile::tempdir().unwrap();
+            let output = output_dir.path().join("cover.jpg");
+
+            let written = download(cover, &output, true, 100).await.unwrap();
+
+            assert_eq!(written, output);
+            assert_eq!(probe(&written), (image::ImageFormat::Jpeg, (100, 100)));
         }
     }
 }

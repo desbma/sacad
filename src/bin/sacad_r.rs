@@ -12,11 +12,13 @@ use async_channel::Receiver;
 use clap::Parser as _;
 use indicatif::{ProgressBar, ProgressStyle};
 use sacad::{
+    Format,
     cl::{self, CoverOutput, ImageProcessingArgs, SearchOptions, SearchQuery},
     search_and_download,
     tags::{self, DEFAULT_VARIOUS_ARTISTS_VALUE},
     walk::{AudioFileIterator, Stats},
 };
+use strum::IntoEnumIterator as _;
 
 /// Unit of work for worker tasks
 #[derive(Debug)]
@@ -92,6 +94,13 @@ impl<S: AsRef<str>> CoverOutputPattern<S> {
     }
 }
 
+/// Return true if a cover file exists at `path`, or with `preserve_format`, under any format extension
+fn cover_exists(path: &Path, preserve_format: bool) -> bool {
+    path.exists()
+        || (preserve_format
+            && Format::iter().any(|format| path.with_extension(format.extension()).exists()))
+}
+
 /// The workers are IO bound and limited by source rate limits, so no need for more than that
 const WORKER_COUNT: usize = 8;
 
@@ -137,10 +146,10 @@ async fn handle_work(
     stats: &Arc<Stats>,
     progress_bar: &ProgressBar,
 ) -> anyhow::Result<()> {
-    let (output, _tmp_file) = match &work.output {
+    let (output, _tmp_dir) = match &work.output {
         WorkOutput::Embed(_) => {
-            let tmp_file = tempfile::NamedTempFile::new()?;
-            (tmp_file.path().to_owned(), Some(tmp_file))
+            let tmp_dir = tempfile::tempdir()?;
+            (tmp_dir.path().join("cover.jpg"), Some(tmp_dir))
         }
         WorkOutput::File(filepath) => (filepath.to_owned(), None),
     };
@@ -152,9 +161,9 @@ async fn handle_work(
     )
     .await?
     {
-        sacad::SearchStatus::Found => {
+        sacad::SearchStatus::Found(filepath) => {
             if let WorkOutput::Embed(audio_files) = work.output {
-                tags::embed_cover(&output, audio_files)?;
+                tags::embed_cover(&filepath, audio_files)?;
             }
             stats.done.fetch_add(1, Ordering::Relaxed);
         }
@@ -249,7 +258,7 @@ async fn main() -> anyhow::Result<()> {
         let has_cover = match &output {
             #[expect(clippy::unwrap_used)]
             WorkOutput::Embed(_) => tags.has_embedded_cover.unwrap(),
-            WorkOutput::File(path) => path.exists(),
+            WorkOutput::File(path) => cover_exists(path, image_proc.preserve_format),
         };
         if has_cover && !cl_args.ignore_existing {
             continue;
@@ -278,7 +287,27 @@ async fn main() -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use super::*;
+
+    #[test]
+    fn cover_exists_requested_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cover.jpg");
+        assert!(!cover_exists(&path, true));
+        fs::write(&path, b"").unwrap();
+        assert!(cover_exists(&path, false));
+    }
+
+    #[test]
+    fn cover_exists_other_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cover.jpg");
+        fs::write(dir.path().join("cover.png"), b"").unwrap();
+        assert!(cover_exists(&path, true));
+        assert!(!cover_exists(&path, false));
+    }
 
     #[test]
     fn output_pattern_basic_replacement() {
