@@ -9,6 +9,7 @@ mod lastfm;
 use std::{cmp, sync::Arc, time::Duration};
 
 use reqwest::header::HeaderMap;
+use unicode_normalization::UnicodeNormalization as _;
 
 use crate::{
     cl::SourceName,
@@ -156,29 +157,16 @@ impl From<&SourceName> for Box<dyn Source> {
     }
 }
 
-/// Remove chars in input string
-fn remove_chars<S, F>(s: S, filter: F) -> String
-where
-    S: AsRef<str>,
-    F: Fn(&char) -> bool,
-{
-    s.as_ref().chars().filter(filter).collect()
-}
-
 /// Normalize string by converting to lowercase and replace accentuated chars
 fn normalize<S>(s: S) -> String
 where
     S: AsRef<str>,
 {
     s.as_ref()
-        .chars()
-        .flat_map(|oc| {
-            let mut nc = None;
-            unicode_normalization::char::decompose_canonical(oc, |c| {
-                nc.get_or_insert(c);
-            });
-            nc.unwrap_or(oc).to_lowercase()
-        })
+        .nfd()
+        // Drop combining diacritical marks (accents)
+        .filter(|c| !('\u{300}'..='\u{36f}').contains(c))
+        .flat_map(char::to_lowercase)
         .collect()
 }
 
@@ -195,13 +183,18 @@ pub(crate) mod tests {
     #[test]
     fn normalize() {
         assert_eq!(super::normalize("AÀh' JÉeêé"), "aah' jeeee");
+        assert_ne!(super::normalize("사랑"), super::normalize("소리"));
+        assert_ne!(super::normalize("कला"), super::normalize("कल"));
+        assert_ne!(super::normalize("が"), super::normalize("か"));
+        assert_eq!(super::normalize("JE\u{301}"), "je");
     }
 
-    pub(crate) async fn source_has_results<S>(source: S, source_name: SourceName)
+    /// Build an HTTP client with the source settings and the shared test cache
+    pub(crate) fn test_http<S>(source: &S, source_name: SourceName) -> Arc<SourceHttpClient>
     where
         S: Source,
     {
-        let mut http = Arc::new(
+        Arc::new(
             SourceHttpClient::new(
                 source_name,
                 source.user_agent(),
@@ -211,7 +204,14 @@ pub(crate) mod tests {
                 TEST_CACHE_DIR.path(),
             )
             .unwrap(),
-        );
+        )
+    }
+
+    pub(crate) async fn source_has_results<S>(source: S, source_name: SourceName)
+    where
+        S: Source,
+    {
+        let mut http = test_http(&source, source_name);
         assert!(
             !source
                 .search(Some("Michael Jackson"), "Thriller", &mut http)
@@ -226,26 +226,37 @@ pub(crate) mod tests {
                 .unwrap()
                 .is_empty(),
         );
+        assert!(
+            !source
+                .search(Some("AC/DC"), "Back in Black", &mut http)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
     }
 
     pub(crate) async fn source_has_results_compilation<S>(source: S, source_name: SourceName)
     where
         S: Source,
     {
-        let mut http = Arc::new(
-            SourceHttpClient::new(
-                source_name,
-                source.user_agent(),
-                source.timeout(),
-                source.common_headers(),
-                source.rate_limit().as_ref(),
-                TEST_CACHE_DIR.path(),
-            )
-            .unwrap(),
-        );
+        let mut http = test_http(&source, source_name);
         assert!(
             !source
                 .search(None, "Pulp Fiction", &mut http)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+    }
+
+    pub(crate) async fn source_has_results_korean<S>(source: S, source_name: SourceName)
+    where
+        S: Source,
+    {
+        let mut http = test_http(&source, source_name);
+        assert!(
+            !source
+                .search(Some("IU"), "꽃갈피", &mut http)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -256,17 +267,7 @@ pub(crate) mod tests {
     where
         S: Source,
     {
-        let mut http = Arc::new(
-            SourceHttpClient::new(
-                source_name,
-                source.user_agent(),
-                source.timeout(),
-                source.common_headers(),
-                source.rate_limit().as_ref(),
-                TEST_CACHE_DIR.path(),
-            )
-            .unwrap(),
-        );
+        let mut http = test_http(&source, source_name);
         assert!(
             source
                 .search(Some("mlkjjkhjklhlkjhlk"), "mlkjjkhjklhlkjhlk", &mut http)

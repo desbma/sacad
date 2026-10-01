@@ -14,7 +14,7 @@ use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
     http::SourceHttpClient,
-    source::{self, Source, normalize},
+    source::{self, Source},
     tags::DEFAULT_VARIOUS_ARTISTS_VALUE,
 };
 
@@ -72,13 +72,11 @@ impl Source for LastFm {
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = normalize(artist.unwrap_or(DEFAULT_VARIOUS_ARTISTS_VALUE));
-        let nalbum = normalize(album);
         let url_params = [
             ("method", "album.getinfo"),
             ("api_key", API_KEY),
-            ("artist", &nartist),
-            ("album", &nalbum),
+            ("artist", artist.unwrap_or(DEFAULT_VARIOUS_ARTISTS_VALUE)),
+            ("album", album),
         ];
         #[expect(clippy::unwrap_used)] // base URL is absolute
         let search_url =
@@ -160,7 +158,8 @@ impl Source for LastFm {
 mod tests {
     use super::*;
     use crate::source::tests::{
-        source_has_results, source_has_results_compilation, source_no_results,
+        source_has_results, source_has_results_compilation, source_has_results_korean,
+        source_no_results,
     };
 
     #[tokio::test]
@@ -175,6 +174,13 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = LastFm;
         source_has_results_compilation(source, SourceName::LastFm).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_korean() {
+        let _ = simple_logger::init_with_env();
+        let source = LastFm;
+        source_has_results_korean(source, SourceName::LastFm).await;
     }
 
     #[tokio::test]

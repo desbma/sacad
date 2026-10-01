@@ -81,11 +81,11 @@ impl Source for Deezer {
     ) -> anyhow::Result<Vec<Cover>> {
         let nartist = artist.map(normalize);
         let nalbum = normalize(album);
-        let query = if let Some(nartist) = &nartist {
+        let query = if let Some(artist) = artist {
             // Deezer returns no results when the artist field is combined with any other field
-            format!("{nartist} album:\"{nalbum}\"")
+            format!("{artist} album:\"{album}\"")
         } else {
-            format!("album:\"{nalbum}\"")
+            format!("album:\"{album}\"")
         };
         let url_params = [("q", query.as_str()), ("order", "RANKING")];
 
@@ -145,7 +145,8 @@ impl Source for Deezer {
 mod tests {
     use super::*;
     use crate::source::tests::{
-        source_has_results, source_has_results_compilation, source_no_results,
+        source_has_results, source_has_results_compilation, source_has_results_korean,
+        source_no_results,
     };
 
     #[tokio::test]
@@ -160,6 +161,13 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = Deezer;
         source_has_results_compilation(source, SourceName::Deezer).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_korean() {
+        let _ = simple_logger::init_with_env();
+        let source = Deezer;
+        source_has_results_korean(source, SourceName::Deezer).await;
     }
 
     #[tokio::test]

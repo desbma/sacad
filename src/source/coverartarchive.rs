@@ -103,9 +103,7 @@ impl Source for CoverArtArchive {
         let nartist = artist.map(normalize);
         let nalbum = normalize(album);
 
-        let releases = self
-            .musicbrainz_releases(nartist.as_deref(), &nalbum, http)
-            .await?;
+        let releases = self.musicbrainz_releases(artist, album, http).await?;
 
         let mut results = Vec::new();
         for (rank, release) in releases.into_iter().enumerate() {
@@ -259,7 +257,8 @@ impl CoverArtArchive {
 mod tests {
     use super::*;
     use crate::source::tests::{
-        source_has_results, source_has_results_compilation, source_no_results,
+        source_has_results, source_has_results_compilation, source_has_results_korean,
+        source_no_results,
     };
 
     #[tokio::test]
@@ -274,6 +273,13 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = CoverArtArchive;
         source_has_results_compilation(source, SourceName::CoverArtArchive).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_korean() {
+        let _ = simple_logger::init_with_env();
+        let source = CoverArtArchive;
+        source_has_results_korean(source, SourceName::CoverArtArchive).await;
     }
 
     #[tokio::test]

@@ -15,7 +15,7 @@ use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
     http::SourceHttpClient,
-    source::{self, Source, normalize},
+    source::{self, Source},
 };
 
 /// Discogs cover source
@@ -82,15 +82,12 @@ impl Source for Discogs {
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = artist.map(normalize);
-        let nalbum = normalize(album);
-
         // Note: source has pagination but getting the first 50 results is more than enough
         let mut url_params = Vec::new();
-        if let Some(nartist) = nartist {
-            url_params.push(("artist", nartist));
+        if let Some(artist) = artist {
+            url_params.push(("artist", artist));
         }
-        url_params.extend([("release_title", nalbum), ("type", "release".to_owned())]);
+        url_params.extend([("release_title", album), ("type", "release")]);
         #[expect(clippy::unwrap_used)]
         let search_url =
             Url::parse_with_params("https://api.discogs.com/database/search", url_params).unwrap();
@@ -155,7 +152,8 @@ impl Source for Discogs {
 mod tests {
     use super::*;
     use crate::source::tests::{
-        source_has_results, source_has_results_compilation, source_no_results,
+        source_has_results, source_has_results_compilation, source_has_results_korean,
+        source_no_results,
     };
 
     #[test]
@@ -176,6 +174,13 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = Discogs;
         source_has_results_compilation(source, SourceName::Discogs).await;
+    }
+
+    #[tokio::test]
+    async fn has_results_korean() {
+        let _ = simple_logger::init_with_env();
+        let source = Discogs;
+        source_has_results_korean(source, SourceName::Discogs).await;
     }
 
     #[tokio::test]

@@ -11,7 +11,7 @@ use crate::{
     cl::SourceName,
     cover::{self, Cover},
     http::SourceHttpClient,
-    source::{self, Source, normalize, remove_chars},
+    source::{self, Source, normalize},
 };
 
 /// Itunes cover source
@@ -46,18 +46,12 @@ impl Source for Itunes {
         album: &str,
         http: &mut Arc<SourceHttpClient>,
     ) -> anyhow::Result<Vec<Cover>> {
-        let nartist = artist.map(|artist| {
-            remove_chars(normalize(artist), |c| {
-                c.is_ascii() && !c.is_ascii_control() && !c.is_ascii_punctuation()
-            })
-        });
-        let nalbum = remove_chars(normalize(album), |c| {
-            c.is_ascii() && !c.is_ascii_control() && !c.is_ascii_punctuation()
-        });
-        let url_term = if let Some(nartist) = &nartist {
-            format!("{nartist} {nalbum}")
+        let nartist = artist.map(normalize);
+        let nalbum = normalize(album);
+        let url_term = if let Some(artist) = artist {
+            format!("{artist} {album}")
         } else {
-            nalbum.clone()
+            album.to_owned()
         };
         let url_params = [("media", "music"), ("entity", "album"), ("term", &url_term)];
         #[expect(clippy::unwrap_used)] // base URL is absolute
@@ -148,7 +142,7 @@ impl Source for Itunes {
 mod tests {
     use super::*;
     use crate::source::tests::{
-        source_has_results, source_has_results_compilation, source_no_results,
+        source_has_results, source_has_results_compilation, source_no_results, test_http,
     };
 
     #[tokio::test]
@@ -163,6 +157,21 @@ mod tests {
         let _ = simple_logger::init_with_env();
         let source = Itunes;
         source_has_results_compilation(source, SourceName::Itunes).await;
+    }
+
+    #[tokio::test]
+    async fn has_exact_result_japanese() {
+        let _ = simple_logger::init_with_env();
+        let source = Itunes;
+        let mut http = test_http(&source, SourceName::Itunes);
+        assert!(
+            source
+                .search(Some("Hikaru Utada"), "初恋", &mut http)
+                .await
+                .unwrap()
+                .iter()
+                .any(|c| c.relevance.is_reference()),
+        );
     }
 
     #[tokio::test]
