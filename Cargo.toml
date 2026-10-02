@@ -67,14 +67,14 @@ tests-ffmpeg = []
 explicit_outlives_requirements = "warn"
 missing_docs = "warn"
 non_ascii_idents = "deny"
-redundant-lifetimes = "warn"
-single-use-lifetimes = "warn"
-unit-bindings = "warn"
+redundant_lifetimes = "warn"
+single_use_lifetimes = "warn"
+unit_bindings = "warn"
 unreachable_pub = "warn"
 unsafe_code = "forbid"
 # unused_crate_dependencies = "warn"
-unused-lifetimes = "warn"
-unused-qualifications = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
