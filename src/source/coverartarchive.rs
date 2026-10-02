@@ -42,7 +42,9 @@ impl MusicBrainzRelease {
                 !self
                     .artist_credit
                     .iter()
-                    .map(|c| normalize(&c.name))
+                    // Name as credited on the release, or canonical artist name
+                    .flat_map(|c| [&c.name, &c.artist.name])
+                    .map(normalize)
                     .any(|ac| ac == nartist)
             })
     }
@@ -50,6 +52,12 @@ impl MusicBrainzRelease {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct ArtistCredit {
+    name: String,
+    artist: Artist,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct Artist {
     name: String,
 }
 
@@ -307,6 +315,21 @@ mod tests {
             .unwrap();
         assert!(!releases.is_empty());
         assert!(releases.iter().all(|r| r.title.contains("Chirping")));
+    }
+
+    #[test]
+    fn release_is_fuzzy_match_canonical_artist() {
+        let release = MusicBrainzRelease {
+            id: String::new(),
+            title: "Bridge Over Troubled Water".to_owned(),
+            artist_credit: vec![ArtistCredit {
+                name: "Simon and Garfunkel".to_owned(),
+                artist: Artist {
+                    name: "Simon & Garfunkel".to_owned(),
+                },
+            }],
+        };
+        assert!(!release.is_fuzzy_match(Some("simon & garfunkel"), "bridge over troubled water"));
     }
 
     #[tokio::test]

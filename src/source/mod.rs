@@ -157,13 +157,24 @@ impl From<&SourceName> for Box<dyn Source> {
     }
 }
 
-/// Normalize string by converting to lowercase and replace accentuated chars
+/// Normalize string by lowercasing, removing accents, and folding typographic and compatibility characters
 fn normalize<S>(s: S) -> String
 where
     S: AsRef<str>,
 {
     s.as_ref()
-        .nfd()
+        .chars()
+        // Map typographic punctuation to ASCII, which compatibility decomposition does not
+        .map(|c| match c {
+            // ‘ ’ ′
+            '\u{2018}' | '\u{2019}' | '\u{2032}' => '\'',
+            // “ ” ″
+            '\u{201c}' | '\u{201d}' | '\u{2033}' => '"',
+            // Hyphens and dashes up to em dash
+            '\u{2010}'..='\u{2014}' => '-',
+            c => c,
+        })
+        .nfkd()
         // Drop combining diacritical marks (accents)
         .filter(|c| !('\u{300}'..='\u{36f}').contains(c))
         .flat_map(char::to_lowercase)
@@ -193,6 +204,19 @@ pub(crate) mod tests {
         assert_ne!(super::normalize("कला"), super::normalize("कल"));
         assert_ne!(super::normalize("が"), super::normalize("か"));
         assert_eq!(super::normalize("JE\u{301}"), "je");
+        assert_eq!(super::normalize("Guns N’ Roses"), "guns n' roses");
+        assert_eq!(
+            super::normalize("“Weird Al” Yankovic in 3‐D"),
+            "\"weird al\" yankovic in 3-d"
+        );
+        assert_eq!(
+            super::normalize("The 12″ Mixes – Vol. 1"),
+            "the 12\" mixes - vol. 1"
+        );
+        assert_eq!(
+            super::normalize("…And Justice for All"),
+            "...and justice for all"
+        );
     }
 
     #[test]
