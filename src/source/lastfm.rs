@@ -13,7 +13,7 @@ use reqwest::{StatusCode, Url};
 use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
-    http::SourceHttpClient,
+    http::{self, SourceHttpClient},
     source::{self, Source},
     tags::DEFAULT_VARIOUS_ARTISTS_VALUE,
 };
@@ -83,12 +83,7 @@ impl Source for LastFm {
             Url::parse_with_params("https://ws.audioscrobbler.com/2.0/", url_params).unwrap();
         let resp: Response = match http.get_xml(search_url).await {
             Ok(resp) => resp,
-            Err(err)
-                if err
-                    .downcast_ref::<reqwest::Error>()
-                    .and_then(reqwest::Error::status)
-                    .is_some_and(|s| s == StatusCode::NOT_FOUND) =>
-            {
+            Err(err) if http::status(&err) == Some(StatusCode::NOT_FOUND) => {
                 // API returns 404 for unknown albums
                 return Ok(vec![]);
             }

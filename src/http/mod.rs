@@ -15,7 +15,7 @@ use cache::Cache;
 use const_format::formatcp;
 use futures_util::StreamExt as _;
 use parking_lot::{Mutex, RwLock};
-use reqwest::{IntoUrl, Url, header::HeaderMap};
+use reqwest::{IntoUrl, StatusCode, Url, header::HeaderMap};
 
 use crate::{
     cl::SourceName,
@@ -60,6 +60,12 @@ pub(crate) fn default_cache_dir() -> anyhow::Result<PathBuf> {
     let dirs = directories::ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
         .context("Unable to compute cache directory")?;
     Ok(dirs.cache_dir().to_owned())
+}
+
+/// Get the HTTP status carried by a request error, if any
+pub(crate) fn status(err: &anyhow::Error) -> Option<StatusCode> {
+    err.downcast_ref::<reqwest::Error>()
+        .and_then(reqwest::Error::status)
 }
 
 impl SourceHttpClient {

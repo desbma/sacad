@@ -7,12 +7,12 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context as _;
 use backon::Retryable as _;
-use reqwest::Url;
+use reqwest::{StatusCode, Url};
 
 use crate::{
     cl::SourceName,
     cover::{Cover, Format, Metadata},
-    http::SourceHttpClient,
+    http::{self, SourceHttpClient},
     source::{self, RateLimit, Source, normalize, query_phrase},
 };
 
@@ -108,8 +108,12 @@ impl Source for CoverArtArchive {
         let mut results = Vec::new();
         for (rank, release) in releases.into_iter().enumerate() {
             let is_fuzzy = release.is_fuzzy_match(nartist.as_deref(), &nalbum);
-            if let Ok(covers) = self.release_covers(&release.id, rank, is_fuzzy, http).await {
-                results.extend(covers);
+            match self.release_covers(&release.id, rank, is_fuzzy, http).await {
+                Ok(covers) => results.extend(covers),
+                Err(err) => log::warn!(
+                    "Failed to get covers for release {id:?}: {err:#}",
+                    id = release.id
+                ),
             }
         }
 
@@ -166,7 +170,14 @@ impl CoverArtArchive {
         #[expect(clippy::unwrap_used)]
         let caa_url = Url::parse(&format!("https://coverartarchive.org/release/{mbid}")).unwrap();
 
-        let resp: CoverArtResponse = self.get_json(http, caa_url).await?;
+        let resp: CoverArtResponse = match self.get_json(http, caa_url).await {
+            Ok(resp) => resp,
+            Err(err) if http::status(&err) == Some(StatusCode::NOT_FOUND) => {
+                // API returns 404 for releases without artwork
+                return Ok(vec![]);
+            }
+            Err(err) => return Err(err),
+        };
 
         let mut covers = Vec::new();
         for image in resp.images.into_iter().filter(|img| img.front) {
@@ -237,14 +248,9 @@ impl CoverArtArchive {
                     .with_max_times(10),
             )
             .when(|err| {
-                if let Some(err) = err.downcast_ref::<reqwest::Error>() {
-                    err.is_connect()
-                        || err.status().is_some_and(|status| {
-                            status == reqwest::StatusCode::SERVICE_UNAVAILABLE
-                        })
-                } else {
-                    false
-                }
+                err.downcast_ref::<reqwest::Error>().is_some_and(|err| {
+                    err.is_connect() || err.status() == Some(StatusCode::SERVICE_UNAVAILABLE)
+                })
             })
             .notify(|err, dur: Duration| {
                 log::warn!(
@@ -301,6 +307,18 @@ mod tests {
             .unwrap();
         assert!(!releases.is_empty());
         assert!(releases.iter().all(|r| r.title.contains("Chirping")));
+    }
+
+    #[tokio::test]
+    async fn release_covers_not_found() {
+        let _ = simple_logger::init_with_env();
+        let source = CoverArtArchive;
+        let mut http = test_http(&source, SourceName::CoverArtArchive);
+        let covers = source
+            .release_covers("00000000-0000-0000-0000-000000000000", 0, false, &mut http)
+            .await
+            .unwrap();
+        assert!(covers.is_empty());
     }
 
     #[tokio::test]
