@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.0.3 - 2026-10-02
+
+### <!-- 01 -->💡 Features
+
+- Improve coverartarchive error handling ([bcbe6fd](https://github.com/desbma/sacad/commit/bcbe6fd811ce264c40c1971d1ba092e1417ff965) by desbma)
+
+### <!-- 02 -->🐛 Bug fixes
+
+- Is_similar hamming distance ([edd6aa3](https://github.com/desbma/sacad/commit/edd6aa3e0d8452f3de0dd965b069da9f4cac47cb) by desbma)
+- Aspect ratio comparison and sorting ([52f43a3](https://github.com/desbma/sacad/commit/52f43a3c1bf05bc1b8e9b12ce135f358f8066d7b) by desbma)
+- Possible integer underflow ([eaa840b](https://github.com/desbma/sacad/commit/eaa840bda2a86a296c1f006535b92ce753f92037) by desbma)
+- Download of smaller than expected cover ([1bcc659](https://github.com/desbma/sacad/commit/1bcc659f82c9e6e2f46f66e61faa98b34181fdf5) by desbma)
+- Cover path corner cases with -p ([3595244](https://github.com/desbma/sacad/commit/35952444d1347fdbc1a1bd811dcb4085a0a22278) by desbma)
+- Better handling of non-ascii chars ([dc2747a](https://github.com/desbma/sacad/commit/dc2747adfec1daec384c8a5926174e9d8fd3fdaa) by desbma)
+- Escaping quotes ([d008949](https://github.com/desbma/sacad/commit/d0089494e62005538e2f8b9b3100ca1e1056d13c) by desbma)
+- Better handling of non-ascii filenames ([c357141](https://github.com/desbma/sacad/commit/c3571418556f9eb1092ac5960ffc762d63af7659) by desbma)
+- Embedding cover in file without tags ([bafd3ff](https://github.com/desbma/sacad/commit/bafd3fff1ac9b2ccbfc494238412ce1d58fbb311) by desbma)
+- Normalization of punctuation ([654076c](https://github.com/desbma/sacad/commit/654076c94f6cbce0f6aa6e4b2a46a52456c0a930) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Simplify cover tests ([611c848](https://github.com/desbma/sacad/commit/611c848c87b3f9a41a504e7933a915732147a024) by desbma)
+- Fix lints ([d0d6cd9](https://github.com/desbma/sacad/commit/d0d6cd94d781958a22adba25d4c20860895409fb) by desbma)
+- Fix lints ([d573517](https://github.com/desbma/sacad/commit/d57351721be911e8627249623513b0ad9b1f429a) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.2 - 2026-09-27
 
 ### <!-- 02 -->🐛 Bug fixes
