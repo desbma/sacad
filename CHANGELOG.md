@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.4 - 2026-10-22
+
+### <!-- 08 -->🏗 Build
+
+- Pin lofty ([f58a557](https://github.com/desbma/sacad/commit/f58a557e91cd8f7d87498f2dee27a5a98a207708) by desbma)
+
+### <!-- 10 -->🧰 Miscellaneous tasks
+
+- Update dependencies ([67347ae](https://github.com/desbma/sacad/commit/67347aef18f6445466490c973f504d7a69d9a059) by desbma)
+- Update dependencies ([635075d](https://github.com/desbma/sacad/commit/635075d94f386d24f37c074de2d2a6410cbde490) by desbma)
+
+______________________________________________________________________
+
 ## 3.0.3 - 2026-10-02
 
 ### <!-- 01 -->💡 Features
