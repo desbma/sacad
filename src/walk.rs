@@ -27,14 +27,14 @@ pub struct Stats {
     pub errors: AtomicUsize,
 }
 
-/// Iterator that yields paths of audio files from the same level
+/// Iterator that yields each directory containing audio files, with the paths of those files
 pub struct AudioFileIterator {
     dirs: Vec<PathBuf>,
     stats: Arc<Stats>,
 }
 
 impl AudioFileIterator {
-    /// Create an iterator that yields paths of audio files from the same level
+    /// Initialize a recursive library walk rooted at `dir`
     pub fn new<P>(dir: P, stats: Arc<Stats>) -> Self
     where
         P: AsRef<Path>,
@@ -60,7 +60,7 @@ impl AudioFileIterator {
 }
 
 impl Iterator for AudioFileIterator {
-    type Item = Vec<PathBuf>;
+    type Item = (PathBuf, Vec<PathBuf>);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(dir) = self.dirs.pop() {
@@ -102,7 +102,7 @@ impl Iterator for AudioFileIterator {
                 self.stats
                     .audio_files
                     .fetch_add(audio_files.len(), Ordering::Relaxed);
-                return Some(audio_files);
+                return Some((dir, audio_files));
             }
         }
         None
@@ -115,7 +115,7 @@ mod tests {
 
     use super::*;
 
-    fn create_file<P>(dir: P, ext: &str)
+    fn create_file<P>(dir: P, ext: &str) -> PathBuf
     where
         P: AsRef<Path>,
     {
@@ -124,7 +124,8 @@ mod tests {
             .tempfile_in(dir)
             .unwrap()
             .keep()
-            .unwrap();
+            .unwrap()
+            .1
     }
 
     #[test]
@@ -149,7 +150,7 @@ mod tests {
         let items: Vec<_> = AudioFileIterator::new(&tmp_dir, Arc::clone(&stats)).collect();
 
         assert_eq!(items.len(), 1);
-        assert_eq!(items[0].len(), 1);
+        assert_eq!(items[0].1.len(), 1);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 1);
         assert_eq!(stats.audio_dirs.load(Ordering::Relaxed), 1);
     }
@@ -165,7 +166,7 @@ mod tests {
         let items: Vec<_> = AudioFileIterator::new(&tmp_dir, Arc::clone(&stats)).collect();
 
         assert_eq!(items.len(), 1);
-        assert_eq!(items[0].len(), 3);
+        assert_eq!(items[0].1.len(), 3);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 3);
         assert_eq!(stats.audio_dirs.load(Ordering::Relaxed), 1);
     }
@@ -181,7 +182,7 @@ mod tests {
         let items: Vec<_> = AudioFileIterator::new(&tmp_dir, Arc::clone(&stats)).collect();
 
         assert_eq!(items.len(), 1);
-        assert_eq!(items[0].len(), 1);
+        assert_eq!(items[0].1.len(), 1);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 1);
     }
 
@@ -194,14 +195,18 @@ mod tests {
         fs::create_dir_all(&album1).unwrap();
         fs::create_dir_all(&album2).unwrap();
 
-        create_file(&album1, "mp3");
-        create_file(&album1, "mp3");
-        create_file(&album2, "flac");
+        let mut album1_files = vec![create_file(&album1, "mp3"), create_file(&album1, "mp3")];
+        album1_files.sort();
+        let album2_files = vec![create_file(&album2, "flac")];
         let stats = Arc::new(Stats::default());
 
-        let items: Vec<_> = AudioFileIterator::new(&tmp_dir, Arc::clone(&stats)).collect();
+        let mut items: Vec<_> = AudioFileIterator::new(&tmp_dir, Arc::clone(&stats)).collect();
+        items.sort();
+        for (_, files) in &mut items {
+            files.sort();
+        }
 
-        assert_eq!(items.len(), 2);
+        assert_eq!(items, vec![(album1, album1_files), (album2, album2_files)]);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 3);
         assert_eq!(stats.audio_dirs.load(Ordering::Relaxed), 2);
     }
@@ -230,7 +235,7 @@ mod tests {
 
         let items: Vec<_> = AudioFileIterator::new(tmp.path(), Arc::clone(&stats)).collect();
 
-        assert_eq!(items[0].len(), 2);
+        assert_eq!(items[0].1.len(), 2);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 2);
     }
 
@@ -247,7 +252,7 @@ mod tests {
 
         let items: Vec<_> = AudioFileIterator::new(tmp.path(), Arc::clone(&stats)).collect();
 
-        assert_eq!(items[0].len(), 12);
+        assert_eq!(items[0].1.len(), 12);
         assert_eq!(stats.audio_files.load(Ordering::Relaxed), 12);
     }
 

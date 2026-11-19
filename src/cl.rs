@@ -44,6 +44,14 @@ pub struct SacadRecursiveArgs {
     /// Ignore existing covers and force search and download for all files
     #[clap(short, long)]
     pub ignore_existing: bool,
+    /// Read tags of all audio files in each directory.
+    /// By default, all audio files in a directory are assumed to belong to the same album,
+    /// and tags are only read until a file with usable artist and album tags is found.
+    /// Enable this if a directory can contain files from different albums.
+    /// Use a cover pattern that differs per album, like "{artist} - {album}.jpg", or '+'.
+    /// WARNING: This makes the scan much slower.
+    #[clap(short, long)]
+    pub full_scan: bool,
     /// Image conversion options
     #[clap(flatten)]
     pub image_proc: ImageProcessingArgs,

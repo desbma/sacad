@@ -1,7 +1,7 @@
 //! Audio metadata handling
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
     sync::LazyLock,
@@ -14,7 +14,7 @@ use lofty::{
 };
 
 /// File tags
-#[derive(Debug)]
+#[derive(Debug, Eq, Hash, PartialEq)]
 pub struct Tags {
     /// Artist tag, None if various artists detected
     pub artist: Option<String>,
@@ -37,22 +37,35 @@ fn extract_tag<'a>(
     tags: &'a tag::Tag,
     keys: &'a [tag::ItemKey],
 ) -> Option<(&'a str, &'a tag::ItemKey)> {
-    for key in keys {
-        if let Some(value) = tags.get_string(key) {
-            return Some((value, key));
-        }
-    }
-    None
+    keys.iter()
+        .find_map(|key| Some((tags.get_string(key)?, key)))
 }
 
-// Return the first file tag type that already has artist and album set
-fn usable_tag_type(file: &lofty::file::TaggedFile) -> Option<tag::TagType> {
-    for tags in file.primary_tag().into_iter().chain(file.tags()) {
-        if extract_tag(tags, &ARTIST_KEYS).is_some() && extract_tag(tags, &ALBUM_KEYS).is_some() {
-            return Some(tags.tag_type());
-        }
-    }
-    None
+/// Read artist/album tags from a single audio file, and optionally if it has embedded cover
+fn read_file_metadata(file_path: &Path, probe_embedded_cover: bool) -> Option<Tags> {
+    let file = lofty::read_from_path(file_path).ok()?;
+    // Use the first file tag that already has artist and album set
+    let (tag_artist, artist_key, tag_album) = file
+        .primary_tag()
+        .into_iter()
+        .chain(file.tags())
+        .find_map(|tags| {
+            let (artist, artist_key) = extract_tag(tags, &ARTIST_KEYS)?;
+            let (album, _) = extract_tag(tags, &ALBUM_KEYS)?;
+            Some((artist, artist_key, album))
+        })?;
+    let has_embedded_cover = probe_embedded_cover.then(|| {
+        file.tags()
+            .iter()
+            .flat_map(tag::Tag::pictures)
+            .any(|p| p.pic_type() == picture::PictureType::CoverFront)
+    });
+    Some(Tags {
+        artist: ((artist_key != &tag::ItemKey::AlbumArtist) || !is_various_artist(tag_artist))
+            .then(|| tag_artist.to_owned()),
+        album: tag_album.to_owned(),
+        has_embedded_cover,
+    })
 }
 
 /// Read artist/album tags from a bunch of audio files from the same album, and optionally if it has embedded cover.
@@ -62,29 +75,26 @@ pub fn read_metadata<P>(file_paths: &[P], probe_embedded_cover: bool) -> Option<
 where
     P: AsRef<Path>,
 {
+    file_paths
+        .iter()
+        .find_map(|file_path| read_file_metadata(file_path.as_ref(), probe_embedded_cover))
+}
+
+/// Group audio files by their tags, and return the files without usable tags apart
+#[must_use]
+pub fn group_by_metadata(
+    file_paths: Vec<PathBuf>,
+    probe_embedded_cover: bool,
+) -> (HashMap<Tags, Vec<PathBuf>>, Vec<PathBuf>) {
+    let mut groups: HashMap<Tags, Vec<PathBuf>> = HashMap::new();
+    let mut untagged = Vec::new();
     for file_path in file_paths {
-        let Ok(file) = lofty::read_from_path(file_path) else {
-            continue;
-        };
-        if let Some(tag_type) = usable_tag_type(&file) {
-            let tags = file.tag(tag_type)?;
-            let has_embedded_cover = probe_embedded_cover.then(|| {
-                file.tags()
-                    .iter()
-                    .flat_map(tag::Tag::pictures)
-                    .any(|p| p.pic_type() == picture::PictureType::CoverFront)
-            });
-            let (tag_artist, artist_key) = extract_tag(tags, &ARTIST_KEYS)?;
-            return Some(Tags {
-                artist: ((artist_key != &tag::ItemKey::AlbumArtist)
-                    || !is_various_artist(tag_artist))
-                .then(|| tag_artist.to_owned()),
-                album: extract_tag(tags, &ALBUM_KEYS)?.0.to_owned(),
-                has_embedded_cover,
-            });
+        match read_file_metadata(&file_path, probe_embedded_cover) {
+            Some(tags) => groups.entry(tags).or_default().push(file_path),
+            None => untagged.push(file_path),
         }
     }
-    None
+    (groups, untagged)
 }
 
 /// Default value for various artists
@@ -259,6 +269,16 @@ mod tests {
         assert!(status.success());
 
         audio_file
+    }
+
+    fn prepend_id3v2(path: &Path, id3v2_tags: &tag::Tag) {
+        // lofty does not write ID3v2 tags into FLAC files, so prepend it manually
+        let mut data = Vec::new();
+        id3v2_tags
+            .dump_to(&mut data, lofty::config::WriteOptions::default())
+            .unwrap();
+        data.extend(fs::read(path).unwrap());
+        fs::write(path, data).unwrap();
     }
 
     macro_rules! ffmpeg_test {
@@ -441,16 +461,40 @@ mod tests {
             cover.set_pic_type(picture::PictureType::CoverFront);
             let mut id3v2_tags = tag::Tag::new(tag::TagType::Id3v2);
             id3v2_tags.push_picture(cover);
-            // lofty does not write ID3v2 tags into FLAC files, so prepend it manually
-            let mut data = Vec::new();
-            id3v2_tags
-                .dump_to(&mut data, lofty::config::WriteOptions::default())
-                .unwrap();
-            data.extend(fs::read(audio_file.path()).unwrap());
-            fs::write(audio_file.path(), data).unwrap();
+            prepend_id3v2(audio_file.path(), &id3v2_tags);
 
             let tags = read_metadata(&[audio_file], true).unwrap();
             assert_eq!(tags.has_embedded_cover, Some(true));
+        }
+    }
+
+    fn id3v2_artist_album(artist: &str, album: &str) -> tag::Tag {
+        let mut id3v2_tags = tag::Tag::new(tag::TagType::Id3v2);
+        id3v2_tags.insert_text(tag::ItemKey::TrackArtist, artist.to_owned());
+        id3v2_tags.insert_text(tag::ItemKey::AlbumTitle, album.to_owned());
+        id3v2_tags
+    }
+
+    ffmpeg_test! {
+        fn primary_tag_preferred_over_secondary_tag() {
+            let audio_file = generate_audio_file("flac", Some("Artist"), None, Some("Album"), None);
+            prepend_id3v2(
+                audio_file.path(),
+                &id3v2_artist_album("Other Artist", "Other Album"),
+            );
+
+            let tags = read_metadata(&[audio_file], false).unwrap();
+            assert_eq!(tags, album_tags("Album", None));
+        }
+    }
+
+    ffmpeg_test! {
+        fn secondary_tag_fallback() {
+            let audio_file = generate_audio_file("flac", Some("Other Artist"), None, None, None);
+            prepend_id3v2(audio_file.path(), &id3v2_artist_album("Artist", "Album"));
+
+            let tags = read_metadata(&[audio_file], false).unwrap();
+            assert_eq!(tags, album_tags("Album", None));
         }
     }
 
@@ -559,6 +603,58 @@ mod tests {
             );
             let tags = read_metadata(&[file], false).unwrap();
             assert_eq!(tags.artist.unwrap(), "Real Album Artist");
+        }
+    }
+
+    fn album_tags(album: &str, has_embedded_cover: Option<bool>) -> Tags {
+        Tags {
+            artist: Some("Artist".to_owned()),
+            album: album.to_owned(),
+            has_embedded_cover,
+        }
+    }
+
+    ffmpeg_test! {
+        fn group_by_metadata_probe_modes() {
+            let files = [
+                generate_audio_file(
+                    "mp3",
+                    Some("Artist"),
+                    None,
+                    Some("Album A"),
+                    Some(&TEST_COVER_PNG),
+                ),
+                generate_audio_file("mp3", Some("Artist"), None, Some("Album A"), None),
+                generate_audio_file("mp3", Some("Artist"), None, Some("Album B"), None),
+                generate_audio_file("ogg", None, None, None, None),
+            ];
+            let paths = files.each_ref().map(|f| f.path().to_path_buf());
+            let [covered_a, uncovered_a, b, untagged] = paths.clone();
+
+            assert_eq!(
+                group_by_metadata(paths.to_vec(), false),
+                (
+                    HashMap::from([
+                        (
+                            album_tags("Album A", None),
+                            vec![covered_a.clone(), uncovered_a.clone()]
+                        ),
+                        (album_tags("Album B", None), vec![b.clone()]),
+                    ]),
+                    vec![untagged.clone()],
+                )
+            );
+            assert_eq!(
+                group_by_metadata(paths.to_vec(), true),
+                (
+                    HashMap::from([
+                        (album_tags("Album A", Some(true)), vec![covered_a]),
+                        (album_tags("Album A", Some(false)), vec![uncovered_a]),
+                        (album_tags("Album B", Some(false)), vec![b]),
+                    ]),
+                    vec![untagged],
+                )
+            );
         }
     }
 
